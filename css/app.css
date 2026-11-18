@@ -413,6 +413,11 @@ body[data-view="board"] main { max-width: 1600px; padding-block: 16px 24px; }
 .board-svg.tool-move .tok.dragging { cursor: grabbing; }
 .board-svg:not(.tool-move):not(.tool-erase) { cursor: crosshair; }
 .board-svg.tool-erase { cursor: cell; }
+.board-svg.tool-move .stk { cursor: pointer; }
+.handles .hd { fill: #fff; stroke: var(--brand); stroke-width: 3; cursor: grab; }
+.handles .hd-mid { fill: var(--brand); stroke: #fff; }
+.stk.sel .s-line { stroke: var(--brand); }
+.stk.sel .s-head { fill: var(--brand); stroke: var(--brand); }
 .board-svg.tool-erase .stk:hover, .board-svg.tool-erase .tok:hover { opacity: 0.45; }
 .board-stage.drop-hot { outline-color: var(--brand-text); }
 .step-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

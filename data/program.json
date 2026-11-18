@@ -843,10 +843,10 @@
       "kind": "trigger",
       "name": "5 THRU",
       "call": "“5 Thru”",
-      "summary": "5 runs through to the left wing and down-screens for 3. 3 comes off the screen to the left wing: backside action to keep the defense engaged away from the ball.",
+      "summary": "5 runs through to the left wing and down-screens for 3. 3 comes off the screen toward the sideline to the left slot: backside action to keep the defense engaged away from the ball.",
       "keys": [
         "Step 1: 5 runs through from the right side to the left wing and down-screens for 3. 1 dribbles over to the right wing. 4 flashes from the left block to the right elbow.",
-        "Step 2: 3 comes off the screen to the left wing. Backside action to keep the defense engaged away from the ball. The ball stays with 1.",
+        "Step 2: 3 comes off the screen toward the sideline to the left slot. Backside action to keep the defense engaged away from the ball. The ball stays with 1.",
         "The Thru's down screen is our backside action. Going into a Rub or Twist, no extra backside screen."
       ],
       "reads": [],
@@ -909,36 +909,12 @@
                     383
                   ],
                   [
-                    436.8,
-                    376.7
-                  ],
-                  [
-                    396.8,
-                    375.6
-                  ],
-                  [
                     326.7,
                     352.2
                   ],
                   [
-                    255.6,
-                    315.6
-                  ],
-                  [
                     212.2,
                     302.2
-                  ],
-                  [
-                    184.4,
-                    284.4
-                  ],
-                  [
-                    165.5,
-                    263.3
-                  ],
-                  [
-                    93.2,
-                    208.8
                   ],
                   [
                     82.1,
@@ -955,14 +931,6 @@
                     196.6
                   ],
                   [
-                    85.4,
-                    198.8
-                  ],
-                  [
-                    63.2,
-                    173.2
-                  ],
-                  [
                     40.9,
                     113.2
                   ]
@@ -977,40 +945,8 @@
                     370
                   ],
                   [
-                    127.7,
-                    352.2
-                  ],
-                  [
-                    159.9,
-                    343.4
-                  ],
-                  [
                     186.6,
                     326.7
-                  ],
-                  [
-                    218.9,
-                    323.3
-                  ],
-                  [
-                    256.7,
-                    307.8
-                  ],
-                  [
-                    284.5,
-                    303.3
-                  ],
-                  [
-                    313.4,
-                    290
-                  ],
-                  [
-                    341.2,
-                    284.4
-                  ],
-                  [
-                    370.1,
-                    271.1
                   ],
                   [
                     386.8,
@@ -1033,14 +969,6 @@
                   [
                     187.7,
                     118.7
-                  ],
-                  [
-                    273.4,
-                    159.9
-                  ],
-                  [
-                    286.7,
-                    175.4
                   ],
                   [
                     307.8,
@@ -1105,16 +1033,16 @@
                     31
                   ],
                   [
-                    58,
-                    92
+                    23,
+                    113
                   ],
                   [
-                    74,
-                    158
+                    60,
+                    170
                   ],
                   [
-                    85,
-                    215
+                    172,
+                    268
                   ]
                 ]
               }
@@ -1140,8 +1068,8 @@
                 "id": "o3",
                 "t": "o",
                 "n": "3",
-                "x": 85,
-                "y": 215
+                "x": 172,
+                "y": 268
               },
               {
                 "id": "o4",
@@ -1175,11 +1103,11 @@
       "kind": "trigger",
       "name": "1 THRU",
       "call": "“1 Thru”",
-      "summary": "1 swings it to 5, then runs through and down-screens for 2. 2 comes off the screen to the right wing: backside action to keep the defense engaged away from the ball.",
+      "summary": "1 swings it to 5, then runs through and down-screens for 2. 2 comes off the screen toward the sideline to the right slot: backside action to keep the defense engaged away from the ball.",
       "keys": [
         "Step 1: 1 passes to 5 on the right side. 4 crosses the lane to the right block.",
         "Step 2: 1 runs through and down-screens for 2 in the right corner. 5 dribbles back to the left wing. 4 flashes to the left elbow.",
-        "Step 3: 2 comes off the screen to the right wing. Backside action to keep the defense engaged away from the ball. The ball stays with 5.",
+        "Step 3: 2 comes off the screen toward the sideline to the right slot. Backside action to keep the defense engaged away from the ball. The ball stays with 5.",
         "The Thru's down screen is our backside action. Going into a Rub or Twist, no extra backside screen."
       ],
       "reads": [],
@@ -1256,20 +1184,8 @@
                     87
                   ],
                   [
-                    179,
-                    80.7
-                  ],
-                  [
-                    204,
-                    69
-                  ],
-                  [
                     256.7,
                     58.8
-                  ],
-                  [
-                    288.9,
-                    60.2
                   ],
                   [
                     321.2,
@@ -1334,32 +1250,8 @@
                     336
                   ],
                   [
-                    83.8,
-                    329.9
-                  ],
-                  [
-                    126.3,
-                    326.9
-                  ],
-                  [
-                    158.5,
-                    319.6
-                  ],
-                  [
-                    236.2,
-                    315.2
-                  ],
-                  [
                     275.8,
                     306.4
-                  ],
-                  [
-                    313.9,
-                    285.9
-                  ],
-                  [
-                    346.1,
-                    262.5
                   ],
                   [
                     353.4,
@@ -1376,32 +1268,8 @@
                     250.7
                   ],
                   [
-                    356.4,
-                    240.5
-                  ],
-                  [
-                    365.2,
-                    230.2
-                  ],
-                  [
-                    378.3,
-                    222.9
-                  ],
-                  [
                     404.7,
                     193.6
-                  ],
-                  [
-                    432.6,
-                    142.3
-                  ],
-                  [
-                    438.4,
-                    120.3
-                  ],
-                  [
-                    445.8,
-                    117.4
                   ],
                   [
                     447.2,
@@ -1426,28 +1294,12 @@
                     313.8
                   ],
                   [
-                    297.7,
-                    307.9
-                  ],
-                  [
-                    280.2,
-                    300.6
-                  ],
-                  [
-                    243.5,
-                    300.6
-                  ],
-                  [
                     195.2,
                     287.4
                   ],
                   [
                     98.4,
                     285.9
-                  ],
-                  [
-                    75,
-                    271.3
                   ],
                   [
                     58.9,
@@ -1466,26 +1318,6 @@
                   [
                     321,
                     72
-                  ],
-                  [
-                    316.8,
-                    85.1
-                  ],
-                  [
-                    305.1,
-                    93.9
-                  ],
-                  [
-                    287.5,
-                    98.3
-                  ],
-                  [
-                    249.4,
-                    129.1
-                  ],
-                  [
-                    230.3,
-                    159.9
                   ],
                   [
                     199.6,
@@ -1550,16 +1382,16 @@
                     38
                   ],
                   [
-                    438,
-                    92
+                    465,
+                    110
                   ],
                   [
-                    426,
-                    158
+                    440,
+                    170
                   ],
                   [
-                    415,
-                    215
+                    328,
+                    268
                   ]
                 ]
               }
@@ -1578,8 +1410,8 @@
                 "id": "o2",
                 "t": "o",
                 "n": "2",
-                "x": 415,
-                "y": 215
+                "x": 328,
+                "y": 268
               },
               {
                 "id": "o3",
@@ -1721,18 +1553,6 @@
                     388
                   ],
                   [
-                    249.6,
-                    387.2
-                  ],
-                  [
-                    221.9,
-                    368
-                  ],
-                  [
-                    166.5,
-                    322.2
-                  ],
-                  [
                     161.2,
                     311.6
                   ]
@@ -1823,24 +1643,8 @@
                     42
                   ],
                   [
-                    318.8,
-                    34.7
-                  ],
-                  [
                     232.5,
                     23
-                  ],
-                  [
-                    161.2,
-                    28.4
-                  ],
-                  [
-                    106.9,
-                    22
-                  ],
-                  [
-                    73.9,
-                    30.5
                   ],
                   [
                     32.3,
@@ -1857,40 +1661,16 @@
                     308.8
                   ],
                   [
-                    195.3,
-                    295.6
-                  ],
-                  [
-                    210.2,
-                    293.5
-                  ],
-                  [
                     250.6,
                     277.5
-                  ],
-                  [
-                    265.5,
-                    261.5
-                  ],
-                  [
-                    302.8,
-                    239.2
                   ],
                   [
                     323,
                     214.7
                   ],
                   [
-                    343.2,
-                    151.9
-                  ],
-                  [
                     352.8,
                     82.7
-                  ],
-                  [
-                    425.2,
-                    62.4
                   ],
                   [
                     459.3,
@@ -1955,16 +1735,8 @@
                     201.3
                   ],
                   [
-                    151.6,
-                    201.9
-                  ],
-                  [
                     132.4,
                     190.2
-                  ],
-                  [
-                    106.9,
-                    163.6
                   ],
                   [
                     89.8,
@@ -1981,24 +1753,8 @@
                     132.1
                   ],
                   [
-                    62.2,
-                    134.8
-                  ],
-                  [
-                    88.8,
-                    162.5
-                  ],
-                  [
-                    123.9,
-                    190.2
-                  ],
-                  [
                     174,
                     217.9
-                  ],
-                  [
-                    224,
-                    234.9
                   ],
                   [
                     281.5,
@@ -2013,14 +1769,6 @@
                   [
                     315,
                     194
-                  ],
-                  [
-                    295.3,
-                    195.5
-                  ],
-                  [
-                    258.1,
-                    188.1
                   ],
                   [
                     229.3,
@@ -2099,14 +1847,6 @@
                     246
                   ],
                   [
-                    287.9,
-                    224.3
-                  ],
-                  [
-                    316.6,
-                    185.9
-                  ],
-                  [
                     320.9,
                     174.2
                   ],
@@ -2117,10 +1857,6 @@
                   [
                     318.8,
                     75.2
-                  ],
-                  [
-                    293.2,
-                    69.9
                   ],
                   [
                     291.1,
@@ -2137,10 +1873,6 @@
                     119.3
                   ],
                   [
-                    113.3,
-                    75.2
-                  ],
-                  [
                     130.3,
                     55
                   ]
@@ -2153,22 +1885,6 @@
                   [
                     229,
                     194
-                  ],
-                  [
-                    199.5,
-                    196.6
-                  ],
-                  [
-                    184.6,
-                    205.1
-                  ],
-                  [
-                    152.7,
-                    205.1
-                  ],
-                  [
-                    113.3,
-                    215.7
                   ],
                   [
                     107.9,

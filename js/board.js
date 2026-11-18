@@ -47,6 +47,7 @@
     libQ: "",
     pendingOpen: null,
     sheetOpen: false,
+    sel: null, // the line being edited (its handles show)
   };
   let root = null;
   let svg = null;
@@ -313,6 +314,11 @@
       courtG.dataset.mode = mode;
     }
     svg.querySelector(".diagram-layer").innerHTML = D().frameMarkup(frame(), { interactive: true });
+    svg.querySelector(".handle-layer").innerHTML = handlesMarkup();
+    if (S.sel) {
+      const el = svg.querySelector(`.diagram-layer [data-stroke="${CSS.escape(S.sel)}"]`);
+      if (el) el.classList.add("sel");
+    }
     const stage = BH.$(".board-stage", root);
     if (stage) stage.dataset.mode = mode;
   }
@@ -347,7 +353,26 @@
     });
     return best;
   }
-  const STRAIGHT = ["pass", "handoff"];
+  const STRAIGHT = ["pass", "handoff"]; // these stay straight; the other lines can be bent
+
+  /* Handles on the selected line: drag an end to move it, drag the middle dot to bend it. */
+  function handlesMarkup() {
+    const st = S.sel && (frame().strokes || []).find((x) => x.id === S.sel);
+    if (!st || st.t === "pen" || st.t === "shot" || !st.pts || st.pts.length < 2) return "";
+    const a = st.pts[0],
+      b = st.pts[st.pts.length - 1];
+    let m = null;
+    if (!STRAIGHT.includes(st.t)) {
+      if (st.pts.length === 2) m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      else if (st.pts.length === 3) m = st.pts[1];
+      else {
+        const poly = D().sampleSmooth(st.pts);
+        m = poly[Math.floor(poly.length / 2)];
+      }
+    }
+    const c = (q, h, cls, title) => `<circle class="hd ${cls}" data-h="${h}" cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="8"><title>${title}</title></circle>`;
+    return `<g class="handles">${c(a, "start", "hd-end", "Drag to move the start")}${c(b, "end", "hd-end", "Drag to move the end")}${m ? c(m, "mid", "hd-mid", "Drag to bend the line") : ""}</g>`;
+  }
   const pathD = (pts) => pts.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + "," + q[1].toFixed(1)).join(" ");
 
   /* ---------- pointer handling on the court ---------- */
@@ -357,8 +382,17 @@
     stopPlay();
     const p = svgPoint(evt);
     const tokEl = evt.target.closest && evt.target.closest(".tok");
-    if (S.tool === "move") {
-      if (!tokEl) return;
+    const hd = evt.target.closest && evt.target.closest(".hd");
+    if (hd && S.sel) {
+      snapshot();
+      gesture = { type: "handle", which: hd.dataset.h, sid: S.sel, moved: false };
+    } else if (S.tool === "move") {
+      if (!tokEl) {
+        const stEl = evt.target.closest && evt.target.closest("[data-stroke]");
+        S.sel = stEl ? stEl.dataset.stroke : null;
+        drawBoard();
+        return;
+      }
       const id = tokEl.dataset.tok;
       const tk = frame().tokens.find((x) => x.id === id);
       if (!tk) return;
@@ -409,11 +443,20 @@
       if (D().dist(last, p) < 3) return;
       gesture.pts.push(p);
       let pts = gesture.pts;
-      if (STRAIGHT.includes(S.tool)) pts = [gesture.pts[0], p];
+      if (S.tool !== "pen") pts = [gesture.pts[0], p];
       if (S.tool === "shot") pts = D().shotCurve(gesture.pts[0], D().nearestRim(p, S.board.court));
       svg.querySelector(".draft-line").setAttribute("d", pathD(pts));
     } else if (gesture.type === "erase") {
       eraseAt(evt);
+    } else if (gesture.type === "handle") {
+      const st = frame().strokes.find((x) => x.id === gesture.sid);
+      if (!st) return;
+      gesture.moved = true;
+      const last = st.pts.length - 1;
+      if (gesture.which === "start") st.pts[0] = p;
+      else if (gesture.which === "end") st.pts[last] = p;
+      else st.pts = [st.pts[0], p, st.pts[last]];
+      drawBoard();
     }
   }
   function onUp() {
@@ -442,21 +485,39 @@
         if (len < 14 && !g.snapped) return;
         stroke = { id: BH.uid("s"), t: "shot", pts: [g.pts[0], D().nearestRim(len < 14 ? g.pts[0] : last, S.board.court)] };
       } else {
-        if (len < 14) return;
-        let end = pts[pts.length - 1];
-        if (STRAIGHT.includes(S.tool)) {
-          const snap = snapPoint(last, g.fromTok);
-          if (snap && D().dist(snap.pt, g.pts[0]) > 10) end = snap.pt;
-          stroke = { id: BH.uid("s"), t: S.tool, pts: [pts[0], end] };
-        } else stroke = { id: BH.uid("s"), t: S.tool, pts };
+        if (S.tool === "pen") {
+          if (len < 14) return;
+          stroke = { id: BH.uid("s"), t: "pen", pts };
+        } else {
+          // Every other line is drawn straight; bend it afterwards with the middle dot.
+          if (D().dist(g.pts[0], last) < 14) return;
+          let end = [Math.round(last[0] * 10) / 10, Math.round(last[1] * 10) / 10];
+          if (STRAIGHT.includes(S.tool)) {
+            const snap = snapPoint(last, g.fromTok);
+            if (snap && D().dist(snap.pt, g.pts[0]) > 10) end = snap.pt;
+          }
+          stroke = { id: BH.uid("s"), t: S.tool, pts: [g.pts[0], end] };
+        }
       }
       snapshot();
       if (S.color) stroke.c = S.color;
       frame().strokes.push(stroke);
+      S.sel = stroke.t === "pen" || stroke.t === "shot" ? null : stroke.id;
       changed();
     } else if (g.type === "erase") {
       if (!g.any) S.history.pop();
       else changed();
+    } else if (g.type === "handle") {
+      const st = frame().strokes.find((x) => x.id === g.sid);
+      if (!g.moved || !st) return void S.history.pop();
+      if (g.which !== "mid") {
+        // Ends snap to a player or a line end, like when drawing.
+        const i = g.which === "start" ? 0 : st.pts.length - 1;
+        const snap = snapPoint(st.pts[i], null);
+        if (snap && (g.which === "start" || STRAIGHT.includes(st.t))) st.pts[i] = snap.pt;
+      }
+      st.pts = st.pts.map((q) => [Math.round(q[0] * 10) / 10, Math.round(q[1] * 10) / 10]);
+      changed();
     }
   }
   function eraseAt(evt) {
@@ -466,6 +527,7 @@
     const tk = el.closest(".tok");
     const f = frame();
     if (s) {
+      if (S.sel === s.dataset.stroke) S.sel = null;
       f.strokes = f.strokes.filter((x) => x.id !== s.dataset.stroke);
       s.remove();
       gesture.any = true;
@@ -572,6 +634,7 @@
   }
   function goStep(i) {
     stopPlay();
+    S.sel = null;
     S.step = Math.max(0, Math.min(S.board.frames.length - 1, i));
     changed();
   }
@@ -862,7 +925,8 @@
             <li><b>Build the call:</b> tap a play from the Library, like 5 Thru, then tap actions like Rub, Twirl and Swing. Each one picks up where the last one ended.</li>
             <li><b>Continuity</b> runs your actions again from the other side.</li>
             <li><b>Players:</b> tap one in the tray, then drag it where it goes.</li>
-            <li><b>Lines:</b> Cut, Dribble, Pass, Handoff, Shot and Screen each draw our standard symbol. Start a pass at the end of a dribble and the ball follows both.</li>
+            <li><b>Lines:</b> drag from where it starts to where it ends for a straight line. Drag the dot in the middle to bend it, or the end dots to move it. Tap a line with Move to edit it later; Delete or Erase removes it.</li>
+            <li>Start a pass at the end of a dribble and the ball follows both.</li>
             <li><b>Next step</b> moves everyone to the end of their line so you can draw the next part.</li>
           </ol>
           ${coachBox}
@@ -942,6 +1006,17 @@
       return undo();
     }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if ((e.key === "Delete" || e.key === "Backspace") && S.sel) {
+      e.preventDefault();
+      snapshot();
+      frame().strokes = frame().strokes.filter((x) => x.id !== S.sel);
+      S.sel = null;
+      return changed();
+    }
+    if (e.key === "Escape" && S.sel) {
+      S.sel = null;
+      return drawBoard();
+    }
     const t = TOOLS.find((x) => x.key === e.key.toLowerCase());
     if (t) return setTool(t.id);
     if (e.key === "ArrowRight") goStep(S.step + 1);
@@ -973,6 +1048,7 @@
             <svg id="board-svg" class="court board-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Basketball court whiteboard">
               <g class="court-host"></g>
               <g class="diagram-layer"></g>
+              <g class="handle-layer"></g>
               <g class="draft-layer"></g>
             </svg>
           </div>
