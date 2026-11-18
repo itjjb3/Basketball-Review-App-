@@ -7,7 +7,7 @@ A playbook, whiteboard and study tool for Baldwin Basketball. Coaches install th
 | Section | Who | What it does |
 | --- | --- | --- |
 | **Playbook** | Everyone | Browse everything by category or search. Each item shows the call or signal, what it is, the keys, the reads, and a diagram that runs step by step. |
-| **Whiteboard** | Everyone | A high school court (84 × 50 ft, NFHS 19'9" arc) with the purple Block B at half court. Drag players 1–5, defenders X1–X5, the ball and cones onto the floor. Draw cuts, dribbles, passes, handoffs, shots, screens and freehand marker. Start a pass at the end of a dribble and the ball follows both. Add steps and hit **Run it** to animate. Pull sets, actions, triggers, formations and defenses from the **Library** onto the **Call bar** to put them up on the court. |
+| **Whiteboard** | Everyone | A high school court (84 × 50 ft, NFHS 19'9" arc) with the purple Block B at half court. Drag players 1–5, defenders X1–X5, the ball and cones onto the floor. Draw cuts, dribbles, passes, handoffs, shots, screens and freehand marker. Start a pass at the end of a dribble and the ball follows both. Add steps and hit **Run it** to animate. Build **the call**: tap a play from the **Library** (say 5 Thru), then tap actions (Rub, Twirl, Swing…). Each one picks up where the last ended. Actions marked **Auto** run from wherever the ball is, and **Continuity** runs them again from the other side. |
 | **Study** | Everyone | Flashcards (name on the front, or the meaning and diagram on the front) with "Got it" / "Still learning" tracking, and a 10-question quiz that asks you to name a diagram, match a description, or define a term. |
 | **Install** | Coaches | Add and edit items, paste a whole terminology list at once, attach diagrams drawn on the whiteboard, and import or export the program file. |
 
@@ -54,7 +54,8 @@ When the app is published on claude.ai instead (from `dist/artifact.html`), anyo
 }
 ```
 
-- `kind` is one of `set`, `action`, `trigger`, `formation`, `defense`, `concept`, `principle`, `term`.
+- `kind` is one of `position`, `set`, `action`, `trigger`, `formation`, `defense`, `concept`, `principle`, `term`.
+- `rule` (optional) makes an item an **Auto** action that runs from wherever the ball is: `swing`, `skip`, `back`, `post-entry`, `get`, `rub`, `twirl` or `continuity`. The rules live in `js/engine.js`. Without a rule, an item plays its diagram as drawn.
 - Court coordinates are in tenths of a foot. The home basket is at the top: the baseline is `y = 0`, the rim is at `(250, 52.5)` and half court is `y = 420`.
 - Tokens: `{ "id": "o1", "t": "o", "n": "1", "x": 250, "y": 285 }`. `t` is `o` (offense), `x` (defense), `ball` or `cone`.
 - Strokes: `{ "id": "s1", "t": "cut", "pts": [[x, y], …] }`. `t` is `cut`, `dribble`, `pass`, `handoff`, `shot`, `screen` or `pen`, with an optional color `c`. A shot's last point is the rim.
@@ -69,6 +70,7 @@ js/util.js          helpers, categories, storage
 js/icons.js         inline icons
 js/court.js         court geometry and the Block B
 js/diagram.js       drawing players and lines, step animation
+js/engine.js        Auto actions (Swing, Rub, Twirl…) and the playbook examples for them
 js/store.js         loading and saving the program
 js/playbook.js      Playbook section
 js/board.js         Whiteboard section

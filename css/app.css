@@ -433,6 +433,13 @@ body[data-view="board"] main { max-width: 1600px; padding-block: 16px 24px; }
 .call-chip.on { background: var(--fg); border-color: var(--fg); }
 .call-chip.on .chip-main, .call-chip.on .chip-x { color: var(--bg); }
 .drop-hint { color: var(--fg-muted); font-size: 0.82rem; white-space: nowrap; padding-left: 4px; }
+.call-empty { color: var(--fg-muted); font-size: 0.88rem; padding-left: 2px; }
+.call-sep { color: var(--fg-muted); font-weight: 700; flex: none; }
+.new-call { min-height: 34px; padding: 4px 10px; flex: none; }
+.steps .step-label em { font-style: normal; color: var(--fg-muted); }
+.lib-auto { font-family: var(--font-display); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--k-action); border: 1px solid currentColor; border-radius: 4px; padding: 0 5px; flex: none; }
+.auto-note { display: flex; gap: 8px; align-items: flex-start; color: var(--fg-muted); font-size: 0.9rem; margin-top: 10px; max-width: 60ch; }
+.auto-note .ic { flex: none; width: 18px; height: 18px; margin-top: 2px; color: var(--k-action); }
 .lib-toggle { display: none; }
 .board-info { padding: 16px; position: sticky; top: calc(var(--topbar-h) + 16px); max-height: calc(100dvh - var(--topbar-h) - 32px); overflow-y: auto; }
 .info-card { display: grid; gap: 10px; }

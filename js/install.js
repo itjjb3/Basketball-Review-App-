@@ -82,6 +82,12 @@
             <input id="f-name" type="text" value="${esc(it.name)}" placeholder="What we call it, e.g. Power Zoom" required maxlength="80" />
           </label>
         </div>
+        <label class="field"><span>On the whiteboard <small>how it plays when added to a call</small></span>
+          <select id="f-rule">
+            <option value="">Play the diagram as drawn</option>
+            ${BH.engine.LIST.map((r) => `<option value="${r.id}" ${it.rule === r.id ? "selected" : ""}>Auto: ${esc(r.label)}</option>`).join("")}
+          </select>
+        </label>
         <label class="field"><span>Call or signal</span>
           <input id="f-call" type="text" value="${esc(it.call)}" placeholder="What we yell or the hand signal, e.g. “Fist” / two fingers up" maxlength="120" />
         </label>
@@ -208,6 +214,7 @@
       summary: BH.$("#f-summary", host).value.trim(),
       keys: BH.lines(BH.$("#f-keys", host).value),
       reads: BH.lines(BH.$("#f-reads", host).value),
+      rule: BH.$("#f-rule", host).value || undefined,
     };
   }
 

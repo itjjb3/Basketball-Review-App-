@@ -17,7 +17,8 @@
 
   function card(it) {
     const k = BH.kind(it.kind);
-    const thumb = BH.hasDiagram(it) ? `<div class="card-thumb">${BH.diagram.thumbSVG(it.diagram, { label: it.name + " diagram" })}</div>` : "";
+    const dg = BH.viewDiagram(it);
+    const thumb = dg ? `<div class="card-thumb">${BH.diagram.thumbSVG(dg, { label: it.name + " diagram" })}</div>` : "";
     return `
       <a class="item-card${thumb ? " has-thumb" : ""}" href="#item-${esc(it.id)}" data-id="${esc(it.id)}">
         ${thumb}
@@ -110,17 +111,20 @@
       return;
     }
     const k = BH.kind(it.kind);
+    const dg = BH.viewDiagram(it);
+    const auto = BH.isAuto(it);
     const related = BH.store.items().filter((o) => o.id !== it.id && o.kind === it.kind);
     root.innerHTML = `
       <section class="view-item">
         <a class="back" href="#playbook">${icons.prev} Playbook</a>
-        <div class="item-layout${BH.hasDiagram(it) ? "" : " no-diagram"}">
-          ${BH.hasDiagram(it) ? `<div class="item-diagram" id="item-player"></div>` : ""}
+        <div class="item-layout${dg ? "" : " no-diagram"}">
+          ${dg ? `<div class="item-diagram"><div id="item-player"></div>${auto && !BH.hasDiagram(it) ? `<p class="auto-note">${icons.info} A small example. On the whiteboard, ${esc(it.name)} runs from wherever the ball is: add it after any play to keep the possession going.</p>` : ""}</div>` : ""}
           <article class="item-text">
             <div class="card-meta"><span class="kind-chip k-${esc(it.kind)}">${esc(k.one)}</span>${it.example ? '<span class="ex-chip">Example</span>' : ""}</div>
             <h1>${esc(it.name)}</h1>
             ${it.call ? `<p class="call big"><span>Call</span> ${esc(it.call)}</p>` : ""}
             ${it.summary ? `<p class="item-summary">${esc(it.summary)}</p>` : ""}
+            ${auto && !dg ? `<p class="auto-note">${icons.info} On the whiteboard, add ${esc(it.name)} after your actions and it runs them again from the other side.</p>` : ""}
             ${it.keys.length ? `<h2>Keys</h2><ul class="keys">${it.keys.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
             ${it.reads.length ? `<h2>Reads</h2><ul class="reads">${it.reads.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
             <div class="item-actions">
@@ -139,7 +143,7 @@
           </article>
         </div>
       </section>`;
-    if (BH.hasDiagram(it)) player = new BH.diagram.Player(BH.$("#item-player", root), it.diagram, { label: it.name + " diagram" });
+    if (dg) player = new BH.diagram.Player(BH.$("#item-player", root), dg, { label: it.name + " diagram" });
     const ob = BH.$("[data-open-board]", root);
     ob.addEventListener("click", () => BH.board && BH.board.queueOpen(it.id));
     const sk = BH.$("[data-study-kind]", root);

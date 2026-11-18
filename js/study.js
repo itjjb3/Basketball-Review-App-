@@ -102,12 +102,13 @@
         </div>`;
     }
     const keys = it.keys.slice(0, 4);
-    return `<div class="face-inner meaning-face${BH.hasDiagram(it) ? " with-diagram" : ""}">
-        ${BH.hasDiagram(it) ? `<div class="fc-diagram">${BH.diagram.thumbSVG(it.diagram, { label: "Diagram" })}</div>` : ""}
+    const dg = BH.viewDiagram(it);
+    return `<div class="face-inner meaning-face${dg ? " with-diagram" : ""}">
+        ${dg ? `<div class="fc-diagram">${BH.diagram.thumbSVG(dg, { label: "Diagram" })}</div>` : ""}
         <div class="fc-text">
           ${it.summary ? `<p class="fc-summary">${esc(it.summary)}</p>` : ""}
           ${keys.length ? `<ul class="keys">${keys.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
-          ${!it.summary && !keys.length && !BH.hasDiagram(it) ? `<p class="muted">No description yet.</p>` : ""}
+          ${!it.summary && !keys.length && !dg ? `<p class="muted">No description yet.</p>` : ""}
           ${side === "front" ? `<p class="flip-hint">${icons.flip} What's this called? Tap to flip</p>` : ""}
         </div>
       </div>`;
@@ -275,7 +276,7 @@
     const pool = BH.shuffle(d).slice(0, Math.min(10, d.length));
     return pool.map((it) => {
       const types = [];
-      if (BH.hasDiagram(it)) types.push("diagram");
+      if (BH.viewDiagram(it)) types.push("diagram");
       if (it.summary) types.push("summary");
       if (it.summary && ["term", "principle", "concept"].includes(it.kind)) types.push("meaning");
       if (!types.length) types.push("call");
@@ -374,7 +375,7 @@
             : ""
         }
       </div>`;
-    if (q.type === "diagram") player = new BH.diagram.Player(BH.$("#q-player", body), it.diagram, { label: "Mystery diagram" });
+    if (q.type === "diagram") player = new BH.diagram.Player(BH.$("#q-player", body), BH.viewDiagram(it), { label: "Mystery diagram" });
     BH.$$("[data-opt]", body).forEach((b) =>
       b.addEventListener("click", () => {
         q.picked = b.dataset.opt;

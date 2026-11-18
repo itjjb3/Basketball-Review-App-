@@ -316,16 +316,20 @@
       return best && best.s;
     };
     let s = next(34);
+    let carrier = null;
     if (!s && playerPaths) {
-      // The ball rides with a player whose cut starts right next to it.
-      let carrier = null,
-        bd = 30;
-      tokens
-        .filter((p) => (p.t === "o" || p.t === "x") && playerPaths[p.id])
-        .forEach((p) => {
-          const dd = dist([p.x, p.y], at);
-          if (dd < bd) (bd = dd), (carrier = p);
-        });
+      // The ball rides with the player who has it, if they move without passing.
+      const owner = ball.h && tokens.find((p) => p.id === ball.h && dist([p.x, p.y], at) < 45);
+      if (owner) carrier = playerPaths[owner.id] ? owner : null;
+      else {
+        let bd = 30;
+        tokens
+          .filter((p) => (p.t === "o" || p.t === "x") && playerPaths[p.id])
+          .forEach((p) => {
+            const dd = dist([p.x, p.y], at);
+            if (dd < bd) (bd = dd), (carrier = p);
+          });
+      }
       if (carrier) {
         poly = playerPaths[carrier.id].map((q) => [q[0] + (ball.x - carrier.x), q[1] + (ball.y - carrier.y)]);
         const e = playerPaths[carrier.id][playerPaths[carrier.id].length - 1];
@@ -344,7 +348,7 @@
       s = next(30);
     }
     if (poly.length < 2) return null;
-    return { poly, end: at, shot };
+    return { poly, end: at, shot, carrier: carrier && !used.size ? carrier.id : null };
   }
 
   /* Which stroke moves which token during the step that follows this frame. */
@@ -404,19 +408,23 @@
           nt.y = Math.round(chain.end[1]);
           return nt;
         }
-        // Settle the ball next to whoever ends up closest to where it lands.
+        // Settle the ball next to whoever ends up closest to where it lands, and remember them.
         let rec = null,
+          recId = null,
           bd = 40;
         (frame.tokens || [])
           .filter((o) => o.t === "o" || o.t === "x")
           .forEach((o) => {
             const op = paths[o.id] ? paths[o.id][paths[o.id].length - 1] : [o.x, o.y];
             const dd = dist(op, chain.end);
-            if (dd < bd) (bd = dd), (rec = op);
+            const pick = chain.carrier ? o.id === chain.carrier : dd < bd;
+            if (pick) (bd = dd), (rec = op), (recId = o.id);
           });
         const base = rec || chain.end;
         nt.x = Math.round(base[0] + 13);
         nt.y = Math.round(base[1] - 12);
+        if (recId) nt.h = recId;
+        else delete nt.h;
         return nt;
       }
       const p = paths[t.id];

@@ -1,10 +1,13 @@
-/* Whiteboard: draw, drag players, and pull the team's sets, actions, triggers,
-   formations and defenses onto the call bar to show them on the court. */
+/* Whiteboard: draw, drag players, and build the call. Sets, triggers and
+   formations play as drawn. Actions like Rub, Twirl and Swing run from wherever
+   the ball is, so a chain of them on the call bar plays as one possession. */
 (function () {
   const BH = window.BH;
   const { esc, icons } = BH;
   const D = () => BH.diagram;
-  const SAVE_KEY = "bh.board";
+  const E = () => BH.engine;
+  const SAVE_KEY = "bh.call";
+  const OLD_KEY = "bh.board";
   const STYLE_KEY = "bh.boardStyle";
 
   const TOOLS = [
@@ -32,8 +35,11 @@
   ];
 
   const S = {
-    tabs: [],
-    active: null,
+    board: null,
+    step: 0,
+    segs: [], // the call: [{ id, itemId, start, base?, parts? }]
+    history: [],
+    note: null, // an item without a diagram whose notes are showing
     tool: "move",
     color: "",
     style: BH.local.get(STYLE_KEY, "floor"),
@@ -41,66 +47,62 @@
     libQ: "",
     pendingOpen: null,
     sheetOpen: false,
-    infoOpen: true,
   };
   let root = null;
   let svg = null;
   let playToken = { cancelled: true };
 
-  /* ---------- tabs ---------- */
-  function newTab(itemId) {
-    const it = itemId ? BH.store.get(itemId) : null;
-    const board = it && BH.hasDiagram(it) ? BH.clone(it.diagram) : D().empty("half");
-    return { key: BH.uid("t"), itemId: itemId || null, board, step: 0, history: [] };
-  }
-  function loadTabs() {
-    const saved = BH.local.get(SAVE_KEY, null);
-    if (saved && Array.isArray(saved.tabs) && saved.tabs.length) {
-      S.tabs = saved.tabs
-        .filter((t) => t && t.board && Array.isArray(t.board.frames) && t.board.frames.length)
-        .map((t) => ({ key: t.key || BH.uid("t"), itemId: t.itemId || null, board: t.board, step: Math.min(t.step || 0, t.board.frames.length - 1), history: [] }));
-      S.active = saved.active;
-      S.tool = saved.tool || "move";
-    }
-    if (!S.tabs.some((t) => !t.itemId)) S.tabs.unshift(scratchStarter());
-    if (!S.tabs.find((t) => t.key === S.active)) S.active = S.tabs[0].key;
-  }
-  function scratchStarter() {
-    const t = newTab(null);
+  /* ---------- the board ---------- */
+  function scratchBoard() {
     // A friendly start: our five on the floor with the ball at the top.
     const sp = BH.court.SPOTS;
-    t.board.frames[0].tokens = ["o1", "o2", "o3", "o4", "o5"].map((id) => ({ id, t: "o", n: id.slice(1), x: sp[id][0], y: sp[id][1] })).concat([{ id: "ball", t: "ball", n: "", x: sp.ball[0], y: sp.ball[1] }]);
-    return t;
+    return {
+      court: "half",
+      frames: [{ tokens: ["o1", "o2", "o3", "o4", "o5"].map((id) => ({ id, t: "o", n: id.slice(1), x: sp[id][0], y: sp[id][1] })).concat([{ id: "ball", t: "ball", n: "", x: sp.ball[0], y: sp.ball[1] }]), strokes: [] }],
+    };
+  }
+  const okBoard = (b) => b && Array.isArray(b.frames) && b.frames.length;
+  function load() {
+    const saved = BH.local.get(SAVE_KEY, null);
+    if (saved && okBoard(saved.board)) {
+      S.board = saved.board;
+      S.segs = Array.isArray(saved.segs) ? saved.segs : [];
+      S.step = Math.min(saved.step || 0, S.board.frames.length - 1);
+      S.tool = saved.tool || "move";
+      return;
+    }
+    // Earlier versions kept a board per tab: carry over the one that was open.
+    const old = BH.local.get(OLD_KEY, null);
+    const t = old && Array.isArray(old.tabs) && (old.tabs.find((x) => x.key === old.active) || old.tabs[0]);
+    if (t && okBoard(t.board)) {
+      S.board = t.board;
+      S.step = Math.min(t.step || 0, t.board.frames.length - 1);
+      S.segs = t.itemId ? [{ id: BH.uid("g"), itemId: t.itemId, start: 0, base: true }] : [];
+      S.tool = old.tool || "move";
+    } else {
+      S.board = scratchBoard();
+      S.segs = [];
+      S.step = 0;
+    }
   }
   let saveTimer;
   function persist() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      BH.local.set(SAVE_KEY, {
-        active: S.active,
-        tool: S.tool,
-        tabs: S.tabs.map((t) => ({ key: t.key, itemId: t.itemId, board: t.board, step: t.step })),
-      });
-    }, 300);
+    saveTimer = setTimeout(() => BH.local.set(SAVE_KEY, { board: S.board, step: S.step, segs: S.segs, tool: S.tool }), 300);
   }
-  const tab = () => S.tabs.find((t) => t.key === S.active) || S.tabs[0];
-  const frame = () => {
-    const t = tab();
-    return t.board.frames[t.step];
-  };
+  const frame = () => S.board.frames[S.step];
   function snapshot() {
-    const t = tab();
-    t.history.push(JSON.stringify({ board: t.board, step: t.step }));
-    if (t.history.length > 60) t.history.shift();
+    S.history.push(JSON.stringify({ board: S.board, step: S.step, segs: S.segs }));
+    if (S.history.length > 60) S.history.shift();
   }
   function undo() {
-    const t = tab();
-    const last = t.history.pop();
+    const last = S.history.pop();
     if (!last) return BH.toast("Nothing to undo.");
-    const s = JSON.parse(last);
-    t.board = s.board;
-    t.step = s.step;
-    changed();
+    const v = JSON.parse(last);
+    S.board = v.board;
+    S.step = v.step;
+    S.segs = v.segs;
+    changedAll();
   }
   function changed() {
     persist();
@@ -108,33 +110,6 @@
     renderSteps();
     renderInfo();
     renderCallBar();
-  }
-  function isModified(t) {
-    if (!t.itemId) return false;
-    const it = BH.store.get(t.itemId);
-    if (!it) return false;
-    const base = BH.hasDiagram(it) ? it.diagram : D().empty("half");
-    return JSON.stringify(base) !== JSON.stringify(t.board);
-  }
-
-  function openItem(id, at) {
-    stopPlay();
-    let t = S.tabs.find((x) => x.itemId === id);
-    if (!t) {
-      t = newTab(id);
-      if (at == null || at > S.tabs.length) S.tabs.push(t);
-      else S.tabs.splice(at, 0, t);
-    }
-    S.active = t.key;
-    changedAll();
-  }
-  function closeTab(key) {
-    stopPlay();
-    const i = S.tabs.findIndex((t) => t.key === key);
-    if (i < 0 || !S.tabs[i].itemId) return;
-    S.tabs.splice(i, 1);
-    if (S.active === key) S.active = (S.tabs[i] || S.tabs[i - 1] || S.tabs[0]).key;
-    changedAll();
   }
   function changedAll() {
     persist();
@@ -145,11 +120,163 @@
     renderCallBar();
   }
 
+  /* ---------- the call ---------- */
+  const segItem = (seg) => (seg ? BH.store.get(seg.itemId) : null);
+  function segAt(step) {
+    let cur = null;
+    S.segs.forEach((g) => {
+      if (g.start <= step) cur = g;
+    });
+    return cur;
+  }
+  /* The item whose notes go with a step (inside Continuity, the action it's replaying). */
+  function itemAt(step) {
+    const g = segAt(step);
+    if (!g) return null;
+    if (g.parts) {
+      let p = g.parts[0];
+      g.parts.forEach((x) => {
+        if (x.start <= step) p = x;
+      });
+      return BH.store.get(p.itemId);
+    }
+    return segItem(g);
+  }
+  function isModified() {
+    const g = S.segs.length === 1 && S.segs[0].base ? S.segs[0] : null;
+    const it = segItem(g);
+    return !!(it && BH.hasDiagram(it) && JSON.stringify(it.diagram) !== JSON.stringify(S.board));
+  }
+
+  /* Add an item to the end of the call. Returns true if it went on the court. */
+  function addToCall(itemId, opts = {}) {
+    const it = BH.store.get(itemId);
+    if (!it) return false;
+    const rule = BH.isAuto(it) ? it.rule : null;
+    if (!opts.silent) {
+      stopPlay();
+      snapshot();
+    }
+    let ok;
+    if (rule === "continuity") ok = runContinuity(it, opts);
+    else if (rule) ok = appendRule(it, opts);
+    else if (BH.hasDiagram(it)) ok = appendDrawn(it);
+    else {
+      if (!opts.silent) {
+        S.history.pop();
+        S.note = it.id;
+        renderInfo();
+        BH.toast(`${it.name} doesn't have a diagram yet. Its notes are on the right.`);
+      }
+      return false;
+    }
+    if (!opts.silent) {
+      if (!ok) S.history.pop();
+      S.note = null;
+      changedAll();
+    }
+    return ok;
+  }
+  function appendRule(it, opts) {
+    const res = E().extend(S.board.frames, it.rule);
+    if (res.error) {
+      if (!opts.silent) BH.toast(`Couldn't run ${it.name}: ${res.error}`);
+      return false;
+    }
+    S.board.frames = res.frames;
+    S.segs.push({ id: BH.uid("g"), itemId: it.id, start: res.start });
+    S.step = res.start;
+    return true;
+  }
+  function appendDrawn(it) {
+    const dg = BH.clone(it.diagram);
+    if (!S.segs.length) {
+      S.board = dg;
+      S.segs = [{ id: BH.uid("g"), itemId: it.id, start: 0, base: true }];
+      S.step = 0;
+      return true;
+    }
+    // Players walk from where they are into the play's first spots, then run it.
+    const fr = S.board.frames;
+    const last = fr[fr.length - 1];
+    if (last.strokes && last.strokes.length) fr.push(D().advanceFrame(last));
+    const start = fr.length - 1;
+    fr.push(...dg.frames);
+    if (dg.court === "full") S.board.court = "full";
+    S.segs.push({ id: BH.uid("g"), itemId: it.id, start });
+    S.step = start;
+    return true;
+  }
+  function runContinuity(it, opts) {
+    // Repeat the actions added since the last drawn play, from wherever the ball is now.
+    let from = 0;
+    S.segs.forEach((g, i) => {
+      if (!BH.isAuto(segItem(g))) from = i + 1;
+    });
+    const actions = S.segs.slice(from).filter((g) => {
+      const x = segItem(g);
+      return x && BH.isAuto(x) && x.rule !== "continuity";
+    });
+    if (!actions.length) {
+      if (!opts.silent) BH.toast("Add some actions first. Continuity runs them again from the other side.");
+      return false;
+    }
+    const before = S.segs.length;
+    actions.forEach((g) => appendRule(segItem(g), { silent: true }));
+    const parts = S.segs.splice(before);
+    if (!parts.length) {
+      if (!opts.silent) BH.toast("Continuity can't run from here.");
+      return false;
+    }
+    S.segs.push({ id: BH.uid("g"), itemId: it.id, start: parts[0].start, parts: parts.map((p) => ({ itemId: p.itemId, start: p.start })) });
+    S.step = parts[0].start;
+    return true;
+  }
+  /* Take one item out of the call; everything after it is rebuilt. */
+  function removeSeg(i) {
+    stopPlay();
+    snapshot();
+    const g = S.segs[i];
+    const rest = S.segs.slice(i + 1).map((x) => x.itemId);
+    if (g.base) {
+      S.board = scratchBoard();
+      S.segs = [];
+    } else {
+      S.board.frames.length = g.start + 1;
+      S.board.frames[g.start].strokes = [];
+      S.segs = S.segs.slice(0, i);
+    }
+    const skipped = rest.filter((id) => !addToCall(id, { silent: true }));
+    S.step = Math.min(S.step, S.board.frames.length - 1);
+    if (skipped.length) BH.toast(`Couldn't run ${skipped.map((id) => (BH.store.get(id) || {}).name).join(", ")} from here, so it came off the call.`);
+    changedAll();
+  }
+  function newCall() {
+    stopPlay();
+    snapshot();
+    S.board = scratchBoard();
+    S.segs = [];
+    S.step = 0;
+    S.note = null;
+    changedAll();
+  }
+  /* Start a fresh call with one item. Actions start from 4-Out so there's a possession to run. */
+  function startCall(id) {
+    const it = BH.store.get(id);
+    if (!it) return;
+    S.board = scratchBoard();
+    S.segs = [];
+    S.step = 0;
+    S.note = null;
+    if (BH.isAuto(it) && BH.store.get("4-out")) addToCall("4-out", { silent: true });
+    if (!addToCall(id, { silent: true }) && !BH.hasDiagram(it)) S.note = id;
+    S.step = 0;
+  }
+
   /* ---------- court drawing ---------- */
   function drawBoard() {
     if (!svg) return;
-    const t = tab();
-    const mode = t.board.court || "half";
+    const mode = S.board.court || "half";
     svg.setAttribute("viewBox", BH.court.viewBox(mode));
     svg.setAttribute("class", `court board-svg ${S.style} tool-${S.tool}`);
     const courtG = svg.querySelector(".court-host");
@@ -169,7 +296,7 @@
     const m = svg.getScreenCTM();
     if (!m) return [0, 0];
     const p = pt.matrixTransform(m.inverse());
-    const h = BH.court.height(tab().board.court);
+    const h = BH.court.height(S.board.court);
     return [Math.max(-6, Math.min(506, p.x)), Math.max(-6, Math.min(h + 6, p.y))];
   }
 
@@ -232,7 +359,7 @@
       const draft = svg.querySelector(".draft-layer");
       const cls = S.tool === "pass" ? " dashed" : S.tool === "shot" ? " dotted" : "";
       draft.innerHTML = `<path class="draft-line${cls}" d="" style="${S.color ? "--ink:" + S.color : ""}" />`;
-      if (S.tool === "shot") svg.querySelector(".draft-line").setAttribute("d", pathD(D().shotCurve(start, D().nearestRim(start, tab().board.court))));
+      if (S.tool === "shot") svg.querySelector(".draft-line").setAttribute("d", pathD(D().shotCurve(start, D().nearestRim(start, S.board.court))));
     }
     try {
       svg.setPointerCapture(evt.pointerId);
@@ -255,7 +382,7 @@
       gesture.pts.push(p);
       let pts = gesture.pts;
       if (STRAIGHT.includes(S.tool)) pts = [gesture.pts[0], p];
-      if (S.tool === "shot") pts = D().shotCurve(gesture.pts[0], D().nearestRim(p, tab().board.court));
+      if (S.tool === "shot") pts = D().shotCurve(gesture.pts[0], D().nearestRim(p, S.board.court));
       svg.querySelector(".draft-line").setAttribute("d", pathD(pts));
     } else if (gesture.type === "erase") {
       eraseAt(evt);
@@ -272,9 +399,10 @@
         if (tk) {
           tk.x = Math.round(g.x);
           tk.y = Math.round(g.y);
+          if (tk.t === "ball") delete tk.h;
         }
         changed();
-      } else tab().history.pop();
+      } else S.history.pop();
     } else if (g.type === "draw") {
       svg.querySelector(".draft-layer").innerHTML = "";
       const pts = D().simplify(g.pts, S.tool === "pen" ? 1.2 : 2.5);
@@ -284,7 +412,7 @@
       if (S.tool === "shot") {
         // A tap on the shooter is enough: the shot always goes to the nearest rim.
         if (len < 14 && !g.snapped) return;
-        stroke = { id: BH.uid("s"), t: "shot", pts: [g.pts[0], D().nearestRim(len < 14 ? g.pts[0] : last, tab().board.court)] };
+        stroke = { id: BH.uid("s"), t: "shot", pts: [g.pts[0], D().nearestRim(len < 14 ? g.pts[0] : last, S.board.court)] };
       } else {
         if (len < 14) return;
         let end = pts[pts.length - 1];
@@ -299,7 +427,7 @@
       frame().strokes.push(stroke);
       changed();
     } else if (g.type === "erase") {
-      if (!g.any) tab().history.pop();
+      if (!g.any) S.history.pop();
       else changed();
     }
   }
@@ -359,22 +487,7 @@
       if (!over) return;
       if (kind === "tray" && over.closest("#board-svg")) placeToken(payload, svgPoint(e));
       if (kind === "item") {
-        const bar = over.closest("#call-bar");
-        if (bar) {
-          const chips = BH.$$(".call-chip", bar);
-          let at = chips.length;
-          for (let i = 0; i < chips.length; i++) {
-            const r = chips[i].getBoundingClientRect();
-            if (e.clientX < r.left + r.width / 2) {
-              at = i;
-              break;
-            }
-          }
-          openItem(payload, Math.max(1, at));
-          BH.toast(`${BH.store.get(payload).name} is on the board.`);
-        } else if (over.closest(".board-stage")) {
-          openItem(payload);
-        }
+        if (over.closest("#call-bar") || over.closest(".board-stage")) addToCall(payload);
       }
     };
     src.addEventListener("pointermove", move);
@@ -386,7 +499,7 @@
       const spot = BH.court.SPOTS[payload.t === "cone" ? "cone" : payload.id] || [250, 300];
       placeToken(payload, spot, true);
     } else if (kind === "item") {
-      openItem(payload);
+      addToCall(payload);
       if (S.sheetOpen) toggleSheet(false);
     }
   }
@@ -400,7 +513,7 @@
       const ex = f.tokens.find((x) => x.id === def.id);
       if (ex) {
         if (fromClick) {
-          tab().history.pop();
+          S.history.pop();
           BH.toast(`${def.label} is already on the court. Drag it to move it.`);
           return;
         }
@@ -415,44 +528,43 @@
   function addStep() {
     stopPlay();
     snapshot();
-    const t = tab();
     const next = D().advanceFrame(frame());
-    t.board.frames.splice(t.step + 1, 0, next);
-    t.step += 1;
+    S.board.frames.splice(S.step + 1, 0, next);
+    S.step += 1;
     changed();
-    BH.toast(`Step ${t.step + 1}: everyone moved to the end of their line. Draw what happens next.`);
+    BH.toast(`Step ${S.step + 1}: everyone moved to the end of their line. Draw what happens next.`);
   }
   function deleteStep() {
-    const t = tab();
-    if (t.board.frames.length < 2) return;
+    if (S.board.frames.length < 2) return;
     stopPlay();
     snapshot();
-    t.board.frames.splice(t.step, 1);
-    t.step = Math.max(0, t.step - 1);
+    S.board.frames.splice(S.step, 1);
+    S.step = Math.max(0, S.step - 1);
     changed();
   }
   function goStep(i) {
     stopPlay();
-    const t = tab();
-    t.step = Math.max(0, Math.min(t.board.frames.length - 1, i));
+    S.step = Math.max(0, Math.min(S.board.frames.length - 1, i));
     changed();
   }
   async function play() {
-    const t = tab();
-    if (t.board.frames.length < 2) return BH.toast("Add a second step to run this.");
-    if (t.step >= t.board.frames.length - 1) t.step = 0;
+    const b = S.board;
+    if (b.frames.length < 2) return BH.toast("Add a second step to run this.");
+    if (S.step >= b.frames.length - 1) S.step = 0;
     drawBoard();
     playToken = { cancelled: false };
     const tok = playToken;
     renderSteps();
     await new Promise((r) => setTimeout(r, 200));
-    while (!tok.cancelled && t.step < t.board.frames.length - 1) {
+    while (!tok.cancelled && S.board === b && S.step < b.frames.length - 1) {
       if (BH.prefersReducedMotion()) await new Promise((r) => setTimeout(r, 700));
-      else if (!(await D().animateStep(svg, t.board, t.step, tok))) break;
+      else if (!(await D().animateStep(svg, b, S.step, tok))) break;
       if (tok.cancelled) break;
-      t.step += 1;
+      S.step += 1;
       drawBoard();
       renderSteps();
+      renderInfo();
+      renderCallBar();
       await new Promise((r) => setTimeout(r, 600));
     }
     if (tok === playToken) {
@@ -473,7 +585,7 @@
   function renderToolbar() {
     const bar = BH.$(".board-toolbar", root);
     if (!bar) return;
-    const mode = tab().board.court || "half";
+    const mode = S.board.court || "half";
     bar.innerHTML = `
       <div class="tool-group" role="radiogroup" aria-label="Drawing tool">
         ${TOOLS.map((t) => `<button class="tool${S.tool === t.id ? " on" : ""}" role="radio" aria-checked="${S.tool === t.id}" data-tool="${t.id}" title="${t.label} (${t.key.toUpperCase()})">${icons[t.icon]}<span>${t.label}</span></button>`).join("")}
@@ -527,7 +639,7 @@
     BH.$$("[data-court]", bar).forEach((b) =>
       b.addEventListener("click", () => {
         snapshot();
-        tab().board.court = b.dataset.court;
+        S.board.court = b.dataset.court;
         changedAll();
       })
     );
@@ -572,20 +684,20 @@
   function renderSteps() {
     const el = BH.$(".step-bar", root);
     if (!el) return;
-    const t = tab();
-    const n = t.board.frames.length;
+    const n = S.board.frames.length;
     const playing = !playToken.cancelled;
+    const here = itemAt(S.step);
     el.innerHTML = `
       <div class="steps">
-        <button class="btn icon" data-act="prev" aria-label="Previous step" ${t.step === 0 ? "disabled" : ""}>${icons.prev}</button>
-        <span class="step-label" aria-live="polite">Step <b>${t.step + 1}</b> of ${n}</span>
-        <button class="btn icon" data-act="next" aria-label="Next step" ${t.step >= n - 1 ? "disabled" : ""}>${icons.next}</button>
+        <button class="btn icon" data-act="prev" aria-label="Previous step" ${S.step === 0 ? "disabled" : ""}>${icons.prev}</button>
+        <span class="step-label" aria-live="polite">Step <b>${S.step + 1}</b> of ${n}${here ? ` <em>· ${esc(here.name)}</em>` : ""}</span>
+        <button class="btn icon" data-act="next" aria-label="Next step" ${S.step >= n - 1 ? "disabled" : ""}>${icons.next}</button>
       </div>
       <button class="btn play" data-act="play" ${n < 2 ? "disabled" : ""}>${playing ? icons.pause + "<span>Pause</span>" : icons.play + "<span>Run it</span>"}</button>
       <button class="btn" data-act="add" title="Copy this step, with everyone moved to the end of their line">${icons.plus}<span>Next step</span></button>
       ${n > 1 ? `<button class="btn ghost" data-act="del">${icons.trash}<span>Delete step</span></button>` : ""}`;
-    BH.$('[data-act="prev"]', el).addEventListener("click", () => goStep(t.step - 1));
-    BH.$('[data-act="next"]', el).addEventListener("click", () => goStep(t.step + 1));
+    BH.$('[data-act="prev"]', el).addEventListener("click", () => goStep(S.step - 1));
+    BH.$('[data-act="next"]', el).addEventListener("click", () => goStep(S.step + 1));
     BH.$('[data-act="play"]', el).addEventListener("click", () => (playToken.cancelled ? play() : stopPlay()));
     BH.$('[data-act="add"]', el).addEventListener("click", addStep);
     const del = BH.$('[data-act="del"]', el);
@@ -595,32 +707,35 @@
   function renderCallBar() {
     const bar = BH.$("#call-bar", root);
     if (!bar) return;
+    const cur = segAt(S.step);
     bar.innerHTML = `
-      <span class="bar-label">Call bar</span>
+      <span class="bar-label">The call</span>
       <div class="call-chips">
-        ${S.tabs
-          .map((t) => {
-            const it = t.itemId ? BH.store.get(t.itemId) : null;
-            const name = t.itemId ? (it ? it.name : "Removed item") : "Scratch board";
-            const kind = it ? it.kind : "scratch";
-            return `<div class="call-chip${t.key === S.active ? " on" : ""} k-${esc(kind)}" data-key="${t.key}">
-              <button class="chip-main" data-pick="${t.key}" aria-pressed="${t.key === S.active}"><i class="dot"></i>${esc(name)}${isModified(t) ? '<em title="Changed on this device">•</em>' : ""}</button>
-              ${t.itemId ? `<button class="chip-x" data-close="${t.key}" aria-label="Take ${esc(name)} off the bar">${icons.x}</button>` : ""}
-            </div>`;
-          })
-          .join("")}
-        <span class="drop-hint">Drag a play here</span>
+        ${
+          S.segs.length
+            ? S.segs
+                .map((g, i) => {
+                  const it = segItem(g);
+                  const name = it ? it.name : "Removed item";
+                  return `${i ? '<span class="call-sep" aria-hidden="true">›</span>' : ""}<div class="call-chip${g === cur ? " on" : ""} k-${esc(it ? it.kind : "scratch")}">
+                    <button class="chip-main" data-jump="${i}" aria-pressed="${g === cur}" title="Go to ${esc(name)}"><i class="dot"></i>${esc(name)}</button>
+                    <button class="chip-x" data-remove="${i}" aria-label="Take ${esc(name)} out of the call">${icons.x}</button>
+                  </div>`;
+                })
+                .join("")
+            : `<span class="call-empty">Tap a play to start the call, then tap actions to keep it going.</span>`
+        }
       </div>
+      ${S.segs.length ? `<button class="btn ghost new-call" data-act="new" title="Start a new call">${icons.plus}<span>New</span></button>` : ""}
       <button class="btn lib-toggle" data-act="lib">${icons.library}<span>Library</span></button>`;
-    BH.$$("[data-pick]", bar).forEach((b) =>
-      b.addEventListener("click", () => {
-        stopPlay();
-        S.active = b.dataset.pick;
-        changedAll();
-      })
-    );
-    BH.$$("[data-close]", bar).forEach((b) => b.addEventListener("click", () => closeTab(b.dataset.close)));
+    BH.$$("[data-jump]", bar).forEach((b) => b.addEventListener("click", () => goStep(S.segs[+b.dataset.jump].start)));
+    BH.$$("[data-remove]", bar).forEach((b) => b.addEventListener("click", () => removeSeg(+b.dataset.remove)));
+    const nw = BH.$('[data-act="new"]', bar);
+    if (nw) nw.addEventListener("click", newCall);
     BH.$('[data-act="lib"]', bar).addEventListener("click", () => toggleSheet());
+    const chips = BH.$(".call-chips", bar);
+    const on = BH.$(".call-chip.on", bar);
+    if (on && chips.scrollWidth > chips.clientWidth) chips.scrollLeft = on.offsetLeft - chips.offsetLeft - 40;
   }
 
   function renderLibrary() {
@@ -653,14 +768,14 @@
                   (it) => `<li><button class="lib-item k-${esc(it.kind)}" data-lib="${esc(it.id)}">
                   <span class="lib-grip">${icons.grip}</span>
                   <span class="lib-text"><b>${esc(it.name)}</b><small>${esc(BH.kind(it.kind).one)}${it.call ? " · " + esc(it.call) : ""}</small></span>
-                  ${BH.hasDiagram(it) ? `<span class="lib-has" title="Has a diagram">${icons.board}</span>` : ""}
+                  ${BH.isAuto(it) ? `<span class="lib-auto" title="Runs from wherever the ball is">Auto</span>` : BH.hasDiagram(it) ? `<span class="lib-has" title="Has a diagram">${icons.board}</span>` : ""}
                 </button></li>`
                 )
                 .join("")
             : `<li class="lib-empty">${items.length ? "No matches." : "Nothing installed yet."}</li>`
         }
       </ul>
-      <p class="lib-hint">Drag onto the call bar, or tap to put it on the court.</p>`;
+      <p class="lib-hint">Tap or drag onto the call. <b>Auto</b> actions pick up from wherever the ball is.</p>`;
     const input = BH.$("#lib-search", lib);
     input.addEventListener("input", () => {
       S.libQ = input.value;
@@ -695,55 +810,68 @@
   function renderInfo() {
     const box = BH.$("#board-info", root);
     if (!box) return;
-    const t = tab();
-    const it = t.itemId ? BH.store.get(t.itemId) : null;
     const coach = BH.store.isCoach;
-    const modified = isModified(t);
+    const seg = segAt(S.step);
+    const it = S.note ? BH.store.get(S.note) : itemAt(S.step);
+    const modified = isModified();
+    const names = S.segs.map((g) => (segItem(g) || {}).name).filter(Boolean);
+    const coachBox = coach
+      ? `<div class="coach-box"><p class="eyebrow">Coach</p>
+          ${
+            S.segs.length === 1 && S.segs[0].base && it && !BH.isAuto(it)
+              ? `<button class="btn primary" data-act="save-to" ${modified ? "" : "disabled"}>${icons.save} Save diagram to “${esc(it.name)}”</button>`
+              : ""
+          }
+          <button class="btn ${S.segs.length > 1 ? "primary" : "ghost"}" data-act="save-new">${icons.plus} Save ${S.segs.length > 1 ? "this call" : ""} as a new item</button></div>`
+      : "";
     if (!it) {
       box.innerHTML = `
         <div class="info-card">
           <p class="eyebrow">On the court</p>
-          <h2>${t.itemId ? "Removed from the playbook" : "Scratch board"}</h2>
-          <p>Draw anything here. Pick a tool, then drag on the court. Lines that start on a player move that player when you hit <b>Run it</b>.</p>
+          <h2>${seg ? "Removed from the playbook" : "Scratch board"}</h2>
+          <p>Draw anything here, or build a call. Lines that start on a player move that player when you hit <b>Run it</b>.</p>
           <ol class="howto">
+            <li><b>Build the call:</b> tap a play from the Library, like 5 Thru, then tap actions like Rub, Twirl and Swing. Each one picks up where the last one ended.</li>
+            <li><b>Continuity</b> runs your actions again from the other side.</li>
             <li><b>Players:</b> tap one in the tray, then drag it where it goes.</li>
             <li><b>Lines:</b> Cut, Dribble, Pass, Handoff, Shot and Screen each draw our standard symbol. Start a pass at the end of a dribble and the ball follows both.</li>
-            <li><b>Shot:</b> drag from the shooter, or just tap them. It always goes to the rim.</li>
             <li><b>Next step</b> moves everyone to the end of their line so you can draw the next part.</li>
-            <li><b>Library:</b> drag our sets, actions, triggers and defenses onto the call bar to put them up.</li>
           </ol>
-          ${coach ? `<div class="coach-box"><p class="eyebrow">Coach</p><button class="btn primary" data-act="save-new">${icons.save} Save as a new item</button></div>` : ""}
+          ${coachBox}
         </div>`;
     } else {
       const k = BH.kind(it.kind);
+      const inContinuity = seg && seg.parts && !S.note;
       box.innerHTML = `
         <div class="info-card">
-          <div class="card-meta"><span class="kind-chip k-${esc(it.kind)}">${esc(k.one)}</span>${it.example ? '<span class="ex-chip">Example</span>' : ""}</div>
+          <div class="card-meta"><span class="kind-chip k-${esc(it.kind)}">${esc(k.one)}</span>${inContinuity ? '<span class="kind-chip k-scratch">Continuity</span>' : ""}${it.example ? '<span class="ex-chip">Example</span>' : ""}</div>
           <h2>${esc(it.name)}</h2>
           ${it.call ? `<p class="call"><span>Call</span> ${esc(it.call)}</p>` : ""}
           ${it.summary ? `<p>${esc(it.summary)}</p>` : ""}
           ${it.keys.length ? `<h3>Keys</h3><ul class="keys">${it.keys.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
           ${it.reads.length ? `<h3>Reads</h3><ul class="reads">${it.reads.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
-          ${!BH.hasDiagram(it) ? `<p class="muted">No diagram yet${coach ? ". Draw it on the court and save it here." : "."}</p>` : ""}
+          ${S.note ? `<p class="muted">No diagram yet${coach ? ". Draw it on the court and save it as a new item, or add it in Install." : "."}</p>` : ""}
+          ${names.length > 1 ? `<p class="muted small">The call: ${names.map(esc).join(" › ")}</p>` : ""}
           <div class="info-actions">
             <a class="btn ghost" href="#item-${esc(it.id)}">${icons.book} Open in playbook</a>
             ${modified ? `<button class="btn ghost" data-act="reset">${icons.undo} Reset to coach's version</button>` : ""}
           </div>
           ${modified && !coach ? `<p class="muted small">Your drawing stays on this device.</p>` : ""}
-          ${coach ? `<div class="coach-box"><p class="eyebrow">Coach</p><button class="btn primary" data-act="save-to" ${modified || !BH.hasDiagram(it) ? "" : "disabled"}>${icons.save} Save diagram to “${esc(it.name)}”</button><button class="btn ghost" data-act="save-new">${icons.plus} Save as a new item</button></div>` : ""}
+          ${coachBox}
         </div>`;
     }
     const reset = BH.$('[data-act="reset"]', box);
     if (reset)
       reset.addEventListener("click", () => {
         snapshot();
-        t.board = BH.hasDiagram(it) ? BH.clone(it.diagram) : D().empty("half");
-        t.step = 0;
+        S.board = BH.clone(segItem(S.segs[0]).diagram);
+        S.step = 0;
         changedAll();
       });
     const saveTo = BH.$('[data-act="save-to"]', box);
     if (saveTo)
       saveTo.addEventListener("click", async () => {
+        const target = segItem(S.segs[0]);
         if (!saveTo.dataset.armed) {
           saveTo.dataset.armed = "1";
           saveTo.innerHTML = `${icons.save} Tap again to replace the diagram`;
@@ -753,14 +881,19 @@
           return;
         }
         saveTo.disabled = true;
-        const ok = await BH.store.saveItem({ ...it, diagram: BH.clone(t.board) }, `Saved the diagram for ${it.name}.`);
+        const ok = await BH.store.saveItem({ ...target, diagram: BH.clone(S.board) }, `Saved the diagram for ${target.name}.`);
         if (ok) changedAll();
         else renderInfo();
       });
     const saveNew = BH.$('[data-act="save-new"]', box);
     if (saveNew)
       saveNew.addEventListener("click", () => {
-        if (BH.install) BH.install.queueNew({ diagram: BH.clone(t.board), kind: it ? it.kind : "set" });
+        const over = { diagram: BH.clone(S.board), kind: "set" };
+        if (names.length > 1) {
+          over.name = names.join(" + ");
+          over.summary = names.join(", then ") + ".";
+        } else if (it && !BH.isAuto(it)) over.kind = it.kind;
+        if (BH.install) BH.install.queueNew(over);
         location.hash = "#install";
       });
   }
@@ -783,8 +916,8 @@
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const t = TOOLS.find((x) => x.key === e.key.toLowerCase());
     if (t) return setTool(t.id);
-    if (e.key === "ArrowRight") goStep(tab().step + 1);
-    if (e.key === "ArrowLeft") goStep(tab().step - 1);
+    if (e.key === "ArrowRight") goStep(S.step + 1);
+    if (e.key === "ArrowLeft") goStep(S.step - 1);
     if (e.key === "Escape" && S.sheetOpen) toggleSheet(false);
   }
   document.addEventListener("keydown", onKey);
@@ -792,17 +925,13 @@
   /* ---------- view ---------- */
   function render(host) {
     root = host;
-    if (!S.tabs.length) loadTabs();
-    // Drop tabs whose item was deleted (but keep scratch).
-    S.tabs = S.tabs.filter((t) => !t.itemId || BH.store.get(t.itemId));
-    if (!S.tabs.find((t) => t.key === S.active)) S.active = S.tabs[0].key;
+    if (!S.board) load();
     if (S.pendingOpen) {
       const id = S.pendingOpen;
       S.pendingOpen = null;
       if (BH.store.get(id)) {
-        let t = S.tabs.find((x) => x.itemId === id);
-        if (!t) S.tabs.push((t = newTab(id)));
-        S.active = t.key;
+        snapshot();
+        startCall(id);
       }
     }
     host.innerHTML = `

@@ -509,7 +509,7 @@
       "kind": "action",
       "name": "Twirl",
       "call": "“Twirl”",
-      "summary": "Our ball screen. A big sets a screen on the ball handler's defender, the handler comes off it shoulder to hip, and the screener rolls to the rim.",
+      "summary": "Our ball screen (PNR) with backside down-screen action. The closest big sets the ball screen and rolls. On the weak side, the higher player down-screens for the lower one.",
       "keys": [
         "Screener: sprint in, wide base, hold until contact",
         "Handler: set your man up first, then go shoulder to hip",
@@ -522,236 +522,18 @@
         "Big's man jumps out high → reject the screen and go the other way"
       ],
       "updated": "2026-11-18",
-      "diagram": {
-        "court": "half",
-        "frames": [
-          {
-            "tokens": [
-              {
-                "id": "o1",
-                "t": "o",
-                "n": "1",
-                "x": 250,
-                "y": 300
-              },
-              {
-                "id": "ball",
-                "t": "ball",
-                "n": "",
-                "x": 263,
-                "y": 288
-              },
-              {
-                "id": "o5",
-                "t": "o",
-                "n": "5",
-                "x": 310,
-                "y": 190
-              },
-              {
-                "id": "o2",
-                "t": "o",
-                "n": "2",
-                "x": 85,
-                "y": 215
-              },
-              {
-                "id": "o3",
-                "t": "o",
-                "n": "3",
-                "x": 30,
-                "y": 32
-              },
-              {
-                "id": "o4",
-                "t": "o",
-                "n": "4",
-                "x": 470,
-                "y": 32
-              }
-            ],
-            "strokes": [
-              {
-                "id": "s1",
-                "t": "screen",
-                "pts": [
-                  [
-                    310,
-                    190
-                  ],
-                  [
-                    300,
-                    240
-                  ],
-                  [
-                    283,
-                    282
-                  ]
-                ]
-              },
-              {
-                "id": "s2",
-                "t": "dribble",
-                "pts": [
-                  [
-                    250,
-                    300
-                  ],
-                  [
-                    292,
-                    305
-                  ],
-                  [
-                    335,
-                    272
-                  ],
-                  [
-                    372,
-                    222
-                  ]
-                ]
-              }
-            ]
-          },
-          {
-            "tokens": [
-              {
-                "id": "o1",
-                "t": "o",
-                "n": "1",
-                "x": 372,
-                "y": 222
-              },
-              {
-                "id": "ball",
-                "t": "ball",
-                "n": "",
-                "x": 385,
-                "y": 210
-              },
-              {
-                "id": "o5",
-                "t": "o",
-                "n": "5",
-                "x": 283,
-                "y": 282
-              },
-              {
-                "id": "o2",
-                "t": "o",
-                "n": "2",
-                "x": 85,
-                "y": 215
-              },
-              {
-                "id": "o3",
-                "t": "o",
-                "n": "3",
-                "x": 30,
-                "y": 32
-              },
-              {
-                "id": "o4",
-                "t": "o",
-                "n": "4",
-                "x": 470,
-                "y": 32
-              }
-            ],
-            "strokes": [
-              {
-                "id": "s3",
-                "t": "cut",
-                "pts": [
-                  [
-                    283,
-                    282
-                  ],
-                  [
-                    300,
-                    205
-                  ],
-                  [
-                    282,
-                    100
-                  ]
-                ]
-              },
-              {
-                "id": "s4",
-                "t": "pass",
-                "pts": [
-                  [
-                    372,
-                    222
-                  ],
-                  [
-                    284,
-                    106
-                  ]
-                ]
-              }
-            ]
-          },
-          {
-            "tokens": [
-              {
-                "id": "o1",
-                "t": "o",
-                "n": "1",
-                "x": 372,
-                "y": 222
-              },
-              {
-                "id": "o5",
-                "t": "o",
-                "n": "5",
-                "x": 282,
-                "y": 100
-              },
-              {
-                "id": "ball",
-                "t": "ball",
-                "n": "",
-                "x": 295,
-                "y": 88
-              },
-              {
-                "id": "o2",
-                "t": "o",
-                "n": "2",
-                "x": 85,
-                "y": 215
-              },
-              {
-                "id": "o3",
-                "t": "o",
-                "n": "3",
-                "x": 30,
-                "y": 32
-              },
-              {
-                "id": "o4",
-                "t": "o",
-                "n": "4",
-                "x": 470,
-                "y": 32
-              }
-            ],
-            "strokes": []
-          }
-        ]
-      }
+      "rule": "twirl"
     },
     {
       "id": "rub",
       "kind": "action",
       "name": "Rub",
       "call": "“Rub”",
-      "summary": "Our dribble handoff (DHO). The ball handler dribbles at a teammate and hands the ball off as they come by.",
+      "summary": "A DHO to the ball-side guard. The ball handler dribbles at the ball-side Lock, the Lock comes up to take the handoff, and the handler fills the corner.",
       "keys": [],
       "reads": [],
-      "updated": "2026-11-18"
+      "updated": "2026-11-18",
+      "rule": "rub"
     },
     {
       "id": "zoom",
@@ -950,6 +732,72 @@
       "keys": [],
       "reads": [],
       "updated": "2026-11-18"
+    },
+    {
+      "id": "swing",
+      "kind": "action",
+      "name": "Swing",
+      "call": "“Swing”",
+      "summary": "Passing from one slot to the other, wing to corner or corner to wing, continuing the direction of the previous pass.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18",
+      "rule": "swing"
+    },
+    {
+      "id": "skip",
+      "kind": "action",
+      "name": "Skip",
+      "call": "“Skip”",
+      "summary": "Skip pass. The pass skips a perimeter player and goes to the next one.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18",
+      "rule": "skip"
+    },
+    {
+      "id": "back-to-you",
+      "kind": "action",
+      "name": "Back to You",
+      "call": "“Back to you”",
+      "summary": "Pass it back to the player who passed it to you.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18",
+      "rule": "back"
+    },
+    {
+      "id": "get",
+      "kind": "action",
+      "name": "Get",
+      "call": "“Get”",
+      "summary": "Pass into a DHO (Rub) back to the passer.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18",
+      "rule": "get"
+    },
+    {
+      "id": "post-entry",
+      "kind": "action",
+      "name": "Post Entry",
+      "call": "“Post”",
+      "summary": "Post entry pass to the nearest teammate in the paint.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18",
+      "rule": "post-entry"
+    },
+    {
+      "id": "continuity",
+      "kind": "action",
+      "name": "Continuity",
+      "call": "",
+      "summary": "When added to the call bar, the actions repeat, moving the ball to each side when they can.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18",
+      "rule": "continuity"
     },
     {
       "id": "denied-backdoor",

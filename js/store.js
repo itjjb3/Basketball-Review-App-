@@ -34,11 +34,12 @@
       updated: it.updated || new Date().toISOString().slice(0, 10),
     };
     if (it.example) out.example = true;
+    if (typeof it.rule === "string" && /^[a-z-]{2,20}$/.test(it.rule)) out.rule = it.rule;
     if (it.diagram && Array.isArray(it.diagram.frames) && it.diagram.frames.length) {
       out.diagram = {
         court: it.diagram.court === "full" ? "full" : "half",
         frames: it.diagram.frames.map((f) => ({
-          tokens: (f.tokens || []).filter((t) => t && isFinite(t.x) && isFinite(t.y)).map((t) => ({ id: String(t.id), t: t.t, n: t.n == null ? "" : String(t.n), x: +t.x, y: +t.y })),
+          tokens: (f.tokens || []).filter((t) => t && isFinite(t.x) && isFinite(t.y)).map((t) => ({ id: String(t.id), t: t.t, n: t.n == null ? "" : String(t.n), x: +t.x, y: +t.y, ...(t.t === "ball" && t.h ? { h: String(t.h) } : {}) })),
           strokes: (f.strokes || []).filter((s) => s && Array.isArray(s.pts) && s.pts.length > 1).map((s) => ({ id: String(s.id || BH.uid("s")), t: s.t, pts: s.pts.map((p) => [+p[0], +p[1]]), ...(s.c ? { c: String(s.c) } : {}) })),
         })),
       };

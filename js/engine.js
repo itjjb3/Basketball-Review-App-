@@ -1,0 +1,311 @@
+/* Action engine. Actions such as Rub, Twirl and Swing aren't fixed drawings: each
+   one looks at the court (who has the ball, who is where) and draws the next steps
+   from there. That is what lets the whiteboard chain them: 5 Thru, then Rub, then
+   Twirl, then Swing, then Continuity, as one possession. */
+(function () {
+  const BH = window.BH;
+  const D = () => BH.diagram;
+  const RIM = [250, 52.5];
+  const TOP = [250, 285];
+  const NAIL_TOP = [250, 215];
+
+  const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  const add = (a, b) => [a[0] + b[0], a[1] + b[1]];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
+  const mul = (a, k) => [a[0] * k, a[1] * k];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1];
+  const unit = (a) => {
+    const L = Math.hypot(a[0], a[1]) || 1;
+    return [a[0] / L, a[1] / L];
+  };
+  const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  const rnd = (p) => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10];
+  const clampPt = (p) => [Math.max(16, Math.min(484, p[0])), Math.max(20, Math.min(400, p[1]))];
+  const P = (t) => [t.x, t.y];
+  const sideOf = (p) => (p[0] >= 250 ? 1 : -1);
+  const corner = (s) => (s > 0 ? [470, 42] : [30, 42]);
+
+  const offense = (f) => (f.tokens || []).filter((t) => t.t === "o");
+  const tok = (f, id) => (f.tokens || []).find((t) => t.id === id);
+  const nearest = (list, p) => list.reduce((b, t) => (!b || dist(P(t), p) < dist(P(b), p) ? t : b), null);
+  const inCorner = (t) => t.y < 90 && Math.abs(t.x - 250) > 150;
+  const isPerimeter = (t) => dist(P(t), RIM) > 155; // about 15 ft out: elbows and the paint are inside
+  // Position along the arc: left corner is smallest, right corner largest.
+  const arcKey = (p) => -Math.atan2(Math.max(p[1], 53) - RIM[1], p[0] - RIM[0]);
+  const line = (t, pts) => ({ id: "e" + Math.random().toString(36).slice(2, 9), t, pts: pts.map(rnd) });
+  const passTo = (from, to) => line("pass", [P(from), P(to)]);
+
+  function holder(f) {
+    const b = (f.tokens || []).find((t) => t.t === "ball");
+    if (!b) return null;
+    const owner = b.h && offense(f).find((t) => t.id === b.h);
+    if (owner && dist(P(owner), [b.x, b.y]) < 45) return owner;
+    let best = null,
+      bd = 45;
+    offense(f).forEach((t) => {
+      const d = dist(P(t), [b.x, b.y]);
+      if (d < bd) (bd = d), (best = t);
+    });
+    return best;
+  }
+
+  /* Perimeter teammates in the direction of travel (dir +1 = toward the right). */
+  function along(f, h, dir) {
+    const hk = arcKey(P(h));
+    const per = offense(f).filter((t) => t.id !== h.id && isPerimeter(t));
+    const toward = (d) => per.filter((t) => d * (arcKey(P(t)) - hk) > 0.03).sort((a, b) => d * (arcKey(P(a)) - arcKey(P(b))));
+    return { ahead: toward(dir), behind: toward(-dir) };
+  }
+
+  /* What the last pass was: who threw it and which way it went. */
+  function ctxFrom(frames) {
+    for (let i = frames.length - 1; i >= 0; i--) {
+      const f = frames[i];
+      const ps = (f.strokes || []).filter((s) => s.t === "pass" || s.t === "handoff");
+      if (!ps.length) continue;
+      const s = ps[ps.length - 1];
+      const a = s.pts[0],
+        b = s.pts[s.pts.length - 1];
+      const g = frames[i + 1] || f;
+      const passer = nearest(offense(g), a);
+      const dx = b[0] - a[0];
+      return { lastPasser: passer ? passer.id : null, dir: Math.abs(dx) < 12 ? 0 : Math.sign(dx) };
+    }
+    return { lastPasser: null, dir: 0 };
+  }
+
+  /* ---------- the rules ---------- */
+  const RULES = {
+    swing: {
+      label: "Swing: pass to the next perimeter player, same direction as the last pass",
+      run(api, ctx) {
+        const h = holder(api.f);
+        if (!h) return "nobody has the ball.";
+        const dir = ctx.dir || -sideOf(P(h));
+        const { ahead, behind } = along(api.f, h, dir);
+        const t = ahead[0] || behind[0];
+        if (!t) return "there's no one on the perimeter to swing it to.";
+        api.step([passTo(h, t)]);
+      },
+    },
+    skip: {
+      label: "Skip: pass over the next perimeter player to the one after",
+      run(api, ctx) {
+        const h = holder(api.f);
+        if (!h) return "nobody has the ball.";
+        const dir = ctx.dir || -sideOf(P(h));
+        const { ahead, behind } = along(api.f, h, dir);
+        const t = ahead[1] || behind[1];
+        if (!t) return "there's no one past the next player to skip it to.";
+        api.step([passTo(h, t)]);
+      },
+    },
+    back: {
+      label: "Back to you: pass it back to the player who passed it",
+      run(api, ctx) {
+        const h = holder(api.f);
+        if (!h) return "nobody has the ball.";
+        const t = ctx.lastPasser && ctx.lastPasser !== h.id ? tok(api.f, ctx.lastPasser) : null;
+        if (!t) return "there's no earlier pass to throw it back on.";
+        api.step([passTo(h, t)]);
+      },
+    },
+    "post-entry": {
+      label: "Post entry: pass to the nearest teammate in the paint",
+      run(api) {
+        const h = holder(api.f);
+        if (!h) return "nobody has the ball.";
+        const paint = offense(api.f).filter((t) => t.id !== h.id && t.x > 165 && t.x < 335 && t.y < 215);
+        const t = nearest(paint, P(h));
+        if (!t) return "no one is in the paint for a post entry.";
+        api.step([passTo(h, t)]);
+      },
+    },
+    get: {
+      label: "Get: pass into a handoff (Rub) back to the passer",
+      run(api) {
+        const h = holder(api.f);
+        if (!h) return "nobody has the ball.";
+        const T = nearest(
+          offense(api.f).filter((t) => t.id !== h.id && !inCorner(t)),
+          P(h)
+        );
+        if (!T) return "there's no one close enough to get it back from.";
+        const home = P(h);
+        api.step([passTo(h, T)]);
+        const T2 = P(tok(api.f, T.id)),
+          H2 = P(tok(api.f, h.id));
+        const M = clampPt(lerp(T2, H2, 0.45));
+        const R = clampPt(add(M, mul(unit(sub(M, H2)), 34)));
+        const bend = add(M, mul(unit(sub(RIM, M)), 16));
+        api.step([line("dribble", [T2, lerp(T2, M, 0.5), M]), line("cut", [H2, lerp(H2, bend, 0.6), bend, R]), line("handoff", [M, R])]);
+        const g = P(tok(api.f, T.id));
+        api.step([line("cut", [g, lerp(g, home, 0.5), home])]);
+      },
+    },
+    rub: {
+      label: "Rub: handoff to the ball-side guard, then fill the corner",
+      run(api) {
+        const f = api.f;
+        const h = holder(f);
+        if (!h) return "nobody has the ball.";
+        const pick = (sd) =>
+          nearest(
+            offense(f).filter((t) => t.id !== h.id && sideOf(P(t)) === sd && Math.abs(t.x - 250) > 40),
+            corner(sd)
+          );
+        let s = Math.abs(h.x - 250) > 20 ? sideOf(P(h)) : 0;
+        let L = s ? pick(s) : null;
+        if (!s) {
+          const r = pick(1),
+            l = pick(-1);
+          L = !r ? l : !l ? r : dist(P(r), corner(1)) <= dist(P(l), corner(-1)) ? r : l;
+          s = L ? sideOf(P(L)) : 1;
+        }
+        if (!L) return "there's no ball-side guard to hand it to.";
+        const H = P(h),
+          Lp = P(L);
+        const M = clampPt(lerp(H, Lp, 0.45));
+        const R = clampPt(add(M, mul(unit(sub(TOP, M)), 34)));
+        api.step([line("dribble", [H, lerp(H, M, 0.5), M]), line("cut", [Lp, lerp(Lp, M, 0.6), add(M, [s * 14, 0]), R]), line("handoff", [M, R])]);
+        const g = P(tok(api.f, h.id));
+        api.step([line("cut", [g, lerp(g, Lp, 0.5), Lp])]);
+      },
+    },
+    twirl: {
+      label: "Twirl: ball screen with backside down screen",
+      run(api) {
+        const f = api.f;
+        const h = holder(f);
+        if (!h) return "nobody has the ball.";
+        const H = P(h);
+        const s = Math.abs(h.x - 250) > 15 ? sideOf(H) : 1;
+        const others = offense(f).filter((t) => t.id !== h.id);
+        const bigs = others.filter((t) => t.n === "4" || t.n === "5");
+        const ballSideBigs = bigs.filter((t) => sideOf(P(t)) === s || Math.abs(t.x - 250) < 60);
+        const S = nearest(ballSideBigs.length ? ballSideBigs : bigs, H) || nearest(others.filter((t) => !inCorner(t)), H);
+        if (!S) return "there's no one to set the ball screen.";
+        const G = clampPt(lerp(H, NAIL_TOP, 0.8)); // the handler comes off toward the middle
+        const dirG = unit(sub(G, H));
+        const SP = clampPt(add(H, mul(dirG, 26))); // screen on the handler's shoulder
+        // Backside: on the weak side, the higher player down-screens for the lower one.
+        const weak = others.filter((t) => t.id !== S.id && sideOf(P(t)) === -s && dist(P(t), G) > 90);
+        let hi = null,
+          lo = null,
+          DS = null;
+        if (weak.length >= 2) {
+          hi = weak.reduce((a, b) => (b.y > a.y ? b : a));
+          lo = weak.reduce((a, b) => (b.y < a.y ? b : a));
+          if (hi.y - lo.y < 60) hi = lo = null;
+        }
+        const first = [line("screen", [P(S), lerp(P(S), SP, 0.55), SP])];
+        if (hi && lo) {
+          DS = lerp(P(lo), P(hi), 0.4);
+          first.push(line("screen", [P(hi), lerp(P(hi), DS, 0.5), DS]));
+        }
+        api.step(first);
+        const f2 = api.f;
+        const H2 = P(tok(f2, h.id)),
+          S2 = P(tok(f2, S.id));
+        let perp = [-dirG[1], dirG[0]];
+        if (dot(perp, sub(RIM, S2)) > 0) perp = mul(perp, -1); // go over the top of the screen
+        const roll = [250 + s * 24, 80];
+        const second = [line("dribble", [H2, add(S2, mul(perp, 22)), G]), line("cut", [S2, lerp(S2, roll, 0.5), roll])];
+        if (hi && lo) {
+          const LO = P(tok(f2, lo.id));
+          second.push(line("cut", [LO, add(DS, [-s * 18, 0]), P(hi)]));
+        }
+        api.step(second);
+      },
+    },
+    continuity: {
+      label: "Continuity: run the actions again from wherever the ball is",
+    },
+  };
+
+  /* Run one rule from a frame. Returns { frames } (first = start with its moves,
+     last = where everyone ends up) or { error }. */
+  function run(ruleId, start, ctx) {
+    const rule = RULES[ruleId];
+    if (!rule || !rule.run) return { error: "that action doesn't run on its own." };
+    let cur = BH.clone(start);
+    cur.strokes = [];
+    const out = [];
+    const api = {
+      get f() {
+        return cur;
+      },
+      step(strokes) {
+        strokes = strokes.filter(Boolean);
+        if (!strokes.length) return;
+        cur.strokes = strokes;
+        out.push(cur);
+        cur = D().advanceFrame(cur);
+      },
+    };
+    const res = rule.run(api, ctx || {});
+    if (typeof res === "string") return { error: res };
+    if (!out.length) return { error: "nothing to do from here." };
+    out.push(cur);
+    return { frames: out };
+  }
+
+  /* Continue a list of frames with a rule. Finishes any lines drawn on the last
+     frame first. Returns { frames, start } or { error }. */
+  function extend(frames, ruleId) {
+    frames = frames.slice();
+    let last = frames[frames.length - 1];
+    if (last.strokes && last.strokes.length) {
+      last = D().advanceFrame(last);
+      frames.push(last);
+    }
+    const res = run(ruleId, last, ctxFrom(frames));
+    if (res.error) return res;
+    const start = frames.length - 1;
+    frames.splice(start, 1, ...res.frames);
+    return { frames, start };
+  }
+
+  /* Small examples for the playbook: just the 2 to 4 players each action needs. */
+  const o = (n, x, y) => ({ id: "o" + n, t: "o", n: String(n), x, y });
+  const withBall = (n, x, y) => [o(n, x, y), { id: "ball", t: "ball", n: "", x: x + 13, y: y - 12 }];
+  const DEMOS = {
+    // 3 swings it to 1, so the swing keeps going the same way: 1 to 4.
+    swing: { tokens: [...withBall(3, 85, 215), o(1, 175, 272), o(4, 325, 272)], first: [{ id: "d0", t: "pass", pts: [[85, 215], [175, 272]] }] },
+    skip: { tokens: [...withBall(1, 175, 272), o(4, 325, 272), o(2, 470, 42)] },
+    back: { tokens: [...withBall(1, 175, 272), o(4, 325, 272)], seq: ["swing", "back"] },
+    "post-entry": { tokens: [...withBall(1, 85, 215), o(5, 175, 76)] },
+    get: { tokens: [...withBall(1, 175, 272), o(4, 325, 272)] },
+    rub: { tokens: [...withBall(1, 175, 272), o(3, 30, 42)] },
+    twirl: { tokens: [...withBall(1, 175, 272), o(5, 175, 76), o(4, 325, 272), o(2, 470, 42)] },
+  };
+  let demoCache = {};
+  function demo(item) {
+    if (!item || !item.rule || !DEMOS[item.rule]) return null;
+    if (item.rule in demoCache) return demoCache[item.rule];
+    const d = DEMOS[item.rule];
+    let frames = [{ tokens: BH.clone(d.tokens), strokes: BH.clone(d.first || []) }];
+    for (const r of d.seq || [item.rule]) {
+      const res = extend(frames, r);
+      if (res.error) return (demoCache[item.rule] = null);
+      frames = res.frames;
+    }
+    return (demoCache[item.rule] = { court: "half", frames });
+  }
+  BH.on("program", () => (demoCache = {}));
+
+  const isAuto = (item) => !!(item && item.rule && RULES[item.rule]);
+  BH.isAuto = isAuto;
+  /* The diagram to show for an item: the coach's drawing, or a demo of its rule. */
+  BH.viewDiagram = (item) => (BH.hasDiagram(item) ? item.diagram : isAuto(item) ? demo(item) : null);
+
+  BH.engine = {
+    RULES,
+    LIST: Object.keys(RULES).map((id) => ({ id, label: RULES[id].label })),
+    run,
+    extend,
+    ctxFrom,
+    demo,
+    holder,
+  };
+})();
