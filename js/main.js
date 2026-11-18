@@ -13,7 +13,8 @@
   let app, main;
 
   function mark() {
-    return `<svg class="mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" class="mark-ring"/><text x="20" y="29" text-anchor="middle" class="mark-b-outer">B</text><text x="20" y="29" text-anchor="middle" class="mark-b-key">B</text><text x="20" y="29" text-anchor="middle" class="mark-b">B</text></svg>`;
+    const b = (cls) => `<path class="${cls}" fill-rule="evenodd" d="${BH.court.B_PATH}" />`;
+    return `<svg class="mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" class="mark-ring"/><g transform="translate(20,20) scale(0.24)">${b("mark-b-outer")}${b("mark-b-key")}${b("mark-b")}</g></svg>`;
   }
 
   function shell() {

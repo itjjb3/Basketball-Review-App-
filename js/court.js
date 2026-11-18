@@ -34,12 +34,17 @@
     return `<path class="c-plank" d="${s}" />`;
   }
 
+  /* Varsity block B, drawn (no font needed): slab serifs on the stem, cut corners,
+     square counters. Centered on 0,0 and 120 units tall. */
+  const B_PATH =
+    "M-48,-60 H26 L40,-46 V-12 L30,0 L48,16 V46 L34,60 H-48 V46 H-40 V-46 H-48 Z M-16,-42 H14 L20,-36 V-17 L14,-11 H-16 Z M-16,11 H20 L26,17 V36 L20,42 H-16 Z";
+
   function blockB(mini) {
-    // Collegiate block B: purple fill, white keyline, purple outer line.
-    // Turned on its side so it reads from the sideline, like the logo on the floor.
-    const t = (cls) => `<text class="${cls}" x="0" y="32" text-anchor="middle">B</text>`;
-    return `<g class="c-logo${mini ? " mini" : ""}" transform="translate(250,420) rotate(90)" aria-hidden="true">
-        ${t("b-outer")}${t("b-key")}${t("b-fill")}
+    // Purple fill, white keyline, dark purple outer line.
+    // Turned on its side so it reads from the right sideline, like the logo on the floor.
+    const p = (cls) => `<path class="${cls}" fill-rule="evenodd" d="${B_PATH}" />`;
+    return `<g class="c-logo${mini ? " mini" : ""}" transform="translate(250,420) rotate(90) scale(0.68)" aria-hidden="true">
+        ${p("b-outer")}${p("b-key")}${p("b-fill")}
       </g>`;
   }
 
@@ -57,7 +62,7 @@
         ${blockB(mini)}
         <g class="c-lines">
           <rect x="0" y="0" width="${W}" height="${FULL}" />
-          <path d="M0,420 L${W},420" />
+          <path d="M0,420 L190,420 M310,420 L${W},420" />
           <circle cx="250" cy="420" r="60" />
           ${endLines()}
           <g transform="translate(0,${FULL}) scale(1,-1)">${endLines()}</g>
@@ -90,5 +95,5 @@
     cone: [250, 330],
   };
 
-  BH.court = { markup, viewBox, height, W, FULL, HALF_VIEW, PAD, RIM, SPOTS };
+  BH.court = { markup, viewBox, height, W, FULL, HALF_VIEW, PAD, RIM, SPOTS, B_PATH };
 })();

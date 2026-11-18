@@ -21,7 +21,6 @@
 
   --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
   --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-block: "Graduate", "Rockwell", "Roboto Slab", Georgia, serif;
 
   --k-set: #5b2f9e;
   --k-action: #1d5fae;
@@ -154,9 +153,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--fg); min-width: 0; }
 .mark { width: 40px; height: 40px; flex: none; }
 .mark-ring { fill: var(--brand); }
-.mark text { font-family: var(--font-block); font-size: 27px; }
-.mark-b-outer { fill: none; stroke: var(--brand-strong); stroke-width: 5; stroke-linejoin: round; }
-.mark-b-key { fill: none; stroke: #fff; stroke-width: 2.6; stroke-linejoin: round; }
+.mark-b-outer { fill: none; stroke: var(--brand-strong); stroke-width: 18; stroke-linejoin: miter; stroke-miterlimit: 8; }
+.mark-b-key { fill: none; stroke: #fff; stroke-width: 10; stroke-linejoin: miter; stroke-miterlimit: 8; }
 .mark-b { fill: var(--brand); }
 .brand-text { display: flex; flex-direction: column; line-height: 1.05; min-width: 0; }
 .brand-text b { font-family: var(--font-display); font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -335,9 +333,8 @@ body[data-view="board"] main { max-width: 1600px; padding-block: 16px 24px; }
 .court .c-lines .c-board-line { stroke-width: 4.5; }
 .court .c-lines .c-rim { stroke: #d0571a; stroke-width: 2.6; }
 .court .c-lines .c-block { fill: var(--court-line); stroke: none; }
-.court .c-logo text { font-family: var(--font-block); font-size: 96px; font-weight: 400; }
-.court .b-outer { fill: none; stroke: #2a1559; stroke-width: 15; stroke-linejoin: round; }
-.court .b-key { fill: none; stroke: #ffffff; stroke-width: 8; stroke-linejoin: round; }
+.court .b-outer { fill: none; stroke: #2a1559; stroke-width: 16; stroke-linejoin: miter; stroke-miterlimit: 8; }
+.court .b-key { fill: none; stroke: #ffffff; stroke-width: 8; stroke-linejoin: miter; stroke-miterlimit: 8; }
 .court .b-fill { fill: #4b2a86; }
 .court.board { --court-floor: #fbfbfd; --court-apron: #e6e8ef; --court-line: #8a90a6; --court-lane: transparent; --court-center: transparent; --court-plank: transparent; }
 .court.board .c-logo { opacity: 0.85; }
