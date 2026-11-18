@@ -22,6 +22,7 @@
   --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
   --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
+  --k-position: #a3216b;
   --k-set: #5b2f9e;
   --k-action: #1d5fae;
   --k-trigger: #c25a00;
@@ -62,6 +63,7 @@
     --bad: #ef7d73;
     --ink-strong: #ece8f4;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
+    --k-position: #f08cc6;
     --k-set: #b393ee;
     --k-action: #77aef0;
     --k-trigger: #f0a05a;
@@ -89,6 +91,7 @@
   --bad: #ef7d73;
   --ink-strong: #ece8f4;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
+  --k-position: #f08cc6;
   --k-set: #b393ee;
   --k-action: #77aef0;
   --k-trigger: #f0a05a;
@@ -242,6 +245,7 @@ body[data-view="board"] main { max-width: 1600px; padding-block: 16px 24px; }
   color: var(--k);
   background: color-mix(in srgb, var(--k) 13%, transparent);
 }
+.k-position { --k: var(--k-position); }
 .k-set { --k: var(--k-set); }
 .k-action { --k: var(--k-action); }
 .k-trigger { --k: var(--k-trigger); }

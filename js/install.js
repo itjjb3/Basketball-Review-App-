@@ -65,7 +65,7 @@
     if (!it) {
       return `<div class="panel editor-panel empty-editor">
           <h2>Pick something to edit</h2>
-          <p>Choose an item on the left, or start a new one. A good install order: <b>terms</b> first so players learn the language, then <b>formations</b>, <b>actions</b> and <b>triggers</b>, then the <b>sets</b> built from them.</p>
+          <p>Choose an item on the left, or start a new one. A good install order: <b>positions</b> and <b>terms</b> first so players learn their roles and the language, then <b>formations</b>, <b>actions</b> and <b>triggers</b>, then the <b>sets</b> built from them.</p>
           <button class="btn primary" data-act="new">${icons.plus} New item</button>
         </div>`;
     }

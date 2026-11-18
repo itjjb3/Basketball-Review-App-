@@ -3,6 +3,7 @@
   const BH = (window.BH = window.BH || {});
 
   BH.KINDS = [
+    { id: "position", label: "Positions", one: "Position", blurb: "Who does what on our floor" },
     { id: "set", label: "Sets", one: "Set", blurb: "Named plays we run" },
     { id: "action", label: "Actions", one: "Action", blurb: "Two- and three-man pieces our sets are built from" },
     { id: "trigger", label: "Triggers", one: "Trigger", blurb: "If the defense does this, we do that" },

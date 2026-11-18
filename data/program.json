@@ -6,6 +6,304 @@
   },
   "items": [
     {
+      "id": "racker",
+      "kind": "position",
+      "name": "Racker",
+      "call": "",
+      "summary": "Our name for the point guard.",
+      "keys": [
+        "First objective: RACK IT. Beat everyone to the rim.",
+        "Coast to coast or off an outlet"
+      ],
+      "reads": [],
+      "updated": "2026-11-18"
+    },
+    {
+      "id": "locks",
+      "kind": "position",
+      "name": "Locks",
+      "call": "",
+      "summary": "Usually our 2 and 3. Locks live in the corners.",
+      "keys": [
+        "SPRINT to the corners at the start of every offensive possession",
+        "Stay LOCKED in the corner until you're involved in an action"
+      ],
+      "diagram": {
+        "court": "half",
+        "frames": [
+          {
+            "tokens": [
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 80,
+                "y": 400
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 420,
+                "y": 400
+              }
+            ],
+            "strokes": [
+              {
+                "id": "lk1",
+                "t": "cut",
+                "pts": [
+                  [
+                    80,
+                    400
+                  ],
+                  [
+                    44,
+                    230
+                  ],
+                  [
+                    30,
+                    44
+                  ]
+                ]
+              },
+              {
+                "id": "lk2",
+                "t": "cut",
+                "pts": [
+                  [
+                    420,
+                    400
+                  ],
+                  [
+                    456,
+                    230
+                  ],
+                  [
+                    470,
+                    44
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 30,
+                "y": 44
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 470,
+                "y": 44
+              }
+            ],
+            "strokes": []
+          }
+        ]
+      },
+      "reads": [],
+      "updated": "2026-11-18"
+    },
+    {
+      "id": "dragon",
+      "kind": "position",
+      "name": "Dragon",
+      "call": "",
+      "summary": "Usually a 4, or someone who gets downhill well. Our inbounder and trailer.",
+      "keys": [
+        "ALWAYS INBOUNDS THE BALL, NO MATTER WHAT, IN ALL SITUATIONS",
+        "DRAGS behind the play as the trailer",
+        "Stays available for the Racker",
+        "Can initiate triggers"
+      ],
+      "reads": [],
+      "updated": "2026-11-18"
+    },
+    {
+      "id": "rabbit",
+      "kind": "position",
+      "name": "Rabbit",
+      "call": "",
+      "summary": "Our big. Sprints the center lane in transition and works between 8 spots in the half court.",
+      "keys": [
+        "Transition: SPRINT the center lane to the rabbit hole (either block)",
+        "Half court spots: each dunker spot, each block, each elbow, the nail and the top of the key"
+      ],
+      "diagram": {
+        "court": "half",
+        "frames": [
+          {
+            "tokens": [
+              {
+                "id": "cone-dunker-l",
+                "t": "cone",
+                "n": "",
+                "x": 140,
+                "y": 36
+              },
+              {
+                "id": "cone-dunker-r",
+                "t": "cone",
+                "n": "",
+                "x": 360,
+                "y": 36
+              },
+              {
+                "id": "cone-block-l",
+                "t": "cone",
+                "n": "",
+                "x": 175,
+                "y": 76
+              },
+              {
+                "id": "cone-block-r",
+                "t": "cone",
+                "n": "",
+                "x": 325,
+                "y": 76
+              },
+              {
+                "id": "cone-elbow-l",
+                "t": "cone",
+                "n": "",
+                "x": 190,
+                "y": 190
+              },
+              {
+                "id": "cone-elbow-r",
+                "t": "cone",
+                "n": "",
+                "x": 310,
+                "y": 190
+              },
+              {
+                "id": "cone-nail",
+                "t": "cone",
+                "n": "",
+                "x": 250,
+                "y": 190
+              },
+              {
+                "id": "cone-top",
+                "t": "cone",
+                "n": "",
+                "x": 250,
+                "y": 256
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 250,
+                "y": 410
+              }
+            ],
+            "strokes": [
+              {
+                "id": "rb1",
+                "t": "cut",
+                "pts": [
+                  [
+                    250,
+                    410
+                  ],
+                  [
+                    252,
+                    300
+                  ],
+                  [
+                    290,
+                    160
+                  ],
+                  [
+                    325,
+                    78
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "cone-dunker-l",
+                "t": "cone",
+                "n": "",
+                "x": 140,
+                "y": 36
+              },
+              {
+                "id": "cone-dunker-r",
+                "t": "cone",
+                "n": "",
+                "x": 360,
+                "y": 36
+              },
+              {
+                "id": "cone-block-l",
+                "t": "cone",
+                "n": "",
+                "x": 175,
+                "y": 76
+              },
+              {
+                "id": "cone-block-r",
+                "t": "cone",
+                "n": "",
+                "x": 325,
+                "y": 76
+              },
+              {
+                "id": "cone-elbow-l",
+                "t": "cone",
+                "n": "",
+                "x": 190,
+                "y": 190
+              },
+              {
+                "id": "cone-elbow-r",
+                "t": "cone",
+                "n": "",
+                "x": 310,
+                "y": 190
+              },
+              {
+                "id": "cone-nail",
+                "t": "cone",
+                "n": "",
+                "x": 250,
+                "y": 190
+              },
+              {
+                "id": "cone-top",
+                "t": "cone",
+                "n": "",
+                "x": 250,
+                "y": 256
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 325,
+                "y": 78
+              }
+            ],
+            "strokes": []
+          }
+        ]
+      },
+      "reads": [],
+      "updated": "2026-11-18"
+    },
+    {
       "id": "power",
       "kind": "formation",
       "name": "Power",
@@ -64,6 +362,73 @@
                 "n": "",
                 "x": 263,
                 "y": 273
+              }
+            ],
+            "strokes": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "4-out",
+      "kind": "formation",
+      "name": "4-Out",
+      "call": "",
+      "summary": "Four out, one in. Racker and Dragon in the slots, Locks in both corners, Rabbit on the block.",
+      "keys": [
+        "Racker (1): left slot with the ball",
+        "Dragon (4): right slot, the trailer",
+        "Locks (2 and 3): LOCKED in the corners",
+        "Rabbit (5): ball-side block"
+      ],
+      "reads": [],
+      "updated": "2026-11-18",
+      "diagram": {
+        "court": "half",
+        "frames": [
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 175,
+                "y": 272
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 188,
+                "y": 260
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 325,
+                "y": 272
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 30,
+                "y": 42
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 470,
+                "y": 42
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 175,
+                "y": 76
               }
             ],
             "strokes": []
@@ -1578,7 +1943,7 @@
                 ]
               },
               {
-                "id": "sjs0kh23",
+                "id": "s7wog4xd",
                 "t": "handoff",
                 "pts": [
                   [
@@ -1586,8 +1951,8 @@
                     194.5
                   ],
                   [
-                    280.4,
-                    246.6
+                    281.5,
+                    245.6
                   ]
                 ]
               }
