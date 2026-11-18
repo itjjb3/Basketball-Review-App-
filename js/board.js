@@ -12,6 +12,8 @@
     { id: "cut", label: "Cut", key: "c", icon: "cut" },
     { id: "dribble", label: "Dribble", key: "d", icon: "dribble" },
     { id: "pass", label: "Pass", key: "p", icon: "pass" },
+    { id: "handoff", label: "Handoff", key: "h", icon: "handoff" },
+    { id: "shot", label: "Shot", key: "t", icon: "shot" },
     { id: "screen", label: "Screen", key: "s", icon: "screen" },
     { id: "pen", label: "Marker", key: "m", icon: "pen" },
     { id: "erase", label: "Erase", key: "e", icon: "eraser" },
@@ -171,6 +173,28 @@
     return [Math.max(-6, Math.min(506, p.x)), Math.max(-6, Math.min(h + 6, p.y))];
   }
 
+  /* Snap a point to a player, or to the end of a line already drawn this step,
+     so a pass can start where a dribble ends and finish where a cut ends. */
+  function snapPoint(p, exceptTok) {
+    const f = frame();
+    let best = null,
+      bd = 24;
+    (f.tokens || []).forEach((t) => {
+      if (t.id === exceptTok || t.t === "cone") return;
+      const dd = D().dist(p, [t.x, t.y]);
+      if (dd < bd) (bd = dd), (best = { pt: [t.x, t.y], tok: t.id });
+    });
+    (f.strokes || []).forEach((st) => {
+      if (st.t === "pen" || st.t === "shot" || !st.pts || st.pts.length < 2) return;
+      const e = st.pts[st.pts.length - 1];
+      const dd = D().dist(p, e);
+      if (dd < bd) (bd = dd), (best = { pt: e.slice(), tok: null });
+    });
+    return best;
+  }
+  const STRAIGHT = ["pass", "handoff"];
+  const pathD = (pts) => pts.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + "," + q[1].toFixed(1)).join(" ");
+
   /* ---------- pointer handling on the court ---------- */
   let gesture = null;
   function onDown(evt) {
@@ -192,13 +216,23 @@
       eraseAt(evt);
     } else {
       let start = p;
-      if (tokEl) {
-        const tk = frame().tokens.find((x) => x.id === tokEl.dataset.tok);
-        if (tk) start = [tk.x, tk.y];
+      let fromTok = null;
+      const tk = tokEl && frame().tokens.find((x) => x.id === tokEl.dataset.tok);
+      if (tk) {
+        start = [tk.x, tk.y];
+        fromTok = tk.id;
+      } else if (S.tool !== "pen") {
+        const snap = snapPoint(p);
+        if (snap) {
+          start = snap.pt;
+          fromTok = snap.tok;
+        }
       }
-      gesture = { type: "draw", pts: [start] };
+      gesture = { type: "draw", pts: [start], fromTok, snapped: start !== p };
       const draft = svg.querySelector(".draft-layer");
-      draft.innerHTML = `<path class="draft-line${S.tool === "pass" ? " dashed" : ""}" d="" style="${S.color ? "--ink:" + S.color : ""}" />`;
+      const cls = S.tool === "pass" ? " dashed" : S.tool === "shot" ? " dotted" : "";
+      draft.innerHTML = `<path class="draft-line${cls}" d="" style="${S.color ? "--ink:" + S.color : ""}" />`;
+      if (S.tool === "shot") svg.querySelector(".draft-line").setAttribute("d", pathD(D().shotCurve(start, D().nearestRim(start, tab().board.court))));
     }
     try {
       svg.setPointerCapture(evt.pointerId);
@@ -219,8 +253,10 @@
       const last = gesture.pts[gesture.pts.length - 1];
       if (D().dist(last, p) < 3) return;
       gesture.pts.push(p);
-      const pts = S.tool === "pass" ? [gesture.pts[0], p] : gesture.pts;
-      svg.querySelector(".draft-line").setAttribute("d", pts.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + "," + q[1].toFixed(1)).join(" "));
+      let pts = gesture.pts;
+      if (STRAIGHT.includes(S.tool)) pts = [gesture.pts[0], p];
+      if (S.tool === "shot") pts = D().shotCurve(gesture.pts[0], D().nearestRim(p, tab().board.court));
+      svg.querySelector(".draft-line").setAttribute("d", pathD(pts));
     } else if (gesture.type === "erase") {
       eraseAt(evt);
     }
@@ -243,9 +279,22 @@
       svg.querySelector(".draft-layer").innerHTML = "";
       const pts = D().simplify(g.pts, S.tool === "pen" ? 1.2 : 2.5);
       const len = g.pts.reduce((a, q, i) => (i ? a + D().dist(g.pts[i - 1], q) : 0), 0);
-      if (len < 14) return;
+      const last = g.pts[g.pts.length - 1];
+      let stroke;
+      if (S.tool === "shot") {
+        // A tap on the shooter is enough: the shot always goes to the nearest rim.
+        if (len < 14 && !g.snapped) return;
+        stroke = { id: BH.uid("s"), t: "shot", pts: [g.pts[0], D().nearestRim(len < 14 ? g.pts[0] : last, tab().board.court)] };
+      } else {
+        if (len < 14) return;
+        let end = pts[pts.length - 1];
+        if (STRAIGHT.includes(S.tool)) {
+          const snap = snapPoint(last, g.fromTok);
+          if (snap && D().dist(snap.pt, g.pts[0]) > 10) end = snap.pt;
+          stroke = { id: BH.uid("s"), t: S.tool, pts: [pts[0], end] };
+        } else stroke = { id: BH.uid("s"), t: S.tool, pts };
+      }
       snapshot();
-      const stroke = { id: BH.uid("s"), t: S.tool, pts: S.tool === "pass" ? [pts[0], pts[pts.length - 1]] : pts };
       if (S.color) stroke.c = S.color;
       frame().strokes.push(stroke);
       changed();
@@ -658,7 +707,8 @@
           <p>Draw anything here. Pick a tool, then drag on the court. Lines that start on a player move that player when you hit <b>Run it</b>.</p>
           <ol class="howto">
             <li><b>Players:</b> tap one in the tray, then drag it where it goes.</li>
-            <li><b>Lines:</b> Cut, Dribble, Pass and Screen each draw our standard symbol.</li>
+            <li><b>Lines:</b> Cut, Dribble, Pass, Handoff, Shot and Screen each draw our standard symbol. Start a pass at the end of a dribble and the ball follows both.</li>
+            <li><b>Shot:</b> drag from the shooter, or just tap them. It always goes to the rim.</li>
             <li><b>Next step</b> moves everyone to the end of their line so you can draw the next part.</li>
             <li><b>Library:</b> drag our sets, actions, triggers and defenses onto the call bar to put them up.</li>
           </ol>

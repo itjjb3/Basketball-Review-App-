@@ -7,7 +7,7 @@ A playbook, whiteboard and study tool for Baldwin Basketball. Coaches install th
 | Section | Who | What it does |
 | --- | --- | --- |
 | **Playbook** | Everyone | Browse everything by category or search. Each item shows the call or signal, what it is, the keys, the reads, and a diagram that runs step by step. |
-| **Whiteboard** | Everyone | A high school court (84 × 50 ft, NFHS 19'9" arc) with the purple Block B at half court. Drag players 1–5, defenders X1–X5, the ball and cones onto the floor. Draw cuts, dribbles, passes, screens and freehand marker. Add steps and hit **Run it** to animate. Pull sets, actions, triggers, formations and defenses from the **Library** onto the **Call bar** to put them up on the court. |
+| **Whiteboard** | Everyone | A high school court (84 × 50 ft, NFHS 19'9" arc) with the purple Block B at half court. Drag players 1–5, defenders X1–X5, the ball and cones onto the floor. Draw cuts, dribbles, passes, handoffs, shots, screens and freehand marker. Start a pass at the end of a dribble and the ball follows both. Add steps and hit **Run it** to animate. Pull sets, actions, triggers, formations and defenses from the **Library** onto the **Call bar** to put them up on the court. |
 | **Study** | Everyone | Flashcards (name on the front, or the meaning and diagram on the front) with "Got it" / "Still learning" tracking, and a 10-question quiz that asks you to name a diagram, match a description, or define a term. |
 | **Install** | Coaches | Add and edit items, paste a whole terminology list at once, attach diagrams drawn on the whiteboard, and import or export the program file. |
 
@@ -57,8 +57,8 @@ When the app is published on claude.ai instead (from `dist/artifact.html`), anyo
 - `kind` is one of `set`, `action`, `trigger`, `formation`, `defense`, `concept`, `principle`, `term`.
 - Court coordinates are in tenths of a foot. The home basket is at the top: the baseline is `y = 0`, the rim is at `(250, 52.5)` and half court is `y = 420`.
 - Tokens: `{ "id": "o1", "t": "o", "n": "1", "x": 250, "y": 285 }`. `t` is `o` (offense), `x` (defense), `ball` or `cone`.
-- Strokes: `{ "id": "s1", "t": "cut", "pts": [[x, y], …] }`. `t` is `cut`, `dribble`, `pass`, `screen` or `pen`, with an optional color `c`.
-- When the app runs a diagram, a line that starts on a player moves that player, and a pass that starts at the ball moves the ball.
+- Strokes: `{ "id": "s1", "t": "cut", "pts": [[x, y], …] }`. `t` is `cut`, `dribble`, `pass`, `handoff`, `shot`, `screen` or `pen`, with an optional color `c`. A shot's last point is the rim.
+- When the app runs a diagram, a cut, dribble or screen that starts on a player moves that player. The ball follows a dribble, handoff, pass or shot that starts at the ball, then any that start where the last one ended.
 
 ## Code layout
 

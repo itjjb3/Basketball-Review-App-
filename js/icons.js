@@ -20,6 +20,8 @@
     cut: s('<path d="M4 20C8 16 10 8 19 5"/><path d="m14 4 5 1-1 5"/>'),
     dribble: s('<path d="M3 19l3-4 3 3 3-4 3 3 3-4"/><path d="m17 6 3 1-1 3"/><path d="M18 9l2-2"/>'),
     pass: s('<path d="M4 20 19 5" stroke-dasharray="3 3"/><path d="m13 5 6 0 0 6"/>'),
+    handoff: s('<path d="M4 20 19 5"/><path d="m13 5 6 0 0 6"/><path d="M8.5 11.5l4 4M11 9l4 4"/>'),
+    shot: s('<path d="M4 20C6 9 12 5 17 6" stroke-dasharray="0.5 3.5"/><circle cx="18.5" cy="6.5" r="2.5"/>'),
     screen: s('<path d="M5 20 15 8"/><path d="M11 5l8 6"/>'),
     pen: s('<path d="M3 21c3-1 5-4 8-7l6-6a2.1 2.1 0 0 0-3-3l-6 6c-3 3-6 5-7 8z"/>'),
     eraser: s('<path d="M20 20H9L4 15a2 2 0 0 1 0-3L13 3a2 2 0 0 1 3 0l5 5a2 2 0 0 1 0 3l-8 9"/><path d="m8 9 7 7"/>'),

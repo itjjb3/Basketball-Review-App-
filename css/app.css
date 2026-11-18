@@ -357,6 +357,8 @@ body[data-view="board"] main { max-width: 1600px; padding-block: 16px 24px; }
 .mini .stk .s-line { stroke-width: 4; }
 .draft-line { fill: none; stroke: var(--ink); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7; }
 .draft-line.dashed { stroke-dasharray: 10 7; }
+.draft-line.dotted, .stk .s-shot { stroke-dasharray: 0.1 7.5; stroke-linecap: round; stroke-width: 3.8; }
+.stk .s-bar.thin { stroke-width: 3; }
 
 /* ---------- whiteboard ---------- */
 .view-board { display: grid; grid-template-columns: 250px minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
@@ -546,6 +548,29 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
 .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .confirm { display: grid; gap: 8px; padding: 12px; background: var(--surface-2); border-radius: 8px; }
 #copy-box { width: 100%; font-family: ui-monospace, monospace; font-size: 0.8rem; }
+
+/* Whiteboard workspace: from tablet width up it fills exactly one screen under the
+   top bar. The page doesn't scroll there; each column scrolls on its own, so the
+   sidebars never slide under the header. */
+@media (min-width: 761px) {
+  body[data-view="board"] .foot { display: none; }
+  body[data-view="board"] main { padding-block: 12px; }
+  .view-board {
+    --board-h: max(520px, calc(100dvh - var(--topbar-h) - 25px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+    height: var(--board-h);
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+  }
+  .lib-drawer, .board-info { position: static; top: auto; max-height: none; height: 100%; min-height: 0; }
+  .lib-list { padding-bottom: 24px; -webkit-mask-image: linear-gradient(#000 calc(100% - 24px), transparent); mask-image: linear-gradient(#000 calc(100% - 24px), transparent); }
+  .board-main { grid-template-rows: auto auto auto minmax(0, 1fr) auto; height: 100%; min-height: 0; }
+  .board-stage { display: flex; min-height: 0; }
+  .board-stage svg { flex: 1; width: 100%; height: 100%; max-height: none; min-height: 0; }
+}
+@media (min-width: 761px) and (max-width: 1180px) {
+  .view-board { height: auto; grid-template-rows: var(--board-h) auto; }
+  .board-info { height: auto; }
+}
 
 /* ---------- responsive ---------- */
 @media (max-width: 1180px) {

@@ -10,6 +10,8 @@
     { id: "cut", label: "Cut", hint: "Solid line with an arrow" },
     { id: "dribble", label: "Dribble", hint: "Zig-zag line" },
     { id: "pass", label: "Pass", hint: "Dashed straight line" },
+    { id: "handoff", label: "Handoff", hint: "Straight line with a double bar" },
+    { id: "shot", label: "Shot", hint: "Dotted arc to the rim" },
     { id: "screen", label: "Screen", hint: "Line ending in a bar" },
     { id: "pen", label: "Marker", hint: "Freehand marker" },
   ];
@@ -128,6 +130,41 @@
     return out;
   }
 
+  /* Rims: home basket at the top; the far basket only exists on a full court. */
+  const RIMS = [
+    [250, 52.5],
+    [250, 787.5],
+  ];
+  function nearestRim(p, court) {
+    if (court !== "full") return RIMS[0].slice();
+    return dist(p, RIMS[0]) <= dist(p, RIMS[1]) ? RIMS[0].slice() : RIMS[1].slice();
+  }
+
+  /* A shot is drawn as a lofted arc from the shooter to the rim. */
+  function shotCurve(a, b) {
+    const L = dist(a, b) || 1;
+    const nx = -(b[1] - a[1]) / L,
+      ny = (b[0] - a[0]) / L;
+    const bend = Math.min(60, L * 0.22);
+    const c = [(a[0] + b[0]) / 2 + nx * bend, (a[1] + b[1]) / 2 + ny * bend];
+    const out = [];
+    for (let i = 0; i <= 24; i++) {
+      const t = i / 24,
+        u = 1 - t;
+      out.push([u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]);
+    }
+    return out;
+  }
+
+  /* The path the ball travels along a stroke. */
+  function ballPoly(s) {
+    const a = s.pts[0],
+      b = s.pts[s.pts.length - 1];
+    if (s.t === "pass" || s.t === "handoff") return [a, b];
+    if (s.t === "shot") return shotCurve(a, b);
+    return sampleSmooth(s.pts);
+  }
+
   function zigzag(poly) {
     const total = polyLength(poly);
     if (total < 30) return poly;
@@ -159,6 +196,26 @@
     if (s.t === "pass") {
       const poly = [s.pts[0], s.pts[s.pts.length - 1]];
       line = `<path class="s-line s-pass" d="${d(trimEnd(poly, 9))}" />`;
+      head = arrowHead(poly);
+      hitPoly = poly;
+    } else if (s.t === "handoff") {
+      const poly = [s.pts[0], s.pts[s.pts.length - 1]];
+      const L = dist(poly[0], poly[1]);
+      const [dx, dy] = endDir(poly);
+      const nx = -dy * 8,
+        ny = dx * 8;
+      const bars = [Math.max(L * 0.45, L - 30), Math.max(L * 0.58, L - 23)]
+        .map((back) => {
+          const c = [poly[0][0] + dx * back, poly[0][1] + dy * back];
+          return `M${(c[0] + nx).toFixed(1)},${(c[1] + ny).toFixed(1)} L${(c[0] - nx).toFixed(1)},${(c[1] - ny).toFixed(1)}`;
+        })
+        .join(" ");
+      line = `<path class="s-line" d="${d(trimEnd(poly, 9))}" /><path class="s-line s-bar thin" d="${bars}" />`;
+      head = arrowHead(poly);
+      hitPoly = poly;
+    } else if (s.t === "shot") {
+      const poly = shotCurve(s.pts[0], s.pts[s.pts.length - 1]);
+      line = `<path class="s-line s-shot" d="${d(trimEnd(poly, 10))}" />`;
       head = arrowHead(poly);
       hitPoly = poly;
     } else if (s.t === "dribble") {
@@ -232,58 +289,85 @@
 
   /* ---------- motion ---------- */
 
+  const PLAYER_MOVES = ["cut", "dribble", "screen"];
+  const BALL_MOVES = { dribble: 0, handoff: 1, pass: 2, shot: 3 }; // order the ball takes them in
+
+  /* Where the ball goes this step. It follows a dribble, handoff, pass or shot that
+     starts at the ball, then any that start where the last one ended — so a pass
+     drawn from the end of a dribble carries on from there. */
+  function ballChain(frame, playerPaths) {
+    const tokens = frame.tokens || [];
+    const ball = tokens.find((t) => t.t === "ball");
+    if (!ball) return null;
+    const strokes = (frame.strokes || []).filter((s) => s.pts && s.pts.length > 1 && s.t in BALL_MOVES);
+    const used = new Set();
+    let poly = [[ball.x, ball.y]];
+    let at = [ball.x, ball.y];
+    let shot = false;
+    const next = (radius) => {
+      let best = null;
+      strokes.forEach((s) => {
+        if (used.has(s.id)) return;
+        const dd = dist(s.pts[0], at);
+        if (dd > radius) return;
+        const rank = BALL_MOVES[s.t] * 1000 + dd;
+        if (!best || rank < best.rank) best = { s, rank };
+      });
+      return best && best.s;
+    };
+    let s = next(34);
+    if (!s && playerPaths) {
+      // The ball rides with a player whose cut starts right next to it.
+      let carrier = null,
+        bd = 30;
+      tokens
+        .filter((p) => (p.t === "o" || p.t === "x") && playerPaths[p.id])
+        .forEach((p) => {
+          const dd = dist([p.x, p.y], at);
+          if (dd < bd) (bd = dd), (carrier = p);
+        });
+      if (carrier) {
+        poly = playerPaths[carrier.id].map((q) => [q[0] + (ball.x - carrier.x), q[1] + (ball.y - carrier.y)]);
+        const e = playerPaths[carrier.id][playerPaths[carrier.id].length - 1];
+        at = e;
+        s = next(34);
+      }
+    }
+    for (let guard = 0; s && guard < 8; guard++) {
+      used.add(s.id);
+      poly = poly.concat(ballPoly(s));
+      at = s.pts[s.pts.length - 1];
+      if (s.t === "shot") {
+        shot = true;
+        break;
+      }
+      s = next(30);
+    }
+    if (poly.length < 2) return null;
+    return { poly, end: at, shot };
+  }
+
   /* Which stroke moves which token during the step that follows this frame. */
   function assignPaths(frame) {
     const out = {};
     const tokens = frame.tokens || [];
-    const strokes = (frame.strokes || []).filter((s) => s.pts && s.pts.length > 1 && s.t !== "pen");
+    const strokes = (frame.strokes || []).filter((s) => s.pts && s.pts.length > 1 && PLAYER_MOVES.includes(s.t));
     const players = tokens.filter((t) => t.t === "o" || t.t === "x");
     const claimed = {};
-    strokes
-      .filter((s) => s.t !== "pass")
-      .forEach((s) => {
-        let best = null,
-          bd = 26;
-        players.forEach((p) => {
-          const dd = dist(s.pts[0], [p.x, p.y]);
-          if (dd < bd && !(claimed[p.id] && claimed[p.id].d <= dd)) (bd = dd), (best = p);
-        });
-        if (best) claimed[best.id] = { d: bd, poly: sampleSmooth(s.pts) };
+    strokes.forEach((s) => {
+      let best = null,
+        bd = 26;
+      players.forEach((p) => {
+        const dd = dist(s.pts[0], [p.x, p.y]);
+        if (dd < bd && !(claimed[p.id] && claimed[p.id].d <= dd)) (bd = dd), (best = p);
       });
+      if (best) claimed[best.id] = { d: bd, poly: sampleSmooth(s.pts) };
+    });
     Object.keys(claimed).forEach((k) => (out[k] = claimed[k].poly));
     const ball = tokens.find((t) => t.t === "ball");
     if (ball) {
-      const near = (types) => {
-        let best = null,
-          bd = 34;
-        strokes
-          .filter((s) => types.includes(s.t))
-          .forEach((s) => {
-            const dd = dist(s.pts[0], [ball.x, ball.y]);
-            if (dd < bd) (bd = dd), (best = s);
-          });
-        return best;
-      };
-      const pass = near(["pass"]);
-      const drib = near(["dribble"]);
-      if (pass && drib) {
-        // Dribble, then pass from where the dribble ends.
-        const dp = sampleSmooth(drib.pts);
-        out[ball.id] = dp.concat([pass.pts[0], pass.pts[pass.pts.length - 1]]);
-      } else if (pass) {
-        out[ball.id] = [pass.pts[0], pass.pts[pass.pts.length - 1]];
-      } else if (drib) {
-        out[ball.id] = sampleSmooth(drib.pts);
-      } else {
-        // Ball rides with a player who has a cut/dribble starting next to it.
-        let carrier = null,
-          bd = 30;
-        players.forEach((p) => {
-          const dd = dist([p.x, p.y], [ball.x, ball.y]);
-          if (out[p.id] && dd < bd) (bd = dd), (carrier = p);
-        });
-        if (carrier) out[ball.id] = out[carrier.id].map((q) => [q[0] + (ball.x - carrier.x), q[1] + (ball.y - carrier.y)]);
-      }
+      const chain = ballChain(frame, out);
+      if (chain) out[ball.id] = chain.poly;
     }
     return out;
   }
@@ -291,28 +375,36 @@
   /* Build the next frame: everyone moves to the end of their path, strokes cleared. */
   function advanceFrame(frame) {
     const paths = assignPaths(frame);
+    const chain = ballChain(frame, paths);
     const tokens = (frame.tokens || []).map((t) => {
       const nt = { ...t };
+      if (t.t === "ball") {
+        if (!chain) return nt;
+        if (chain.shot) {
+          nt.x = Math.round(chain.end[0]);
+          nt.y = Math.round(chain.end[1]);
+          return nt;
+        }
+        // Settle the ball next to whoever ends up closest to where it lands.
+        let rec = null,
+          bd = 40;
+        (frame.tokens || [])
+          .filter((o) => o.t === "o" || o.t === "x")
+          .forEach((o) => {
+            const op = paths[o.id] ? paths[o.id][paths[o.id].length - 1] : [o.x, o.y];
+            const dd = dist(op, chain.end);
+            if (dd < bd) (bd = dd), (rec = op);
+          });
+        const base = rec || chain.end;
+        nt.x = Math.round(base[0] + 13);
+        nt.y = Math.round(base[1] - 12);
+        return nt;
+      }
       const p = paths[t.id];
       if (p) {
         const e = p[p.length - 1];
-        if (t.t === "ball") {
-          // Settle the ball next to whoever is closest to where it lands.
-          const others = (frame.tokens || []).filter((o) => o.t === "o" || o.t === "x");
-          let rec = null,
-            bd = 40;
-          others.forEach((o) => {
-            const op = paths[o.id] ? paths[o.id][paths[o.id].length - 1] : [o.x, o.y];
-            const dd = dist(op, e);
-            if (dd < bd) (bd = dd), (rec = op);
-          });
-          const base = rec || e;
-          nt.x = Math.round(base[0] + 13);
-          nt.y = Math.round(base[1] - 12);
-        } else {
-          nt.x = Math.round(e[0]);
-          nt.y = Math.round(e[1]);
-        }
+        nt.x = Math.round(e[0]);
+        nt.y = Math.round(e[1]);
       }
       return nt;
     });
@@ -457,6 +549,9 @@
     thumbSVG,
     assignPaths,
     advanceFrame,
+    ballChain,
+    nearestRim,
+    shotCurve,
     animateStep,
     tween,
     dist,
