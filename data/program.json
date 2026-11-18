@@ -6,10 +6,10 @@
   },
   "items": [
     {
-      "id": "horns",
+      "id": "power",
       "kind": "formation",
       "name": "Power",
-      "call": "“Horns” — index and pinky up",
+      "call": "“Power”",
       "summary": "1 at the top, 4 and 5 at the elbows, 2 and 3 in the corners. Our base look for half-court sets.",
       "keys": [
         "Elbows sit at the free-throw line extended, not below it",
@@ -992,11 +992,11 @@
       }
     },
     {
-      "id": "horns-pnr",
+      "id": "power-zoom",
       "kind": "set",
       "name": "Power Zoom",
-      "call": "“Horns 5” — horns, then five fingers",
-      "summary": "From Horns, 5 steps up and screens for 1. 1 comes off to the right, 5 rolls, and 4 replaces at the top as the safety.",
+      "call": "“Power Zoom”",
+      "summary": "From Power, 5 steps up and screens for 1. 1 comes off to the right, 5 rolls, and 4 replaces at the top as the safety.",
       "keys": [
         "1: come off tight — no gap between you and 5",
         "5: roll hard to the rim on 1's second dribble",
@@ -1259,237 +1259,6 @@
       ],
       "reads": [],
       "updated": "2026-11-18"
-    },
-    {
-      "id": "pack-line",
-      "kind": "defense",
-      "name": "Pack Line Man",
-      "call": "“Pack”",
-      "summary": "Man-to-man. Pressure the ball and keep the other four inside the pack line, about 16 feet from the rim, so every drive runs into help.",
-      "keys": [
-        "On ball: pressure without reaching — no straight-line drives",
-        "Off ball: inside the pack line, see your man and the ball",
-        "Help, then recover with high hands",
-        "Everyone rebounds. Find a body, then the ball."
-      ],
-      "reads": [
-        "Ball goes to the post → dig from the passer's side",
-        "Skip pass → long closeout, chop your feet, no flying by"
-      ],
-      "updated": "2026-11-18",
-      "example": true,
-      "diagram": {
-        "court": "half",
-        "frames": [
-          {
-            "tokens": [
-              {
-                "id": "o1",
-                "t": "o",
-                "n": "1",
-                "x": 250,
-                "y": 292
-              },
-              {
-                "id": "ball",
-                "t": "ball",
-                "n": "",
-                "x": 263,
-                "y": 280
-              },
-              {
-                "id": "o2",
-                "t": "o",
-                "n": "2",
-                "x": 415,
-                "y": 215
-              },
-              {
-                "id": "o3",
-                "t": "o",
-                "n": "3",
-                "x": 85,
-                "y": 215
-              },
-              {
-                "id": "o4",
-                "t": "o",
-                "n": "4",
-                "x": 470,
-                "y": 32
-              },
-              {
-                "id": "o5",
-                "t": "o",
-                "n": "5",
-                "x": 30,
-                "y": 32
-              },
-              {
-                "id": "x1",
-                "t": "x",
-                "n": "1",
-                "x": 250,
-                "y": 256
-              },
-              {
-                "id": "x2",
-                "t": "x",
-                "n": "2",
-                "x": 340,
-                "y": 182
-              },
-              {
-                "id": "x3",
-                "t": "x",
-                "n": "3",
-                "x": 160,
-                "y": 182
-              },
-              {
-                "id": "x4",
-                "t": "x",
-                "n": "4",
-                "x": 330,
-                "y": 96
-              },
-              {
-                "id": "x5",
-                "t": "x",
-                "n": "5",
-                "x": 170,
-                "y": 96
-              }
-            ],
-            "strokes": [
-              {
-                "id": "s18",
-                "t": "pen",
-                "pts": [
-                  [
-                    408.4,
-                    74.8
-                  ],
-                  [
-                    400.4,
-                    107.2
-                  ],
-                  [
-                    385.7,
-                    137.3
-                  ],
-                  [
-                    365.1,
-                    163.6
-                  ],
-                  [
-                    339.5,
-                    185.1
-                  ],
-                  [
-                    309.9,
-                    200.8
-                  ],
-                  [
-                    277.8,
-                    210.1
-                  ],
-                  [
-                    244.4,
-                    212.4
-                  ],
-                  [
-                    211.3,
-                    207.7
-                  ],
-                  [
-                    179.9,
-                    196.3
-                  ],
-                  [
-                    151.5,
-                    178.6
-                  ],
-                  [
-                    127.4,
-                    155.3
-                  ],
-                  [
-                    108.7,
-                    127.6
-                  ],
-                  [
-                    96.2,
-                    96.6
-                  ]
-                ],
-                "c": "#5b2f9e"
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "id": "2-3-zone",
-      "kind": "defense",
-      "name": "2-3 Zone",
-      "call": "“Twenty-three” — two fingers, then three",
-      "summary": "Two guards up top, two forwards on the blocks, and the 5 in the middle of the paint. Take away the paint and make them shoot over us.",
-      "keys": [
-        "Guards: no middle penetration, high hands",
-        "Bottom three: talk every cutter across",
-        "Forwards close out to the corner on the pass",
-        "5 owns the paint and fronts the post below the free-throw line"
-      ],
-      "reads": [],
-      "updated": "2026-11-18",
-      "example": true,
-      "diagram": {
-        "court": "half",
-        "frames": [
-          {
-            "tokens": [
-              {
-                "id": "x1",
-                "t": "x",
-                "n": "1",
-                "x": 198,
-                "y": 240
-              },
-              {
-                "id": "x2",
-                "t": "x",
-                "n": "2",
-                "x": 302,
-                "y": 240
-              },
-              {
-                "id": "x3",
-                "t": "x",
-                "n": "3",
-                "x": 112,
-                "y": 112
-              },
-              {
-                "id": "x4",
-                "t": "x",
-                "n": "4",
-                "x": 388,
-                "y": 112
-              },
-              {
-                "id": "x5",
-                "t": "x",
-                "n": "5",
-                "x": 250,
-                "y": 84
-              }
-            ],
-            "strokes": []
-          }
-        ]
-      }
     },
     {
       "id": "advantage-basketball",

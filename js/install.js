@@ -79,7 +79,7 @@
             <select id="f-kind">${BH.KINDS.map((k) => `<option value="${k.id}" ${it.kind === k.id ? "selected" : ""}>${esc(k.one)}</option>`).join("")}</select>
           </label>
           <label class="field grow"><span>Name</span>
-            <input id="f-name" type="text" value="${esc(it.name)}" placeholder="What we call it, e.g. Horns Flare" required maxlength="80" />
+            <input id="f-name" type="text" value="${esc(it.name)}" placeholder="What we call it, e.g. Power Zoom" required maxlength="80" />
           </label>
         </div>
         <label class="field"><span>Call or signal</span>

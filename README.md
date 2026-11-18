@@ -41,11 +41,11 @@ When the app is published on claude.ai instead (from `dist/artifact.html`), anyo
   "team": { "name": "Baldwin Basketball", "season": "2026–27" },
   "items": [
     {
-      "id": "horns-pnr",
+      "id": "power-zoom",
       "kind": "set",
-      "name": "Horns PNR",
-      "call": "“Horns 5”",
-      "summary": "From Horns, 5 steps up and screens for 1…",
+      "name": "Power Zoom",
+      "call": "“Power Zoom”",
+      "summary": "From Power, 5 steps up and screens for 1…",
       "keys": ["1: come off tight", "5: roll on the second dribble"],
       "reads": ["Big's defender drops → 1 pulls up at the elbow"],
       "diagram": { "court": "half", "frames": [ { "tokens": [], "strokes": [] } ] }
