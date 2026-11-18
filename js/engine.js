@@ -35,10 +35,12 @@
   const arcKey = (p) => -Math.atan2(Math.max(p[1], 53) - RIM[1], p[0] - RIM[0]);
   const line = (t, pts) => ({ id: "e" + Math.random().toString(36).slice(2, 9), t, pts: pts.map(rnd) });
   const passTo = (from, to) => line("pass", [P(from), P(to)]);
-  /* The Rabbit is our 5, the interior player. Without a 5 on the floor, whoever is closest to the rim. */
+  /* In our diagrams 4 is the Rabbit (the interior player) and 5 is the Dragon.
+     Without a 4 on the floor, the Rabbit is whoever is closest to the rim. */
+  const RABBIT = "4";
   const rabbit = (f, exceptId) => {
     const o = offense(f).filter((t) => t.id !== exceptId);
-    return o.find((t) => t.n === "5") || nearest(o, RIM);
+    return o.find((t) => t.n === RABBIT) || nearest(o, RIM);
   };
 
   function holder(f) {
@@ -195,7 +197,7 @@
       run(api) {
         const h = holder(api.f);
         if (!h) return "nobody has the ball.";
-        if (h.n === "5") return "the Rabbit has the ball. Get runs with the Rabbit.";
+        if (h.n === RABBIT) return "the Rabbit has the ball. Get runs with the Rabbit.";
         const T = rabbit(api.f, h.id);
         if (!T) return "there's no Rabbit on the floor to get it from.";
         // Run it on the ball side: the Rabbit flashes to the ball-side elbow first if he isn't there.
@@ -274,7 +276,7 @@
         const H = P(h);
         const s = Math.abs(h.x - 250) > 15 ? sideOf(H) : 1;
         const others = offense(f).filter((t) => t.id !== h.id);
-        if (h.n === "5") return "the Rabbit has the ball. Twirl is the Rabbit's ball screen.";
+        if (h.n === RABBIT) return "the Rabbit has the ball. Twirl is the Rabbit's ball screen.";
         const S = rabbit(f, h.id);
         if (!S) return "there's no Rabbit on the floor to set the ball screen.";
         // The handler comes off toward the middle, stopping short of a spot someone already has.
@@ -344,15 +346,15 @@
   const o = (n, x, y) => ({ id: "o" + n, t: "o", n: String(n), x, y });
   const withBall = (n, x, y) => [o(n, x, y), { id: "ball", t: "ball", n: "", x: x + 13, y: y - 12 }];
   const DEMOS = {
-    // 3 swings it to 1, so the swing keeps going the same way: 1 to 4.
-    swing: { tokens: [...withBall(3, 85, 215), o(1, 175, 272), o(4, 325, 272)], first: [{ id: "d0", t: "pass", pts: [[85, 215], [175, 272]] }] },
-    skip: { tokens: [...withBall(1, 175, 272), o(4, 325, 272), o(2, 470, 42)] },
-    back: { tokens: [...withBall(1, 175, 272), o(4, 325, 272)], seq: ["swing", "back"] },
-    "post-entry": { tokens: [...withBall(1, 85, 215), o(5, 175, 76)] },
-    get: { tokens: [...withBall(1, 85, 215), o(5, 190, 190)] },
-    rub: { tokens: [...withBall(1, 175, 272), o(3, 30, 42), o(4, 325, 272), o(2, 470, 42)] },
-    twist: { tokens: [...withBall(1, 175, 272), o(3, 30, 42), o(4, 325, 272), o(2, 470, 42)] },
-    twirl: { tokens: [...withBall(1, 175, 272), o(5, 175, 76)] },
+    // 3 swings it to 1, so the swing keeps going the same way: 1 to 5.
+    swing: { tokens: [...withBall(3, 85, 215), o(1, 175, 272), o(5, 325, 272)], first: [{ id: "d0", t: "pass", pts: [[85, 215], [175, 272]] }] },
+    skip: { tokens: [...withBall(1, 175, 272), o(5, 325, 272), o(2, 470, 42)] },
+    back: { tokens: [...withBall(1, 175, 272), o(5, 325, 272)], seq: ["swing", "back"] },
+    "post-entry": { tokens: [...withBall(1, 85, 215), o(4, 175, 76)] },
+    get: { tokens: [...withBall(1, 85, 215), o(4, 190, 190)] },
+    rub: { tokens: [...withBall(1, 175, 272), o(3, 30, 42), o(5, 325, 272), o(2, 470, 42)] },
+    twist: { tokens: [...withBall(1, 175, 272), o(3, 30, 42), o(5, 325, 272), o(2, 470, 42)] },
+    twirl: { tokens: [...withBall(1, 175, 272), o(4, 175, 76)] },
   };
   let demoCache = {};
   function demo(item) {

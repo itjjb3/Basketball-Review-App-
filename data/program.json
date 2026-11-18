@@ -10,7 +10,7 @@
       "kind": "position",
       "name": "Racker",
       "call": "",
-      "summary": "Our name for the point guard.",
+      "summary": "Our name for the point guard. Shown as 1 in our diagrams.",
       "keys": [
         "First objective: RACK IT. Beat everyone to the rim.",
         "Coast to coast or off an outlet",
@@ -117,7 +117,7 @@
       "kind": "position",
       "name": "Dragon",
       "call": "",
-      "summary": "Usually a 4, or someone who gets downhill well. Our inbounder and trailer.",
+      "summary": "Usually a 4, or someone who gets downhill well. Shown as 5 in our diagrams. Our inbounder and trailer.",
       "keys": [
         "ALWAYS INBOUNDS THE BALL, NO MATTER WHAT, IN ALL SITUATIONS",
         "DRAGS behind the play as the trailer",
@@ -132,7 +132,7 @@
       "kind": "position",
       "name": "Rabbit",
       "call": "",
-      "summary": "Our big. Sprints the center lane in transition and works between 8 spots in the half court.",
+      "summary": "Our big, shown as 4 in our diagrams. Sprints the center lane in transition and works between 8 spots in the half court.",
       "keys": [
         "Transition: SPRINT the center lane to the rabbit hole (either block)",
         "Half court spots: each dunker spot, each block, each elbow, the nail and the top of the key"
@@ -201,9 +201,9 @@
                 "y": 256
               },
               {
-                "id": "o5",
+                "id": "o4",
                 "t": "o",
-                "n": "5",
+                "n": "4",
                 "x": 250,
                 "y": 410
               }
@@ -292,9 +292,9 @@
                 "y": 256
               },
               {
-                "id": "o5",
+                "id": "o4",
                 "t": "o",
-                "n": "5",
+                "n": "4",
                 "x": 325,
                 "y": 78
               }
@@ -378,9 +378,9 @@
       "summary": "Four out, one in. Racker and Dragon in the slots, Locks in both corners, Rabbit on the block.",
       "keys": [
         "Racker (1): left slot with the ball",
-        "Dragon (4): right slot, the trailer",
+        "Dragon (5): right slot, the trailer",
         "Locks (2 and 3): LOCKED in the corners",
-        "Rabbit (5): ball-side block"
+        "Rabbit (4): ball-side block"
       ],
       "reads": [],
       "updated": "2026-11-18",
@@ -404,9 +404,9 @@
                 "y": 260
               },
               {
-                "id": "o4",
+                "id": "o5",
                 "t": "o",
-                "n": "4",
+                "n": "5",
                 "x": 325,
                 "y": 272
               },
@@ -425,9 +425,9 @@
                 "y": 42
               },
               {
-                "id": "o5",
+                "id": "o4",
                 "t": "o",
-                "n": "5",
+                "n": "4",
                 "x": 175,
                 "y": 76
               }
