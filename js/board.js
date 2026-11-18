@@ -207,30 +207,54 @@
     S.step = start;
     return true;
   }
-  function runContinuity(it, opts) {
-    // Repeat the actions added since the last drawn play, from wherever the ball is now.
+  /* The Auto actions in the call since the last drawn play (what Continuity repeats). */
+  function baseActions(upto) {
     let from = 0;
-    S.segs.forEach((g, i) => {
+    S.segs.slice(0, upto).forEach((g, i) => {
       if (!BH.isAuto(segItem(g))) from = i + 1;
     });
-    const actions = S.segs.slice(from).filter((g) => {
-      const x = segItem(g);
-      return x && BH.isAuto(x) && x.rule !== "continuity";
-    });
+    return S.segs
+      .slice(from, upto)
+      .map(segItem)
+      .filter((x) => x && BH.isAuto(x) && x.rule !== "continuity")
+      .map((x) => x.id);
+  }
+  /* Run the actions once more inside a Continuity piece. Returns how many ran. */
+  function runCycle(cont, actions) {
+    const before = S.segs.length;
+    actions.forEach((id) => appendRule(BH.store.get(id), { silent: true }));
+    const parts = S.segs.splice(before);
+    cont.parts.push(...parts.map((p) => ({ itemId: p.itemId, start: p.start })));
+    if (parts.length) cont.cycles = (cont.cycles || 0) + 1;
+    return parts.length;
+  }
+  const MAX_CYCLES = 10;
+  function runContinuity(it, opts) {
+    const actions = baseActions(S.segs.length);
     if (!actions.length) {
-      if (!opts.silent) BH.toast("Add some actions first. Continuity runs them again from the other side.");
+      if (!opts.silent) BH.toast("Add some actions first. Continuity keeps running them side to side.");
       return false;
     }
-    const before = S.segs.length;
-    actions.forEach((g) => appendRule(segItem(g), { silent: true }));
-    const parts = S.segs.splice(before);
-    if (!parts.length) {
+    const cont = { id: BH.uid("g"), itemId: it.id, start: 0, parts: [], cycles: 0 };
+    // Over to the other side and back; Run it keeps going from there.
+    for (let c = 0; c < 2; c++) if (!runCycle(cont, actions)) break;
+    if (!cont.parts.length) {
       if (!opts.silent) BH.toast("Continuity can't run from here.");
       return false;
     }
-    S.segs.push({ id: BH.uid("g"), itemId: it.id, start: parts[0].start, parts: parts.map((p) => ({ itemId: p.itemId, start: p.start })) });
-    S.step = parts[0].start;
+    cont.start = cont.parts[0].start;
+    S.segs.push(cont);
+    S.step = cont.start;
     return true;
+  }
+  /* While Run it plays a call that ends in Continuity, keep adding trips side to side. */
+  function keepGoing() {
+    const cont = S.segs[S.segs.length - 1];
+    const it = segItem(cont);
+    if (!cont || !it || it.rule !== "continuity" || !cont.parts || (cont.cycles || 0) >= MAX_CYCLES) return false;
+    const ran = runCycle(cont, baseActions(S.segs.length - 1));
+    if (ran) renderCallBar();
+    return ran > 0;
   }
   /* Take one item out of the call; everything after it is rebuilt. */
   function removeSeg(i) {
@@ -556,7 +580,7 @@
     const tok = playToken;
     renderSteps();
     await new Promise((r) => setTimeout(r, 200));
-    while (!tok.cancelled && S.board === b && S.step < b.frames.length - 1) {
+    while (!tok.cancelled && S.board === b && (S.step < b.frames.length - 1 || keepGoing())) {
       if (BH.prefersReducedMotion()) await new Promise((r) => setTimeout(r, 700));
       else if (!(await D().animateStep(svg, b, S.step, tok))) break;
       if (tok.cancelled) break;
@@ -718,7 +742,7 @@
                   const it = segItem(g);
                   const name = it ? it.name : "Removed item";
                   return `${i ? '<span class="call-sep" aria-hidden="true">›</span>' : ""}<div class="call-chip${g === cur ? " on" : ""} k-${esc(it ? it.kind : "scratch")}">
-                    <button class="chip-main" data-jump="${i}" aria-pressed="${g === cur}" title="Go to ${esc(name)}"><i class="dot"></i>${esc(name)}</button>
+                    <button class="chip-main" data-jump="${i}" aria-pressed="${g === cur}" title="Go to ${esc(name)}"><i class="dot"></i>${esc(name)}${g.cycles > 1 ? ` <small>×${g.cycles}</small>` : ""}</button>
                     <button class="chip-x" data-remove="${i}" aria-label="Take ${esc(name)} out of the call">${icons.x}</button>
                   </div>`;
                 })

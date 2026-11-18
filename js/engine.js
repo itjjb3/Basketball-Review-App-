@@ -24,6 +24,7 @@
   const P = (t) => [t.x, t.y];
   const sideOf = (p) => (p[0] >= 250 ? 1 : -1);
   const corner = (s) => (s > 0 ? [470, 42] : [30, 42]);
+  const wing = (s) => (s > 0 ? [415, 215] : [85, 215]);
 
   const offense = (f) => (f.tokens || []).filter((t) => t.t === "o");
   const tok = (f, id) => (f.tokens || []).find((t) => t.id === id);
@@ -57,7 +58,7 @@
   /* Perimeter teammates in the direction of travel (dir +1 = toward the right). */
   function along(f, h, dir) {
     const hk = arcKey(P(h));
-    const per = offense(f).filter((t) => t.id !== h.id && isPerimeter(t));
+    const per = offense(f).filter((t) => t.id !== h.id && isPerimeter(t) && dist(P(t), P(h)) > 60);
     const toward = (d) => per.filter((t) => d * (arcKey(P(t)) - hk) > 0.03).sort((a, b) => d * (arcKey(P(a)) - arcKey(P(b))));
     return { ahead: toward(dir), behind: toward(-dir) };
   }
@@ -79,6 +80,40 @@
     return { lastPasser: null, dir: 0 };
   }
 
+  /* Backside down screen, away from the ball, to keep the defense engaged. Every
+     on-ball action (Rub, Get, Twirl) runs one. busy: players in the on-ball action;
+     s: the ball side; near: where the ball is going (keep clear of it).
+     Returns { screen, cut } (screen this step, cut off it next step) or null. */
+  function backside(f, busy, s, near) {
+    const free = offense(f).filter((t) => !busy.includes(t.id));
+    const weak = free.filter((t) => sideOf(P(t)) === -s && (!near || dist(P(t), near) > 70));
+    let hi = null,
+      lo = null,
+      to = null;
+    if (weak.length >= 2) {
+      // The higher player down-screens for the lower one, who comes up to the screener's spot.
+      hi = weak.reduce((a, b) => (b.y > a.y ? b : a));
+      lo = weak.reduce((a, b) => (b.y < a.y ? b : a));
+      if (hi.y - lo.y < 60) return null;
+      to = P(hi);
+    } else if (weak.length === 1 && weak[0].y < 170) {
+      // One low player on the backside: the closest free teammate comes over to screen,
+      // and the low player comes up to the wing.
+      lo = weak[0];
+      hi = nearest(free.filter((t) => t.id !== lo.id && !inCorner(t) && dist(P(t), P(lo)) < 260), P(lo));
+      to = [-s > 0 ? 415 : 85, 215];
+    }
+    if (!hi || !lo) return null;
+    const L = P(lo),
+      Hp = P(hi);
+    const DS = add(L, mul(unit(sub(Hp, L)), Math.min(0.4 * dist(L, Hp), 55)));
+    return {
+      screener: hi.id,
+      screen: line("screen", [Hp, lerp(Hp, DS, 0.5), DS]),
+      cut: line("cut", [L, add(DS, [-s * 18, 0]), to]),
+    };
+  }
+
   /* ---------- the rules ---------- */
   const RULES = {
     swing: {
@@ -94,15 +129,27 @@
       },
     },
     skip: {
-      label: "Skip: pass over the next perimeter player to the one after",
+      label: "Skip: across the floor over the next player; a Lock who catches it rises, the skipped player fills the corner",
       run(api, ctx) {
-        const h = holder(api.f);
+        const f = api.f;
+        const h = holder(f);
         if (!h) return "nobody has the ball.";
-        const dir = ctx.dir || -sideOf(P(h));
-        const { ahead, behind } = along(api.f, h, dir);
-        const t = ahead[1] || behind[1];
-        if (!t) return "there's no one past the next player to skip it to.";
+        const hs = Math.abs(h.x - 250) > 20 ? sideOf(P(h)) : 0;
+        const dir = hs ? -hs : ctx.dir || 1; // skips go from one side to the other
+        const { ahead } = along(f, h, dir);
+        const t = ahead.slice(1).find((x) => !hs || sideOf(P(x)) !== hs);
+        if (!t) return "there's no one across the floor past the next player to skip it to.";
+        const skipped = ahead[0];
         api.step([passTo(h, t)]);
+        if (t.y < 110) {
+          // Caught by a Lock in the corner: the Lock rises with the ball and the
+          // player who was skipped runs the lane line and fills back to the corner.
+          const s = sideOf(P(t));
+          const T2 = P(tok(api.f, t.id)),
+            K = P(tok(api.f, skipped.id));
+          const lane = 250 + s * 62;
+          api.step([line("dribble", [T2, lerp(T2, wing(s), 0.5), wing(s)]), line("cut", [K, [lane, Math.min(K[1], 185)], [lane, 72], corner(s)])]);
+        }
       },
     },
     back: {
@@ -127,7 +174,7 @@
       },
     },
     get: {
-      label: "Get: pass to the Rabbit, who hands it back (Rub) and rolls",
+      label: "Get: pass to the Rabbit, who hands it back and rolls, with a backside down screen",
       run(api) {
         const h = holder(api.f);
         if (!h) return "nobody has the ball.";
@@ -140,14 +187,15 @@
         const M = clampPt(lerp(T2, H2, 0.45));
         const R = clampPt(add(M, mul(unit(sub(M, H2)), 34)));
         const bend = add(M, mul(unit(sub(RIM, M)), 16));
-        api.step([line("dribble", [T2, lerp(T2, M, 0.5), M]), line("cut", [H2, lerp(H2, bend, 0.6), bend, R]), line("handoff", [M, R])]);
+        const bs = backside(api.f, [h.id, T.id], sideOf(M), M);
+        api.step([line("dribble", [T2, lerp(T2, M, 0.5), M]), line("cut", [H2, lerp(H2, bend, 0.6), bend, R]), line("handoff", [M, R]), bs && bs.screen]);
         const g = P(tok(api.f, T.id));
         const roll = [250 + sideOf(g) * 24, 80];
-        api.step([line("cut", [g, lerp(g, roll, 0.5), roll])]);
+        api.step([line("cut", [g, lerp(g, roll, 0.5), roll]), bs && bs.cut]);
       },
     },
     rub: {
-      label: "Rub: handoff to the ball-side guard; whoever hands it off fills the corner",
+      label: "Rub: handoff to the ball-side guard, who hands it off fills the corner, with a backside down screen",
       run(api) {
         const f = api.f;
         const h = holder(f);
@@ -170,9 +218,10 @@
           Lp = P(L);
         const M = clampPt(lerp(H, Lp, 0.45));
         const R = clampPt(add(M, mul(unit(sub(TOP, M)), 34)));
-        api.step([line("dribble", [H, lerp(H, M, 0.5), M]), line("cut", [Lp, lerp(Lp, M, 0.6), add(M, [s * 14, 0]), R]), line("handoff", [M, R])]);
+        const bs = backside(f, [h.id, L.id], s, M);
+        api.step([line("dribble", [H, lerp(H, M, 0.5), M]), line("cut", [Lp, lerp(Lp, M, 0.6), add(M, [s * 14, 0]), R]), line("handoff", [M, R]), bs && bs.screen]);
         const g = P(tok(api.f, h.id));
-        api.step([line("cut", [g, lerp(g, Lp, 0.5), Lp])]);
+        api.step([line("cut", [g, lerp(g, Lp, 0.5), Lp]), bs && bs.cut]);
       },
     },
     twirl: {
@@ -187,24 +236,14 @@
         if (h.n === "5") return "the Rabbit has the ball. Twirl is the Rabbit's ball screen.";
         const S = rabbit(f, h.id);
         if (!S) return "there's no Rabbit on the floor to set the ball screen.";
-        const G = clampPt(lerp(H, NAIL_TOP, 0.8)); // the handler comes off toward the middle
+        // The handler comes off toward the middle, stopping short of a spot someone already has
+        // (the backside screener is leaving, so his spot doesn't count).
+        const bs = backside(f, [h.id, S.id], s, lerp(H, NAIL_TOP, 0.8));
+        const open = (p) => others.every((t) => t.id === S.id || (bs && t.id === bs.screener) || dist(P(t), p) > 55);
+        const G = clampPt([0.8, 0.65, 0.5, 0.35].map((k) => lerp(H, NAIL_TOP, k)).find(open) || lerp(H, NAIL_TOP, 0.35));
         const dirG = unit(sub(G, H));
         const SP = clampPt(add(H, mul(dirG, 26))); // screen on the handler's shoulder
-        // Backside: on the weak side, the higher player down-screens for the lower one.
-        const weak = others.filter((t) => t.id !== S.id && sideOf(P(t)) === -s && dist(P(t), G) > 90);
-        let hi = null,
-          lo = null,
-          DS = null;
-        if (weak.length >= 2) {
-          hi = weak.reduce((a, b) => (b.y > a.y ? b : a));
-          lo = weak.reduce((a, b) => (b.y < a.y ? b : a));
-          if (hi.y - lo.y < 60) hi = lo = null;
-        }
-        const first = [line("screen", [P(S), lerp(P(S), SP, 0.55), SP])];
-        if (hi && lo) {
-          DS = lerp(P(lo), P(hi), 0.4);
-          first.push(line("screen", [P(hi), lerp(P(hi), DS, 0.5), DS]));
-        }
+        const first = [line("screen", [P(S), lerp(P(S), SP, 0.55), SP]), bs && bs.screen];
         api.step(first);
         const f2 = api.f;
         const H2 = P(tok(f2, h.id)),
@@ -212,16 +251,11 @@
         let perp = [-dirG[1], dirG[0]];
         if (dot(perp, sub(RIM, S2)) > 0) perp = mul(perp, -1); // go over the top of the screen
         const roll = [250 + s * 24, 80];
-        const second = [line("dribble", [H2, add(S2, mul(perp, 22)), G]), line("cut", [S2, lerp(S2, roll, 0.5), roll])];
-        if (hi && lo) {
-          const LO = P(tok(f2, lo.id));
-          second.push(line("cut", [LO, add(DS, [-s * 18, 0]), P(hi)]));
-        }
-        api.step(second);
+        api.step([line("dribble", [H2, add(S2, mul(perp, 22)), G]), line("cut", [S2, lerp(S2, roll, 0.5), roll]), bs && bs.cut]);
       },
     },
     continuity: {
-      label: "Continuity: run the actions again from wherever the ball is",
+      label: "Continuity: keep running the actions side to side from wherever the ball is",
     },
   };
 
@@ -277,8 +311,8 @@
     skip: { tokens: [...withBall(1, 175, 272), o(4, 325, 272), o(2, 470, 42)] },
     back: { tokens: [...withBall(1, 175, 272), o(4, 325, 272)], seq: ["swing", "back"] },
     "post-entry": { tokens: [...withBall(1, 85, 215), o(5, 175, 76)] },
-    get: { tokens: [...withBall(1, 85, 215), o(5, 190, 190)] },
-    rub: { tokens: [...withBall(1, 175, 272), o(3, 30, 42)] },
+    get: { tokens: [...withBall(1, 85, 215), o(5, 190, 190), o(4, 325, 272), o(2, 470, 42)] },
+    rub: { tokens: [...withBall(1, 175, 272), o(3, 30, 42), o(4, 325, 272), o(2, 470, 42)] },
     twirl: { tokens: [...withBall(1, 175, 272), o(5, 175, 76), o(4, 325, 272), o(2, 470, 42)] },
   };
   let demoCache = {};

@@ -509,7 +509,7 @@
       "kind": "action",
       "name": "Twirl",
       "call": "“Twirl”",
-      "summary": "Our ball screen (PNR), set by the Rabbit, with backside down-screen action. The Rabbit rolls; on the weak side, the higher player down-screens for the lower one. Twirl and Get are interchangeable.",
+      "summary": "Our ball screen (PNR), set by the Rabbit, with backside down-screen action to keep the defense engaged. Twirl and Get are interchangeable.",
       "keys": [
         "Screener: sprint in, wide base, hold until contact",
         "Handler: set your man up first, then go shoulder to hip",
@@ -531,7 +531,8 @@
       "call": "“Rub”",
       "summary": "A DHO to the ball-side guard. The ball handler dribbles at the ball-side Lock, the Lock comes up to take the handoff, and the handler fills the corner.",
       "keys": [
-        "Whoever hands the ball off fills to the corner"
+        "Whoever hands the ball off fills to the corner",
+        "Backside: down screen away from the ball to keep the defense engaged"
       ],
       "reads": [],
       "updated": "2026-11-18",
@@ -751,8 +752,12 @@
       "kind": "action",
       "name": "Skip",
       "call": "“Skip”",
-      "summary": "Skip pass. The pass skips a perimeter player and goes to the next one.",
-      "keys": [],
+      "summary": "Skip pass, usually from one side to the other. The pass skips a perimeter player and goes to the next one.",
+      "keys": [
+        "If there's no one to skip to, there's no skip",
+        "Skip to a Lock: the Lock rises with the ball",
+        "The player who was skipped runs the lane line and fills back to the corner"
+      ],
       "reads": [],
       "updated": "2026-11-18",
       "rule": "skip"
@@ -776,7 +781,8 @@
       "summary": "Pass into a DHO (Rub) back to the passer, run with the Rabbit. Twirl and Get are interchangeable.",
       "keys": [
         "Pass to the Rabbit, then go get it back",
-        "Rabbit: hand it back, then roll to the rim"
+        "Rabbit: hand it back, then roll to the rim",
+        "Backside: down screen away from the ball to keep the defense engaged"
       ],
       "reads": [],
       "updated": "2026-11-18",
@@ -798,8 +804,10 @@
       "kind": "action",
       "name": "Continuity",
       "call": "",
-      "summary": "When added to the call bar, the actions repeat, moving the ball to each side when they can.",
-      "keys": [],
+      "summary": "When added to the call bar, the actions keep repeating, moving the ball side to side when they can.",
+      "keys": [
+        "Run it keeps the possession going until you pause"
+      ],
       "reads": [],
       "updated": "2026-11-18",
       "rule": "continuity"
