@@ -100,7 +100,8 @@
   }
 
   /* Backside down screen, away from the ball, to keep the defense engaged. Rub and
-     Twist each run one (Twirl and Get don't). busy: players in the on-ball action;
+     Twist each run one (Twirl and Get don't), unless they come straight out of a
+     trigger like 5 Thru, whose down screen is the backside action. busy: players in the on-ball action;
      s: the ball side; near: where the ball is going (keep clear of it).
      Returns { screen, cut } (screen this step, cut off it next step) or null. */
   function backside(f, busy, s, near) {
@@ -221,7 +222,7 @@
     },
     rub: {
       label: "Rub: handoff to the ball-side guard, who hands it off fills the corner, with a backside down screen",
-      run(api) {
+      run(api, ctx) {
         const f = api.f;
         const h = holder(f);
         if (!h) return "nobody has the ball.";
@@ -239,7 +240,7 @@
           Lp = P(L);
         const M = clampPt(lerp(H, Lp, 0.45));
         const R = clampPt(add(M, mul(unit(sub(TOP, M)), 34)));
-        const bs = backside(f, [h.id, L.id], s, M);
+        const bs = ctx.noBackside ? null : backside(f, [h.id, L.id], s, M);
         api.step([line("dribble", [H, lerp(H, M, 0.5), M]), line("cut", [Lp, lerp(Lp, M, 0.6), add(M, [s * 14, 0]), R]), line("handoff", [M, R]), bs && bs.screen]);
         const g = P(tok(api.f, h.id));
         api.step([line("cut", [g, lerp(g, Lp, 0.5), Lp]), bs && bs.cut]);
@@ -257,7 +258,7 @@
         if (!L || L.y > 160) return "there's no Lock on that side to pass to.";
         const home = P(h),
           Lp = P(L);
-        const bs = backside(f, [h.id, L.id], s, home);
+        const bs = ctx.noBackside ? null : backside(f, [h.id, L.id], s, home);
         api.step([passTo(h, L), bs && bs.screen]);
         // The passer rides up the lane line and fills the corner; the Lock fills the slot with the ball.
         const lane = 250 + s * 52;
@@ -328,14 +329,14 @@
 
   /* Continue a list of frames with a rule. Finishes any lines drawn on the last
      frame first. Returns { frames, start } or { error }. */
-  function extend(frames, ruleId) {
+  function extend(frames, ruleId, extra) {
     frames = frames.slice();
     let last = frames[frames.length - 1];
     if (last.strokes && last.strokes.length) {
       last = D().advanceFrame(last);
       frames.push(last);
     }
-    const res = run(ruleId, last, ctxFrom(frames));
+    const res = run(ruleId, last, Object.assign(ctxFrom(frames), extra || {}));
     if (res.error) return res;
     const start = frames.length - 1;
     frames.splice(start, 1, ...res.frames);

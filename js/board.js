@@ -178,7 +178,9 @@
     return ok;
   }
   function appendRule(it, opts) {
-    const res = E().extend(S.board.frames, it.rule);
+    // Straight out of a trigger (a Thru), its down screen is the backside action.
+    const prev = segItem(S.segs[S.segs.length - 1]);
+    const res = E().extend(S.board.frames, it.rule, { noBackside: !!(prev && prev.kind === "trigger") });
     if (res.error) {
       if (!opts.silent) BH.toast(`Couldn't run ${it.name}: ${res.error}`);
       return false;

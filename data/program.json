@@ -533,7 +533,7 @@
       "summary": "A DHO to the ball-side guard. The ball handler dribbles at the ball-side Lock, the Lock comes up to take the handoff, and the handler fills the corner. Goes into a Twirl or Get.",
       "keys": [
         "Whoever hands the ball off fills to the corner",
-        "Backside: down screen away from the ball to keep the defense engaged",
+        "Backside: down screen away from the ball to keep the defense engaged, unless we came out of a Thru (its down screen is the backside action)",
         "Next: Twirl or Get with the Rabbit"
       ],
       "reads": [],
@@ -549,7 +549,7 @@
       "keys": [
         "Passer: ride up the lane line and fill the corner",
         "Lock: fill the slot with the ball",
-        "Backside: down screen away from the ball to keep the defense engaged",
+        "Backside: down screen away from the ball to keep the defense engaged, unless we came out of a Thru (its down screen is the backside action)",
         "Next: Twirl or Get with the Rabbit"
       ],
       "reads": [],
@@ -838,7 +838,8 @@
       "summary": "5 runs through to the left wing and down-screens for 3. 3 comes off the screen to the left wing: backside action to keep the defense engaged away from the ball.",
       "keys": [
         "Step 1: 5 runs through from the right side to the left wing and down-screens for 3. 1 dribbles over to the right wing. 4 flashes from the left block to the right elbow.",
-        "Step 2: 3 comes off the screen to the left wing. Backside action to keep the defense engaged away from the ball. The ball stays with 1."
+        "Step 2: 3 comes off the screen to the left wing. Backside action to keep the defense engaged away from the ball. The ball stays with 1.",
+        "The Thru's down screen is our backside action. Going into a Rub or Twist, no extra backside screen."
       ],
       "reads": [],
       "updated": "2026-11-18",
@@ -1170,7 +1171,8 @@
       "keys": [
         "Step 1: 1 passes to 5 on the right side. 4 crosses the lane to the right block.",
         "Step 2: 1 runs through and down-screens for 2 in the right corner. 5 dribbles back to the left wing. 4 flashes to the left elbow.",
-        "Step 3: 2 comes off the screen to the right wing. Backside action to keep the defense engaged away from the ball. The ball stays with 5."
+        "Step 3: 2 comes off the screen to the right wing. Backside action to keep the defense engaged away from the ball. The ball stays with 5.",
+        "The Thru's down screen is our backside action. Going into a Rub or Twist, no extra backside screen."
       ],
       "reads": [],
       "updated": "2026-11-18",
