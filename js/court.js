@@ -38,7 +38,7 @@
     // Collegiate block B: purple fill, white keyline, purple outer line.
     // Turned on its side so it reads from the sideline, like the logo on the floor.
     const t = (cls) => `<text class="${cls}" x="0" y="32" text-anchor="middle">B</text>`;
-    return `<g class="c-logo${mini ? " mini" : ""}" transform="translate(250,420) rotate(-90)" aria-hidden="true">
+    return `<g class="c-logo${mini ? " mini" : ""}" transform="translate(250,420) rotate(90)" aria-hidden="true">
         ${t("b-outer")}${t("b-key")}${t("b-fill")}
       </g>`;
   }
