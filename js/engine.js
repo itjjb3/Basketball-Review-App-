@@ -97,8 +97,8 @@
     );
   }
 
-  /* Backside down screen, away from the ball, to keep the defense engaged. Every
-     on-ball action (Rub, Get, Twirl) runs one. busy: players in the on-ball action;
+  /* Backside down screen, away from the ball, to keep the defense engaged. Rub and
+     Twist each run one (Twirl and Get don't). busy: players in the on-ball action;
      s: the ball side; near: where the ball is going (keep clear of it).
      Returns { screen, cut } (screen this step, cut off it next step) or null. */
   function backside(f, busy, s, near) {
@@ -191,7 +191,7 @@
       },
     },
     get: {
-      label: "Get: pass to the Rabbit, who hands it back and rolls, with a backside down screen",
+      label: "Get: pass to the Rabbit, who hands it back and rolls",
       run(api) {
         const h = holder(api.f);
         if (!h) return "nobody has the ball.";
@@ -204,11 +204,10 @@
         const M = clampPt(lerp(T2, H2, 0.45));
         const R = clampPt(add(M, mul(unit(sub(M, H2)), 34)));
         const bend = add(M, mul(unit(sub(RIM, M)), 16));
-        const bs = backside(api.f, [h.id, T.id], sideOf(M), M);
-        api.step([line("dribble", [T2, lerp(T2, M, 0.5), M]), line("cut", [H2, lerp(H2, bend, 0.6), bend, R]), line("handoff", [M, R]), bs && bs.screen]);
+        api.step([line("dribble", [T2, lerp(T2, M, 0.5), M]), line("cut", [H2, lerp(H2, bend, 0.6), bend, R]), line("handoff", [M, R])]);
         const g = P(tok(api.f, T.id));
         const roll = [250 + sideOf(g) * 24, 80];
-        api.step([line("cut", [g, lerp(g, roll, 0.5), roll]), bs && bs.cut]);
+        api.step([line("cut", [g, lerp(g, roll, 0.5), roll])]);
       },
     },
     rub: {
@@ -238,7 +237,7 @@
       },
     },
     twist: {
-      label: "Twist: slot passes to the Lock and rides up the lane line to the corner; the Lock fills the slot with the ball",
+      label: "Twist: slot passes to the Lock and rides up the lane line to the corner; the Lock fills the slot with the ball, with a backside down screen",
       run(api, ctx) {
         const f = api.f;
         const h = holder(f);
@@ -249,17 +248,18 @@
         if (!L || L.y > 160) return "there's no Lock on that side to pass to.";
         const home = P(h),
           Lp = P(L);
-        api.step([passTo(h, L)]);
+        const bs = backside(f, [h.id, L.id], s, home);
+        api.step([passTo(h, L), bs && bs.screen]);
         // The passer rides up the lane line and fills the corner; the Lock fills the slot with the ball.
         const lane = 250 + s * 52;
         const H2 = P(tok(api.f, h.id)),
           L2 = P(tok(api.f, L.id));
-        api.step([line("dribble", [L2, lerp(L2, home, 0.5), home]), line("cut", [H2, [lane, Math.min(H2[1], 185)], [lane, 72], Lp])]);
+        api.step([line("dribble", [L2, lerp(L2, home, 0.5), home]), line("cut", [H2, [lane, Math.min(H2[1], 185)], [lane, 72], Lp]), bs && bs.cut]);
         // From here the Lock goes into a Twirl or a Get with the Rabbit (add either next in the call).
       },
     },
     twirl: {
-      label: "Twirl: the Rabbit's ball screen, with a backside down screen",
+      label: "Twirl: the Rabbit's ball screen; the Rabbit rolls",
       run(api) {
         const f = api.f;
         const h = holder(f);
@@ -270,22 +270,19 @@
         if (h.n === "5") return "the Rabbit has the ball. Twirl is the Rabbit's ball screen.";
         const S = rabbit(f, h.id);
         if (!S) return "there's no Rabbit on the floor to set the ball screen.";
-        // The handler comes off toward the middle, stopping short of a spot someone already has
-        // (the backside screener is leaving, so his spot doesn't count).
-        const bs = backside(f, [h.id, S.id], s, lerp(H, NAIL_TOP, 0.8));
-        const open = (p) => others.every((t) => t.id === S.id || (bs && t.id === bs.screener) || dist(P(t), p) > 55);
+        // The handler comes off toward the middle, stopping short of a spot someone already has.
+        const open = (p) => others.every((t) => t.id === S.id || dist(P(t), p) > 55);
         const G = clampPt([0.8, 0.65, 0.5, 0.35].map((k) => lerp(H, NAIL_TOP, k)).find(open) || lerp(H, NAIL_TOP, 0.35));
         const dirG = unit(sub(G, H));
         const SP = clampPt(add(H, mul(dirG, 26))); // screen on the handler's shoulder
-        const first = [line("screen", [P(S), lerp(P(S), SP, 0.55), SP]), bs && bs.screen];
-        api.step(first);
+        api.step([line("screen", [P(S), lerp(P(S), SP, 0.55), SP])]);
         const f2 = api.f;
         const H2 = P(tok(f2, h.id)),
           S2 = P(tok(f2, S.id));
         let perp = [-dirG[1], dirG[0]];
         if (dot(perp, sub(RIM, S2)) > 0) perp = mul(perp, -1); // go over the top of the screen
         const roll = [250 + s * 24, 80];
-        api.step([line("dribble", [H2, add(S2, mul(perp, 22)), G]), line("cut", [S2, lerp(S2, roll, 0.5), roll]), bs && bs.cut]);
+        api.step([line("dribble", [H2, add(S2, mul(perp, 22)), G]), line("cut", [S2, lerp(S2, roll, 0.5), roll])]);
       },
     },
     continuity: {
@@ -345,10 +342,10 @@
     skip: { tokens: [...withBall(1, 175, 272), o(4, 325, 272), o(2, 470, 42)] },
     back: { tokens: [...withBall(1, 175, 272), o(4, 325, 272)], seq: ["swing", "back"] },
     "post-entry": { tokens: [...withBall(1, 85, 215), o(5, 175, 76)] },
-    get: { tokens: [...withBall(1, 85, 215), o(5, 190, 190), o(4, 325, 272), o(2, 470, 42)] },
+    get: { tokens: [...withBall(1, 85, 215), o(5, 190, 190)] },
     rub: { tokens: [...withBall(1, 175, 272), o(3, 30, 42), o(4, 325, 272), o(2, 470, 42)] },
-    twist: { tokens: [...withBall(1, 175, 272), o(3, 30, 42)] },
-    twirl: { tokens: [...withBall(1, 175, 272), o(5, 175, 76), o(4, 325, 272), o(2, 470, 42)] },
+    twist: { tokens: [...withBall(1, 175, 272), o(3, 30, 42), o(4, 325, 272), o(2, 470, 42)] },
+    twirl: { tokens: [...withBall(1, 175, 272), o(5, 175, 76)] },
   };
   let demoCache = {};
   function demo(item) {

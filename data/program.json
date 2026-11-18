@@ -509,7 +509,7 @@
       "kind": "action",
       "name": "Twirl",
       "call": "“Twirl”",
-      "summary": "Our ball screen (PNR), set by the Rabbit, with backside down-screen action to keep the defense engaged. Twirl and Get are interchangeable.",
+      "summary": "Our ball screen (PNR), set by the Rabbit. The Rabbit rolls. Twirl and Get are interchangeable.",
       "keys": [
         "Screener: sprint in, wide base, hold until contact",
         "Handler: set your man up first, then go shoulder to hip",
@@ -548,6 +548,7 @@
       "keys": [
         "Passer: ride up the lane line and fill the corner",
         "Lock: fill the slot with the ball",
+        "Backside: down screen away from the ball to keep the defense engaged",
         "Next: Twirl or Get with the Rabbit"
       ],
       "reads": [],
@@ -797,8 +798,7 @@
       "summary": "Pass into a DHO (Rub) back to the passer, run with the Rabbit. Twirl and Get are interchangeable.",
       "keys": [
         "Pass to the Rabbit, then go get it back",
-        "Rabbit: hand it back, then roll to the rim",
-        "Backside: down screen away from the ball to keep the defense engaged"
+        "Rabbit: hand it back, then roll to the rim"
       ],
       "reads": [],
       "updated": "2026-11-18",
