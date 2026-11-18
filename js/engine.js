@@ -238,7 +238,7 @@
       },
     },
     twist: {
-      label: "Twist: slot passes to the Lock and rides up the lane line to the corner; the Lock fills with the ball and runs Twirl with the Rabbit",
+      label: "Twist: slot passes to the Lock and rides up the lane line to the corner; the Lock fills the slot with the ball",
       run(api, ctx) {
         const f = api.f;
         const h = holder(f);
@@ -255,8 +255,7 @@
         const H2 = P(tok(api.f, h.id)),
           L2 = P(tok(api.f, L.id));
         api.step([line("dribble", [L2, lerp(L2, home, 0.5), home]), line("cut", [H2, [lane, Math.min(H2[1], 185)], [lane, 72], Lp])]);
-        // Then the Lock runs action with the Rabbit.
-        return RULES.twirl.run(api, ctx);
+        // From here the Lock goes into a Twirl or a Get with the Rabbit (add either next in the call).
       },
     },
     twirl: {
@@ -348,7 +347,7 @@
     "post-entry": { tokens: [...withBall(1, 85, 215), o(5, 175, 76)] },
     get: { tokens: [...withBall(1, 85, 215), o(5, 190, 190), o(4, 325, 272), o(2, 470, 42)] },
     rub: { tokens: [...withBall(1, 175, 272), o(3, 30, 42), o(4, 325, 272), o(2, 470, 42)] },
-    twist: { tokens: [...withBall(1, 175, 272), o(3, 30, 42), o(5, 325, 76), o(4, 325, 272), o(2, 470, 42)] },
+    twist: { tokens: [...withBall(1, 175, 272), o(3, 30, 42)] },
     twirl: { tokens: [...withBall(1, 175, 272), o(5, 175, 76), o(4, 325, 272), o(2, 470, 42)] },
   };
   let demoCache = {};

@@ -529,10 +529,11 @@
       "kind": "action",
       "name": "Rub",
       "call": "“Rub”",
-      "summary": "A DHO to the ball-side guard. The ball handler dribbles at the ball-side Lock, the Lock comes up to take the handoff, and the handler fills the corner.",
+      "summary": "A DHO to the ball-side guard. The ball handler dribbles at the ball-side Lock, the Lock comes up to take the handoff, and the handler fills the corner. Goes into a Twirl or Get.",
       "keys": [
         "Whoever hands the ball off fills to the corner",
-        "Backside: down screen away from the ball to keep the defense engaged"
+        "Backside: down screen away from the ball to keep the defense engaged",
+        "Next: Twirl or Get with the Rabbit"
       ],
       "reads": [],
       "updated": "2026-11-18",
@@ -543,11 +544,11 @@
       "kind": "action",
       "name": "Twist",
       "call": "“Twist”",
-      "summary": "Pass from the slot to the Lock. The passer rides up the lane line, and the Lock fills with the ball and runs action with the Rabbit.",
+      "summary": "Pass from the slot to the Lock. The passer rides up the lane line and fills the corner, and the Lock fills the slot with the ball. Goes into a Twirl or Get.",
       "keys": [
         "Passer: ride up the lane line and fill the corner",
         "Lock: fill the slot with the ball",
-        "Then run action with the Rabbit (Twirl), with the backside down screen"
+        "Next: Twirl or Get with the Rabbit"
       ],
       "reads": [],
       "updated": "2026-11-18",
@@ -2374,6 +2375,16 @@
       "name": "Contain",
       "call": "",
       "summary": "Also called drop coverage. The big stays between the ball and the rim. No switch.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18"
+    },
+    {
+      "id": "kick",
+      "kind": "term",
+      "name": "Kick",
+      "call": "",
+      "summary": "A same-side pass.",
       "keys": [],
       "reads": [],
       "updated": "2026-11-18"
