@@ -1450,6 +1450,16 @@
       "updated": "2026-11-18"
     },
     {
+      "id": "contain",
+      "kind": "term",
+      "name": "Contain",
+      "call": "",
+      "summary": "The big stays between the ball and the rim. No switch.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18"
+    },
+    {
       "id": "lift",
       "kind": "term",
       "name": "Lift",
