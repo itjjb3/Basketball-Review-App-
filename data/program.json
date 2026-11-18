@@ -509,7 +509,7 @@
       "kind": "action",
       "name": "Twirl",
       "call": "“Twirl”",
-      "summary": "Our ball screen (PNR) with backside down-screen action. The closest big sets the ball screen and rolls. On the weak side, the higher player down-screens for the lower one.",
+      "summary": "Our ball screen (PNR), set by the Rabbit, with backside down-screen action. The Rabbit rolls; on the weak side, the higher player down-screens for the lower one. Twirl and Get are interchangeable.",
       "keys": [
         "Screener: sprint in, wide base, hold until contact",
         "Handler: set your man up first, then go shoulder to hip",
@@ -530,7 +530,9 @@
       "name": "Rub",
       "call": "“Rub”",
       "summary": "A DHO to the ball-side guard. The ball handler dribbles at the ball-side Lock, the Lock comes up to take the handoff, and the handler fills the corner.",
-      "keys": [],
+      "keys": [
+        "Whoever hands the ball off fills to the corner"
+      ],
       "reads": [],
       "updated": "2026-11-18",
       "rule": "rub"
@@ -771,8 +773,11 @@
       "kind": "action",
       "name": "Get",
       "call": "“Get”",
-      "summary": "Pass into a DHO (Rub) back to the passer.",
-      "keys": [],
+      "summary": "Pass into a DHO (Rub) back to the passer, run with the Rabbit. Twirl and Get are interchangeable.",
+      "keys": [
+        "Pass to the Rabbit, then go get it back",
+        "Rabbit: hand it back, then roll to the rim"
+      ],
       "reads": [],
       "updated": "2026-11-18",
       "rule": "get"

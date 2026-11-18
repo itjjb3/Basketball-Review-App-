@@ -34,6 +34,11 @@
   const arcKey = (p) => -Math.atan2(Math.max(p[1], 53) - RIM[1], p[0] - RIM[0]);
   const line = (t, pts) => ({ id: "e" + Math.random().toString(36).slice(2, 9), t, pts: pts.map(rnd) });
   const passTo = (from, to) => line("pass", [P(from), P(to)]);
+  /* The Rabbit is our 5, the interior player. Without a 5 on the floor, whoever is closest to the rim. */
+  const rabbit = (f, exceptId) => {
+    const o = offense(f).filter((t) => t.id !== exceptId);
+    return o.find((t) => t.n === "5") || nearest(o, RIM);
+  };
 
   function holder(f) {
     const b = (f.tokens || []).find((t) => t.t === "ball");
@@ -122,16 +127,13 @@
       },
     },
     get: {
-      label: "Get: pass into a handoff (Rub) back to the passer",
+      label: "Get: pass to the Rabbit, who hands it back (Rub) and rolls",
       run(api) {
         const h = holder(api.f);
         if (!h) return "nobody has the ball.";
-        const T = nearest(
-          offense(api.f).filter((t) => t.id !== h.id && !inCorner(t)),
-          P(h)
-        );
-        if (!T) return "there's no one close enough to get it back from.";
-        const home = P(h);
+        if (h.n === "5") return "the Rabbit has the ball. Get runs with the Rabbit.";
+        const T = rabbit(api.f, h.id);
+        if (!T) return "there's no Rabbit on the floor to get it from.";
         api.step([passTo(h, T)]);
         const T2 = P(tok(api.f, T.id)),
           H2 = P(tok(api.f, h.id));
@@ -140,11 +142,12 @@
         const bend = add(M, mul(unit(sub(RIM, M)), 16));
         api.step([line("dribble", [T2, lerp(T2, M, 0.5), M]), line("cut", [H2, lerp(H2, bend, 0.6), bend, R]), line("handoff", [M, R])]);
         const g = P(tok(api.f, T.id));
-        api.step([line("cut", [g, lerp(g, home, 0.5), home])]);
+        const roll = [250 + sideOf(g) * 24, 80];
+        api.step([line("cut", [g, lerp(g, roll, 0.5), roll])]);
       },
     },
     rub: {
-      label: "Rub: handoff to the ball-side guard, then fill the corner",
+      label: "Rub: handoff to the ball-side guard; whoever hands it off fills the corner",
       run(api) {
         const f = api.f;
         const h = holder(f);
@@ -173,7 +176,7 @@
       },
     },
     twirl: {
-      label: "Twirl: ball screen with backside down screen",
+      label: "Twirl: the Rabbit's ball screen, with a backside down screen",
       run(api) {
         const f = api.f;
         const h = holder(f);
@@ -181,10 +184,9 @@
         const H = P(h);
         const s = Math.abs(h.x - 250) > 15 ? sideOf(H) : 1;
         const others = offense(f).filter((t) => t.id !== h.id);
-        const bigs = others.filter((t) => t.n === "4" || t.n === "5");
-        const ballSideBigs = bigs.filter((t) => sideOf(P(t)) === s || Math.abs(t.x - 250) < 60);
-        const S = nearest(ballSideBigs.length ? ballSideBigs : bigs, H) || nearest(others.filter((t) => !inCorner(t)), H);
-        if (!S) return "there's no one to set the ball screen.";
+        if (h.n === "5") return "the Rabbit has the ball. Twirl is the Rabbit's ball screen.";
+        const S = rabbit(f, h.id);
+        if (!S) return "there's no Rabbit on the floor to set the ball screen.";
         const G = clampPt(lerp(H, NAIL_TOP, 0.8)); // the handler comes off toward the middle
         const dirG = unit(sub(G, H));
         const SP = clampPt(add(H, mul(dirG, 26))); // screen on the handler's shoulder
@@ -275,7 +277,7 @@
     skip: { tokens: [...withBall(1, 175, 272), o(4, 325, 272), o(2, 470, 42)] },
     back: { tokens: [...withBall(1, 175, 272), o(4, 325, 272)], seq: ["swing", "back"] },
     "post-entry": { tokens: [...withBall(1, 85, 215), o(5, 175, 76)] },
-    get: { tokens: [...withBall(1, 175, 272), o(4, 325, 272)] },
+    get: { tokens: [...withBall(1, 85, 215), o(5, 190, 190)] },
     rub: { tokens: [...withBall(1, 175, 272), o(3, 30, 42)] },
     twirl: { tokens: [...withBall(1, 175, 272), o(5, 175, 76), o(4, 325, 272), o(2, 470, 42)] },
   };
