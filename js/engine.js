@@ -43,18 +43,20 @@
   const RACKER = "1";
   const DRAGON = "5";
   const byNum = (f, n, exceptId) => offense(f).find((t) => t.n === n && t.id !== exceptId);
-  /* A handoff at the top of the key. The giver dribbles to his side of the top and
-     the receiver takes it just past him. Then the backside action every trigger has:
-     the giver down-screens for the Lock on his side, who comes up to the wing. */
+  /* A handoff at the top of the key. The giver dribbles to his side of the top; the
+     receiver comes over the top of him (behind him, away from the basket), takes it on
+     his outside shoulder and turns the corner downhill on the giver's side. Then the
+     backside action every trigger has, away from the ball: the giver down-screens for
+     the Lock on the side the receiver came from, who comes up to the open slot. */
   function pitchAtTop(api, giver, receiver, s) {
-    const M = [250 + s * 30, 276],
-      T = [250 - s * 12, 262];
+    const M = [250 + s * 30, 276];
+    const T = clampPt(add(M, mul(unit(sub([250 + s * 110, 200], M)), HANDOFF_OUT)));
     const G = P(tok(api.f, giver.id)),
       R = P(tok(api.f, receiver.id));
-    api.step([line("dribble", [G, lerp(G, M, 0.5), M]), line("cut", [R, lerp(R, T, 0.6), T]), line("handoff", [M, T])]);
+    api.step([line("dribble", [G, lerp(G, M, 0.5), M]), line("cut", [R, ...curl(M, R, T), T]), line("handoff", [M, T])]);
     const g = tok(api.f, giver.id);
-    const L = lockOn(api.f, g, s);
-    const ds = L && L.y < 170 ? downScreen(P(g), P(L), s) : backside(api.f, [giver.id, receiver.id], s, T);
+    const L = lockOn(api.f, g, -s);
+    const ds = L && L.y < 170 ? downScreen(P(g), P(L), -s) : backside(api.f, [giver.id, receiver.id], s, T);
     if (ds) {
       api.step([ds.screen]);
       api.step([ds.cut, ds.fill]);
@@ -115,8 +117,9 @@
 
   /* The Lock on a side: the teammate on that side closest to its corner. */
   function lockOn(f, h, sd) {
+    const rab = rabbit(f, h.id);
     return nearest(
-      offense(f).filter((t) => t.id !== h.id && sideOf(P(t)) === sd && Math.abs(t.x - 250) > 40),
+      offense(f).filter((t) => t.id !== h.id && (!rab || t.id !== rab.id) && sideOf(P(t)) === sd && Math.abs(t.x - 250) > 40),
       corner(sd)
     );
   }
