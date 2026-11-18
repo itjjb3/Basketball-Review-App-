@@ -30,7 +30,7 @@ for (const [name, text] of [["css", css], ["js", js]]) {
 const fragment = [
   `<title data-src="title">${title}</title>`,
   `<meta name="claude:viewport-fit-sides" content="cover" data-src="meta">`,
-  `<link rel="stylesheet" href="${fontHref}" data-src="font">`,
+  `<link rel="stylesheet" href="${fontHref.replace(/&/g, "&amp;")}" data-src="font">`,
   `<style data-src="css">\n${css}</style>`,
   `<script type="application/json" id="program-data" data-src="program">${json}</script>`,
   `<script data-src="app">\n${js}</script>`,

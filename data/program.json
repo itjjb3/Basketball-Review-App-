@@ -6,7 +6,11 @@
   },
   "items": [
     {
-      "example": true,
+      "id": "horns",
+      "kind": "formation",
+      "name": "Power",
+      "call": "“Horns” — index and pinky up",
+      "summary": "1 at the top, 4 and 5 at the elbows, 2 and 3 in the corners. Our base look for half-court sets.",
       "keys": [
         "Elbows sit at the free-throw line extended, not below it",
         "Corners stay in the corner until the ball moves",
@@ -14,11 +18,6 @@
       ],
       "reads": [],
       "updated": "2026-11-18",
-      "id": "horns",
-      "kind": "formation",
-      "name": "Horns",
-      "call": "“Horns” — index and pinky up",
-      "summary": "1 at the top, 4 and 5 at the elbows, 2 and 3 in the corners. Our base look for half-court sets.",
       "diagram": {
         "court": "half",
         "frames": [
@@ -73,7 +72,11 @@
       }
     },
     {
-      "example": true,
+      "id": "5-out",
+      "kind": "formation",
+      "name": "5-Out",
+      "call": "“Five” — open hand",
+      "summary": "All five outside the arc: top, both wings, both corners. Opens the lane for drives, cuts and paint touches.",
       "keys": [
         "15 to 18 feet between teammates",
         "Wings set at the free-throw line extended",
@@ -81,11 +84,7 @@
       ],
       "reads": [],
       "updated": "2026-11-18",
-      "id": "5-out",
-      "kind": "formation",
-      "name": "5-Out",
-      "call": "“Five” — open hand",
-      "summary": "All five outside the arc: top, both wings, both corners. Opens the lane for drives, cuts and paint touches.",
+      "example": true,
       "diagram": {
         "court": "half",
         "frames": [
@@ -140,7 +139,11 @@
       }
     },
     {
-      "example": true,
+      "id": "ball-screen",
+      "kind": "action",
+      "name": "Ball Screen",
+      "call": "“Pick” — fist on top of the head",
+      "summary": "A big sets a screen on the ball handler's defender, the handler comes off it shoulder to hip, and the screener rolls to the rim.",
       "keys": [
         "Screener: sprint in, wide base, hold until contact",
         "Handler: set your man up first, then go shoulder to hip",
@@ -153,11 +156,7 @@
         "Big's man jumps out high → reject the screen and go the other way"
       ],
       "updated": "2026-11-18",
-      "id": "ball-screen",
-      "kind": "action",
-      "name": "Ball Screen",
-      "call": "“Pick” — fist on top of the head",
-      "summary": "A big sets a screen on the ball handler's defender, the handler comes off it shoulder to hip, and the screener rolls to the rim.",
+      "example": true,
       "diagram": {
         "court": "half",
         "frames": [
@@ -380,7 +379,11 @@
       }
     },
     {
-      "example": true,
+      "id": "flare-screen",
+      "kind": "action",
+      "name": "Flare Screen",
+      "call": "“Flare”",
+      "summary": "A screen away from the ball. The cutter fades to the wing behind the screen for a catch-and-shoot three.",
       "keys": [
         "Screener's back faces where the shooter is going",
         "Shooter: walk your man in, then fade — don't drift",
@@ -391,11 +394,7 @@
         "Defender chases over the top → curl to the elbow"
       ],
       "updated": "2026-11-18",
-      "id": "flare-screen",
-      "kind": "action",
-      "name": "Flare Screen",
-      "call": "“Flare”",
-      "summary": "A screen away from the ball. The cutter fades to the wing behind the screen for a catch-and-shoot three.",
+      "example": true,
       "diagram": {
         "court": "half",
         "frames": [
@@ -600,7 +599,11 @@
       }
     },
     {
-      "example": true,
+      "id": "denied-backdoor",
+      "kind": "trigger",
+      "name": "5 THRU",
+      "call": "No call. The deny is the call.",
+      "summary": "When the wing's defender is in the passing lane, the wing cuts backdoor right away. The passer leads him to the rim with a bounce pass.",
       "keys": [
         "Trigger: defender's hand and foot are in the passing lane",
         "Take him up one hard step, plant on the outside foot, cut to the rim",
@@ -611,11 +614,6 @@
         "Denied again on the next catch → keep cutting, keep spacing"
       ],
       "updated": "2026-11-18",
-      "id": "denied-backdoor",
-      "kind": "trigger",
-      "name": "Wing Denied → Backdoor",
-      "call": "No call. The deny is the call.",
-      "summary": "When the wing's defender is in the passing lane, the wing cuts backdoor right away. The passer leads him to the rim with a bounce pass.",
       "diagram": {
         "court": "half",
         "frames": [
@@ -782,7 +780,11 @@
       }
     },
     {
-      "example": true,
+      "id": "baseline-drive-lift",
+      "kind": "trigger",
+      "name": "1 THRU",
+      "call": "No call. The drive is the call.",
+      "summary": "When the wing drives baseline, the corner player lifts to the wing. The driver kicks it out when help comes.",
       "keys": [
         "Lift early, as soon as the driver's first dribble goes baseline",
         "Show your hands, feet set behind the line",
@@ -790,11 +792,6 @@
       ],
       "reads": [],
       "updated": "2026-11-18",
-      "id": "baseline-drive-lift",
-      "kind": "trigger",
-      "name": "Baseline Drive → Lift",
-      "call": "No call. The drive is the call.",
-      "summary": "When the wing drives baseline, the corner player lifts to the wing. The driver kicks it out when help comes.",
       "diagram": {
         "court": "half",
         "frames": [
@@ -995,7 +992,11 @@
       }
     },
     {
-      "example": true,
+      "id": "horns-pnr",
+      "kind": "set",
+      "name": "Power Zoom",
+      "call": "“Horns 5” — horns, then five fingers",
+      "summary": "From Horns, 5 steps up and screens for 1. 1 comes off to the right, 5 rolls, and 4 replaces at the top as the safety.",
       "keys": [
         "1: come off tight — no gap between you and 5",
         "5: roll hard to the rim on 1's second dribble",
@@ -1007,11 +1008,6 @@
         "Corner defender helps on the roll → 1 skips to the corner"
       ],
       "updated": "2026-11-18",
-      "id": "horns-pnr",
-      "kind": "set",
-      "name": "Horns PNR",
-      "call": "“Horns 5” — horns, then five fingers",
-      "summary": "From Horns, 5 steps up and screens for 1. 1 comes off to the right, 5 rolls, and 4 replaces at the top as the safety.",
       "diagram": {
         "court": "half",
         "frames": [
@@ -1252,7 +1248,24 @@
       }
     },
     {
-      "example": true,
+      "id": "lock-left",
+      "kind": "defense",
+      "name": "Lock Left",
+      "call": "",
+      "summary": "Our defensive system. A style of defense centered around forcing offenses LEFT, with the goal of them making decisions and passes using their left hand.",
+      "keys": [
+        "NO RIGHT HAND DRIVES",
+        "NO OPEN CATCH AND SHOOT THREES"
+      ],
+      "reads": [],
+      "updated": "2026-11-18"
+    },
+    {
+      "id": "pack-line",
+      "kind": "defense",
+      "name": "Pack Line Man",
+      "call": "“Pack”",
+      "summary": "Man-to-man. Pressure the ball and keep the other four inside the pack line, about 16 feet from the rim, so every drive runs into help.",
       "keys": [
         "On ball: pressure without reaching — no straight-line drives",
         "Off ball: inside the pack line, see your man and the ball",
@@ -1264,11 +1277,7 @@
         "Skip pass → long closeout, chop your feet, no flying by"
       ],
       "updated": "2026-11-18",
-      "id": "pack-line",
-      "kind": "defense",
-      "name": "Pack Line Man",
-      "call": "“Pack”",
-      "summary": "Man-to-man. Pressure the ball and keep the other four inside the pack line, about 16 feet from the rim, so every drive runs into help.",
+      "example": true,
       "diagram": {
         "court": "half",
         "frames": [
@@ -1422,7 +1431,11 @@
       }
     },
     {
-      "example": true,
+      "id": "2-3-zone",
+      "kind": "defense",
+      "name": "2-3 Zone",
+      "call": "“Twenty-three” — two fingers, then three",
+      "summary": "Two guards up top, two forwards on the blocks, and the 5 in the middle of the paint. Take away the paint and make them shoot over us.",
       "keys": [
         "Guards: no middle penetration, high hands",
         "Bottom three: talk every cutter across",
@@ -1431,11 +1444,7 @@
       ],
       "reads": [],
       "updated": "2026-11-18",
-      "id": "2-3-zone",
-      "kind": "defense",
-      "name": "2-3 Zone",
-      "call": "“Twenty-three” — two fingers, then three",
-      "summary": "Two guards up top, two forwards on the blocks, and the 5 in the middle of the paint. Take away the paint and make them shoot over us.",
+      "example": true,
       "diagram": {
         "court": "half",
         "frames": [
@@ -1483,7 +1492,11 @@
       }
     },
     {
-      "example": true,
+      "id": "advantage-basketball",
+      "kind": "concept",
+      "name": "Advantage Basketball",
+      "call": "“Keep it!”",
+      "summary": "Once we create an advantage — we beat a man, or the defense has to help — the next action has to keep it. Drive, kick, swing. Don't hold it.",
       "keys": [
         "Catch with your feet ready to shoot, drive or pass",
         "Make your decision in half a second",
@@ -1491,14 +1504,14 @@
       ],
       "reads": [],
       "updated": "2026-11-18",
-      "id": "advantage-basketball",
-      "kind": "concept",
-      "name": "Advantage Basketball",
-      "call": "“Keep it!”",
-      "summary": "Once we create an advantage — we beat a man, or the defense has to help — the next action has to keep it. Drive, kick, swing. Don't hold it."
+      "example": true
     },
     {
-      "example": true,
+      "id": "spacing",
+      "kind": "concept",
+      "name": "Spacing",
+      "call": "“Space!”",
+      "summary": "Keep 15 to 18 feet between teammates so one defender can't guard two of us.",
       "keys": [
         "If you can hand it to a teammate, you're too close",
         "Corners are spots, not suggestions",
@@ -1506,28 +1519,28 @@
       ],
       "reads": [],
       "updated": "2026-11-18",
-      "id": "spacing",
-      "kind": "concept",
-      "name": "Spacing",
-      "call": "“Space!”",
-      "summary": "Keep 15 to 18 feet between teammates so one defender can't guard two of us."
+      "example": true
     },
     {
-      "example": true,
+      "id": "paint-touch",
+      "kind": "principle",
+      "name": "Paint Touch Before a Three",
+      "call": "",
+      "summary": "Get the ball into the paint, by a drive or a post feed, before we take a three. Kick-out threes are our best threes.",
       "keys": [
         "Drive or post feed first",
         "Exception: a wide-open catch-and-shoot in transition"
       ],
       "reads": [],
       "updated": "2026-11-18",
-      "id": "paint-touch",
-      "kind": "principle",
-      "name": "Paint Touch Before a Three",
-      "call": "",
-      "summary": "Get the ball into the paint, by a drive or a post feed, before we take a three. Kick-out threes are our best threes."
+      "example": true
     },
     {
-      "example": true,
+      "id": "sprint-back",
+      "kind": "principle",
+      "name": "Sprint Back, Talk Early",
+      "call": "“Back!”",
+      "summary": "When the shot goes up, the guards sprint back. Stop the ball, protect the rim, then match up. Everyone talks.",
       "keys": [
         "First back takes the rim",
         "Second back stops the ball",
@@ -1535,55 +1548,150 @@
       ],
       "reads": [],
       "updated": "2026-11-18",
-      "id": "sprint-back",
-      "kind": "principle",
-      "name": "Sprint Back, Talk Early",
-      "call": "“Back!”",
-      "summary": "When the shot goes up, the guards sprint back. Stop the ball, protect the rim, then match up. Everyone talks."
+      "example": true
     },
     {
-      "example": true,
-      "keys": [],
-      "reads": [],
-      "updated": "2026-11-18",
-      "id": "lift",
+      "id": "on-ball-shade",
       "kind": "term",
-      "name": "Lift",
+      "name": "On Ball Shade",
       "call": "",
-      "summary": "The corner player moves up to the wing when the ball is driven baseline."
-    },
-    {
-      "example": true,
+      "summary": "The on-ball defender is ALWAYS forcing the ball to JAIL (the left corner).",
       "keys": [],
       "reads": [],
-      "updated": "2026-11-18",
-      "id": "drift",
+      "updated": "2026-11-18"
+    },
+    {
+      "id": "gnaw",
       "kind": "term",
-      "name": "Drift",
+      "name": "Gnaw",
       "call": "",
-      "summary": "Slide along the arc away from a middle drive so you stay in the driver's sight line."
-    },
-    {
-      "example": true,
+      "summary": "On-ball pressure, staying connected to the hip even when beaten by a step.",
       "keys": [],
       "reads": [],
-      "updated": "2026-11-18",
+      "updated": "2026-11-18"
+    },
+    {
+      "id": "attack-the-hip",
+      "kind": "term",
+      "name": "Attack the Hip",
+      "call": "",
+      "summary": "On closeouts we are always attacking the ball handler's RIGHT HIP (the defender's left), with active high hands for deflections in the passing lanes and contests on shots.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18"
+    },
+    {
+      "id": "wolf",
+      "kind": "term",
+      "name": "Wolf",
+      "call": "",
+      "summary": "Wolf is the defender pressuring the point guard full court and making them bring it up on the left side.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18"
+    },
+    {
+      "id": "tiger",
+      "kind": "term",
+      "name": "Tiger",
+      "call": "",
+      "summary": "Tiger is the secondary press defender, usually guarding the inbounder. Also forcing the ball to cross half court on the left.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18"
+    },
+    {
+      "id": "snipe-and-grab",
+      "kind": "term",
+      "name": "Snipe and Grab",
+      "call": "",
+      "summary": "Defensive term for stunting off ball and trying to steal the kick-out on a drive.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18"
+    },
+    {
+      "id": "scram",
+      "kind": "term",
+      "name": "Scram",
+      "call": "",
+      "summary": "SWITCH. Usually in transition or deficit situations.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18"
+    },
+    {
       "id": "gap",
       "kind": "term",
       "name": "Gap",
       "call": "",
-      "summary": "Stand in the driving lane between two offensive players, ready to help on the drive and recover to your man."
+      "summary": "The Gap defender is the first off-ball defender to the left, sitting in the GAP between the driving lane and the passing lane, looking to snipe and grab.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18"
     },
     {
-      "example": true,
+      "id": "deny",
+      "kind": "term",
+      "name": "Deny",
+      "call": "",
+      "summary": "The Deny defender is the first off-ball defender to the right, hard denying any pass to the right and keeping the ball on the left side.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18"
+    },
+    {
+      "id": "wall",
+      "kind": "term",
+      "name": "Wall",
+      "call": "",
+      "summary": "Wall is the paint help defender. As soon as they see a drive, they sprint to help OUTSIDE OF THE PAINT. Active hands and WALLING UP, staying on our feet.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18"
+    },
+    {
+      "id": "bear",
+      "kind": "term",
+      "name": "Bear",
+      "call": "",
+      "summary": "The drop defender in help, filling the space left by the WALL going over to help on a drive.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18"
+    },
+    {
+      "id": "lift",
+      "kind": "term",
+      "name": "Lift",
+      "call": "",
+      "summary": "The corner player moves up to the wing when the ball is driven baseline.",
       "keys": [],
       "reads": [],
       "updated": "2026-11-18",
+      "example": true
+    },
+    {
+      "id": "drift",
+      "kind": "term",
+      "name": "Drift",
+      "call": "",
+      "summary": "Slide along the arc away from a middle drive so you stay in the driver's sight line.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18",
+      "example": true
+    },
+    {
       "id": "ice",
       "kind": "term",
       "name": "Ice",
       "call": "“Ice!”",
-      "summary": "Ball-screen defense: force the ball handler toward the sideline, away from the screen."
+      "summary": "Ball-screen defense: force the ball handler toward the sideline, away from the screen.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18",
+      "example": true
     }
   ]
 }
