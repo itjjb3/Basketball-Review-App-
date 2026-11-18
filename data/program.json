@@ -139,11 +139,11 @@
       }
     },
     {
-      "id": "ball-screen",
+      "id": "twirl",
       "kind": "action",
-      "name": "Ball Screen",
-      "call": "“Pick” — fist on top of the head",
-      "summary": "A big sets a screen on the ball handler's defender, the handler comes off it shoulder to hip, and the screener rolls to the rim.",
+      "name": "Twirl",
+      "call": "“Twirl”",
+      "summary": "Our ball screen. A big sets a screen on the ball handler's defender, the handler comes off it shoulder to hip, and the screener rolls to the rim.",
       "keys": [
         "Screener: sprint in, wide base, hold until contact",
         "Handler: set your man up first, then go shoulder to hip",
@@ -156,7 +156,6 @@
         "Big's man jumps out high → reject the screen and go the other way"
       ],
       "updated": "2026-11-18",
-      "example": true,
       "diagram": {
         "court": "half",
         "frames": [
@@ -377,6 +376,16 @@
           }
         ]
       }
+    },
+    {
+      "id": "rub",
+      "kind": "action",
+      "name": "Rub",
+      "call": "“Rub”",
+      "summary": "Our dribble handoff (DHO). The ball handler dribbles at a teammate and hands the ball off as they come by.",
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18"
     },
     {
       "id": "flare-screen",
