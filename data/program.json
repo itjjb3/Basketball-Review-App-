@@ -1,0 +1,1589 @@
+{
+  "version": 1,
+  "team": {
+    "name": "Baldwin Basketball",
+    "season": "2026–27"
+  },
+  "items": [
+    {
+      "example": true,
+      "keys": [
+        "Elbows sit at the free-throw line extended, not below it",
+        "Corners stay in the corner until the ball moves",
+        "1 brings it to the top with a live dribble"
+      ],
+      "reads": [],
+      "updated": "2026-11-18",
+      "id": "horns",
+      "kind": "formation",
+      "name": "Horns",
+      "call": "“Horns” — index and pinky up",
+      "summary": "1 at the top, 4 and 5 at the elbows, 2 and 3 in the corners. Our base look for half-court sets.",
+      "diagram": {
+        "court": "half",
+        "frames": [
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 250,
+                "y": 285
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 190,
+                "y": 190
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 310,
+                "y": 190
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 30,
+                "y": 32
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 470,
+                "y": 32
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 263,
+                "y": 273
+              }
+            ],
+            "strokes": []
+          }
+        ]
+      }
+    },
+    {
+      "example": true,
+      "keys": [
+        "15 to 18 feet between teammates",
+        "Wings set at the free-throw line extended",
+        "Fill the spot a cutter leaves"
+      ],
+      "reads": [],
+      "updated": "2026-11-18",
+      "id": "5-out",
+      "kind": "formation",
+      "name": "5-Out",
+      "call": "“Five” — open hand",
+      "summary": "All five outside the arc: top, both wings, both corners. Opens the lane for drives, cuts and paint touches.",
+      "diagram": {
+        "court": "half",
+        "frames": [
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 250,
+                "y": 285
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 415,
+                "y": 215
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 85,
+                "y": 215
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 470,
+                "y": 32
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 30,
+                "y": 32
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 263,
+                "y": 273
+              }
+            ],
+            "strokes": []
+          }
+        ]
+      }
+    },
+    {
+      "example": true,
+      "keys": [
+        "Screener: sprint in, wide base, hold until contact",
+        "Handler: set your man up first, then go shoulder to hip",
+        "Screener rolls on the handler's second dribble",
+        "Handler reads the big's defender: hedge = pocket pass, drop = pull-up"
+      ],
+      "reads": [
+        "They switch → screener seals the smaller man and posts",
+        "Help comes from the corner → kick to the corner",
+        "Big's man jumps out high → reject the screen and go the other way"
+      ],
+      "updated": "2026-11-18",
+      "id": "ball-screen",
+      "kind": "action",
+      "name": "Ball Screen",
+      "call": "“Pick” — fist on top of the head",
+      "summary": "A big sets a screen on the ball handler's defender, the handler comes off it shoulder to hip, and the screener rolls to the rim.",
+      "diagram": {
+        "court": "half",
+        "frames": [
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 250,
+                "y": 300
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 263,
+                "y": 288
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 310,
+                "y": 190
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 85,
+                "y": 215
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 30,
+                "y": 32
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 470,
+                "y": 32
+              }
+            ],
+            "strokes": [
+              {
+                "id": "s1",
+                "t": "screen",
+                "pts": [
+                  [
+                    310,
+                    190
+                  ],
+                  [
+                    300,
+                    240
+                  ],
+                  [
+                    283,
+                    282
+                  ]
+                ]
+              },
+              {
+                "id": "s2",
+                "t": "dribble",
+                "pts": [
+                  [
+                    250,
+                    300
+                  ],
+                  [
+                    292,
+                    305
+                  ],
+                  [
+                    335,
+                    272
+                  ],
+                  [
+                    372,
+                    222
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 372,
+                "y": 222
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 385,
+                "y": 210
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 283,
+                "y": 282
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 85,
+                "y": 215
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 30,
+                "y": 32
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 470,
+                "y": 32
+              }
+            ],
+            "strokes": [
+              {
+                "id": "s3",
+                "t": "cut",
+                "pts": [
+                  [
+                    283,
+                    282
+                  ],
+                  [
+                    300,
+                    205
+                  ],
+                  [
+                    282,
+                    100
+                  ]
+                ]
+              },
+              {
+                "id": "s4",
+                "t": "pass",
+                "pts": [
+                  [
+                    372,
+                    222
+                  ],
+                  [
+                    284,
+                    106
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 372,
+                "y": 222
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 282,
+                "y": 100
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 295,
+                "y": 88
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 85,
+                "y": 215
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 30,
+                "y": 32
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 470,
+                "y": 32
+              }
+            ],
+            "strokes": []
+          }
+        ]
+      }
+    },
+    {
+      "example": true,
+      "keys": [
+        "Screener's back faces where the shooter is going",
+        "Shooter: walk your man in, then fade — don't drift",
+        "Passer throws the skip on time, to the shooting pocket"
+      ],
+      "reads": [
+        "Defender goes under → shoot it",
+        "Defender chases over the top → curl to the elbow"
+      ],
+      "updated": "2026-11-18",
+      "id": "flare-screen",
+      "kind": "action",
+      "name": "Flare Screen",
+      "call": "“Flare”",
+      "summary": "A screen away from the ball. The cutter fades to the wing behind the screen for a catch-and-shoot three.",
+      "diagram": {
+        "court": "half",
+        "frames": [
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 165,
+                "y": 285
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 178,
+                "y": 273
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 310,
+                "y": 190
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 335,
+                "y": 285
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 172,
+                "y": 78
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 30,
+                "y": 32
+              }
+            ],
+            "strokes": [
+              {
+                "id": "s5",
+                "t": "screen",
+                "pts": [
+                  [
+                    335,
+                    285
+                  ],
+                  [
+                    318,
+                    255
+                  ],
+                  [
+                    300,
+                    232
+                  ]
+                ]
+              },
+              {
+                "id": "s6",
+                "t": "cut",
+                "pts": [
+                  [
+                    310,
+                    190
+                  ],
+                  [
+                    320,
+                    205
+                  ],
+                  [
+                    372,
+                    230
+                  ],
+                  [
+                    430,
+                    245
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 165,
+                "y": 285
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 178,
+                "y": 273
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 430,
+                "y": 245
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 300,
+                "y": 232
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 172,
+                "y": 78
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 30,
+                "y": 32
+              }
+            ],
+            "strokes": [
+              {
+                "id": "s7",
+                "t": "pass",
+                "pts": [
+                  [
+                    165,
+                    285
+                  ],
+                  [
+                    428,
+                    245
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 165,
+                "y": 285
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 430,
+                "y": 245
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 443,
+                "y": 233
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 300,
+                "y": 232
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 172,
+                "y": 78
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 30,
+                "y": 32
+              }
+            ],
+            "strokes": []
+          }
+        ]
+      }
+    },
+    {
+      "example": true,
+      "keys": [
+        "Trigger: defender's hand and foot are in the passing lane",
+        "Take him up one hard step, plant on the outside foot, cut to the rim",
+        "Passer: bounce pass, lead him to the rim"
+      ],
+      "reads": [
+        "Help steps in from the weak side → pass out to the open shooter",
+        "Denied again on the next catch → keep cutting, keep spacing"
+      ],
+      "updated": "2026-11-18",
+      "id": "denied-backdoor",
+      "kind": "trigger",
+      "name": "Wing Denied → Backdoor",
+      "call": "No call. The deny is the call.",
+      "summary": "When the wing's defender is in the passing lane, the wing cuts backdoor right away. The passer leads him to the rim with a bounce pass.",
+      "diagram": {
+        "court": "half",
+        "frames": [
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 250,
+                "y": 292
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 263,
+                "y": 280
+              },
+              {
+                "id": "x1",
+                "t": "x",
+                "n": "1",
+                "x": 250,
+                "y": 255
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 415,
+                "y": 215
+              },
+              {
+                "id": "x2",
+                "t": "x",
+                "n": "2",
+                "x": 388,
+                "y": 196
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 85,
+                "y": 215
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 470,
+                "y": 32
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 172,
+                "y": 78
+              }
+            ],
+            "strokes": [
+              {
+                "id": "s8",
+                "t": "cut",
+                "pts": [
+                  [
+                    415,
+                    215
+                  ],
+                  [
+                    432,
+                    245
+                  ],
+                  [
+                    400,
+                    160
+                  ],
+                  [
+                    298,
+                    74
+                  ]
+                ]
+              },
+              {
+                "id": "s9",
+                "t": "pass",
+                "pts": [
+                  [
+                    250,
+                    292
+                  ],
+                  [
+                    292,
+                    84
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 250,
+                "y": 292
+              },
+              {
+                "id": "x1",
+                "t": "x",
+                "n": "1",
+                "x": 250,
+                "y": 255
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 298,
+                "y": 74
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 311,
+                "y": 62
+              },
+              {
+                "id": "x2",
+                "t": "x",
+                "n": "2",
+                "x": 352,
+                "y": 120
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 85,
+                "y": 215
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 470,
+                "y": 32
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 172,
+                "y": 78
+              }
+            ],
+            "strokes": []
+          }
+        ]
+      }
+    },
+    {
+      "example": true,
+      "keys": [
+        "Lift early, as soon as the driver's first dribble goes baseline",
+        "Show your hands, feet set behind the line",
+        "Driver: two feet in the paint before you kick"
+      ],
+      "reads": [],
+      "updated": "2026-11-18",
+      "id": "baseline-drive-lift",
+      "kind": "trigger",
+      "name": "Baseline Drive → Lift",
+      "call": "No call. The drive is the call.",
+      "summary": "When the wing drives baseline, the corner player lifts to the wing. The driver kicks it out when help comes.",
+      "diagram": {
+        "court": "half",
+        "frames": [
+          {
+            "tokens": [
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 415,
+                "y": 215
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 428,
+                "y": 203
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 470,
+                "y": 32
+              },
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 250,
+                "y": 285
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 85,
+                "y": 215
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 172,
+                "y": 78
+              }
+            ],
+            "strokes": [
+              {
+                "id": "s10",
+                "t": "dribble",
+                "pts": [
+                  [
+                    415,
+                    215
+                  ],
+                  [
+                    432,
+                    150
+                  ],
+                  [
+                    392,
+                    70
+                  ]
+                ]
+              },
+              {
+                "id": "s11",
+                "t": "cut",
+                "pts": [
+                  [
+                    470,
+                    32
+                  ],
+                  [
+                    474,
+                    120
+                  ],
+                  [
+                    440,
+                    196
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 392,
+                "y": 70
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 405,
+                "y": 58
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 440,
+                "y": 196
+              },
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 250,
+                "y": 285
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 85,
+                "y": 215
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 172,
+                "y": 78
+              }
+            ],
+            "strokes": [
+              {
+                "id": "s12",
+                "t": "pass",
+                "pts": [
+                  [
+                    392,
+                    70
+                  ],
+                  [
+                    438,
+                    192
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 392,
+                "y": 70
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 440,
+                "y": 196
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 453,
+                "y": 184
+              },
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 250,
+                "y": 285
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 85,
+                "y": 215
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 172,
+                "y": 78
+              }
+            ],
+            "strokes": []
+          }
+        ]
+      }
+    },
+    {
+      "example": true,
+      "keys": [
+        "1: come off tight — no gap between you and 5",
+        "5: roll hard to the rim on 1's second dribble",
+        "4: replace at the top and be ready to shoot",
+        "Corners stay wide. Their defenders are the help."
+      ],
+      "reads": [
+        "Big's defender drops → 1 pulls up at the elbow",
+        "Corner defender helps on the roll → 1 skips to the corner"
+      ],
+      "updated": "2026-11-18",
+      "id": "horns-pnr",
+      "kind": "set",
+      "name": "Horns PNR",
+      "call": "“Horns 5” — horns, then five fingers",
+      "summary": "From Horns, 5 steps up and screens for 1. 1 comes off to the right, 5 rolls, and 4 replaces at the top as the safety.",
+      "diagram": {
+        "court": "half",
+        "frames": [
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 250,
+                "y": 285
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 263,
+                "y": 273
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 190,
+                "y": 190
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 310,
+                "y": 190
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 30,
+                "y": 32
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 470,
+                "y": 32
+              }
+            ],
+            "strokes": [
+              {
+                "id": "s13",
+                "t": "screen",
+                "pts": [
+                  [
+                    310,
+                    190
+                  ],
+                  [
+                    300,
+                    238
+                  ],
+                  [
+                    281,
+                    270
+                  ]
+                ]
+              },
+              {
+                "id": "s14",
+                "t": "dribble",
+                "pts": [
+                  [
+                    250,
+                    285
+                  ],
+                  [
+                    290,
+                    302
+                  ],
+                  [
+                    335,
+                    268
+                  ],
+                  [
+                    372,
+                    218
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 372,
+                "y": 218
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 385,
+                "y": 206
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 190,
+                "y": 190
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 281,
+                "y": 270
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 30,
+                "y": 32
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 470,
+                "y": 32
+              }
+            ],
+            "strokes": [
+              {
+                "id": "s15",
+                "t": "cut",
+                "pts": [
+                  [
+                    281,
+                    270
+                  ],
+                  [
+                    306,
+                    185
+                  ],
+                  [
+                    285,
+                    98
+                  ]
+                ]
+              },
+              {
+                "id": "s16",
+                "t": "cut",
+                "pts": [
+                  [
+                    190,
+                    190
+                  ],
+                  [
+                    212,
+                    252
+                  ],
+                  [
+                    250,
+                    292
+                  ]
+                ]
+              },
+              {
+                "id": "s17",
+                "t": "pass",
+                "pts": [
+                  [
+                    372,
+                    218
+                  ],
+                  [
+                    288,
+                    104
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 372,
+                "y": 218
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 250,
+                "y": 292
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 285,
+                "y": 98
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 298,
+                "y": 86
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 30,
+                "y": 32
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 470,
+                "y": 32
+              }
+            ],
+            "strokes": []
+          }
+        ]
+      }
+    },
+    {
+      "example": true,
+      "keys": [
+        "On ball: pressure without reaching — no straight-line drives",
+        "Off ball: inside the pack line, see your man and the ball",
+        "Help, then recover with high hands",
+        "Everyone rebounds. Find a body, then the ball."
+      ],
+      "reads": [
+        "Ball goes to the post → dig from the passer's side",
+        "Skip pass → long closeout, chop your feet, no flying by"
+      ],
+      "updated": "2026-11-18",
+      "id": "pack-line",
+      "kind": "defense",
+      "name": "Pack Line Man",
+      "call": "“Pack”",
+      "summary": "Man-to-man. Pressure the ball and keep the other four inside the pack line, about 16 feet from the rim, so every drive runs into help.",
+      "diagram": {
+        "court": "half",
+        "frames": [
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 250,
+                "y": 292
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 263,
+                "y": 280
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 415,
+                "y": 215
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 85,
+                "y": 215
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 470,
+                "y": 32
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 30,
+                "y": 32
+              },
+              {
+                "id": "x1",
+                "t": "x",
+                "n": "1",
+                "x": 250,
+                "y": 256
+              },
+              {
+                "id": "x2",
+                "t": "x",
+                "n": "2",
+                "x": 340,
+                "y": 182
+              },
+              {
+                "id": "x3",
+                "t": "x",
+                "n": "3",
+                "x": 160,
+                "y": 182
+              },
+              {
+                "id": "x4",
+                "t": "x",
+                "n": "4",
+                "x": 330,
+                "y": 96
+              },
+              {
+                "id": "x5",
+                "t": "x",
+                "n": "5",
+                "x": 170,
+                "y": 96
+              }
+            ],
+            "strokes": [
+              {
+                "id": "s18",
+                "t": "pen",
+                "pts": [
+                  [
+                    408.4,
+                    74.8
+                  ],
+                  [
+                    400.4,
+                    107.2
+                  ],
+                  [
+                    385.7,
+                    137.3
+                  ],
+                  [
+                    365.1,
+                    163.6
+                  ],
+                  [
+                    339.5,
+                    185.1
+                  ],
+                  [
+                    309.9,
+                    200.8
+                  ],
+                  [
+                    277.8,
+                    210.1
+                  ],
+                  [
+                    244.4,
+                    212.4
+                  ],
+                  [
+                    211.3,
+                    207.7
+                  ],
+                  [
+                    179.9,
+                    196.3
+                  ],
+                  [
+                    151.5,
+                    178.6
+                  ],
+                  [
+                    127.4,
+                    155.3
+                  ],
+                  [
+                    108.7,
+                    127.6
+                  ],
+                  [
+                    96.2,
+                    96.6
+                  ]
+                ],
+                "c": "#5b2f9e"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "example": true,
+      "keys": [
+        "Guards: no middle penetration, high hands",
+        "Bottom three: talk every cutter across",
+        "Forwards close out to the corner on the pass",
+        "5 owns the paint and fronts the post below the free-throw line"
+      ],
+      "reads": [],
+      "updated": "2026-11-18",
+      "id": "2-3-zone",
+      "kind": "defense",
+      "name": "2-3 Zone",
+      "call": "“Twenty-three” — two fingers, then three",
+      "summary": "Two guards up top, two forwards on the blocks, and the 5 in the middle of the paint. Take away the paint and make them shoot over us.",
+      "diagram": {
+        "court": "half",
+        "frames": [
+          {
+            "tokens": [
+              {
+                "id": "x1",
+                "t": "x",
+                "n": "1",
+                "x": 198,
+                "y": 240
+              },
+              {
+                "id": "x2",
+                "t": "x",
+                "n": "2",
+                "x": 302,
+                "y": 240
+              },
+              {
+                "id": "x3",
+                "t": "x",
+                "n": "3",
+                "x": 112,
+                "y": 112
+              },
+              {
+                "id": "x4",
+                "t": "x",
+                "n": "4",
+                "x": 388,
+                "y": 112
+              },
+              {
+                "id": "x5",
+                "t": "x",
+                "n": "5",
+                "x": 250,
+                "y": 84
+              }
+            ],
+            "strokes": []
+          }
+        ]
+      }
+    },
+    {
+      "example": true,
+      "keys": [
+        "Catch with your feet ready to shoot, drive or pass",
+        "Make your decision in half a second",
+        "A good shot now beats a great shot later only if the advantage is gone"
+      ],
+      "reads": [],
+      "updated": "2026-11-18",
+      "id": "advantage-basketball",
+      "kind": "concept",
+      "name": "Advantage Basketball",
+      "call": "“Keep it!”",
+      "summary": "Once we create an advantage — we beat a man, or the defense has to help — the next action has to keep it. Drive, kick, swing. Don't hold it."
+    },
+    {
+      "example": true,
+      "keys": [
+        "If you can hand it to a teammate, you're too close",
+        "Corners are spots, not suggestions",
+        "When a teammate cuts, fill the spot they left"
+      ],
+      "reads": [],
+      "updated": "2026-11-18",
+      "id": "spacing",
+      "kind": "concept",
+      "name": "Spacing",
+      "call": "“Space!”",
+      "summary": "Keep 15 to 18 feet between teammates so one defender can't guard two of us."
+    },
+    {
+      "example": true,
+      "keys": [
+        "Drive or post feed first",
+        "Exception: a wide-open catch-and-shoot in transition"
+      ],
+      "reads": [],
+      "updated": "2026-11-18",
+      "id": "paint-touch",
+      "kind": "principle",
+      "name": "Paint Touch Before a Three",
+      "call": "",
+      "summary": "Get the ball into the paint, by a drive or a post feed, before we take a three. Kick-out threes are our best threes."
+    },
+    {
+      "example": true,
+      "keys": [
+        "First back takes the rim",
+        "Second back stops the ball",
+        "Point and call out who you have"
+      ],
+      "reads": [],
+      "updated": "2026-11-18",
+      "id": "sprint-back",
+      "kind": "principle",
+      "name": "Sprint Back, Talk Early",
+      "call": "“Back!”",
+      "summary": "When the shot goes up, the guards sprint back. Stop the ball, protect the rim, then match up. Everyone talks."
+    },
+    {
+      "example": true,
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18",
+      "id": "lift",
+      "kind": "term",
+      "name": "Lift",
+      "call": "",
+      "summary": "The corner player moves up to the wing when the ball is driven baseline."
+    },
+    {
+      "example": true,
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18",
+      "id": "drift",
+      "kind": "term",
+      "name": "Drift",
+      "call": "",
+      "summary": "Slide along the arc away from a middle drive so you stay in the driver's sight line."
+    },
+    {
+      "example": true,
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18",
+      "id": "gap",
+      "kind": "term",
+      "name": "Gap",
+      "call": "",
+      "summary": "Stand in the driving lane between two offensive players, ready to help on the drive and recover to your man."
+    },
+    {
+      "example": true,
+      "keys": [],
+      "reads": [],
+      "updated": "2026-11-18",
+      "id": "ice",
+      "kind": "term",
+      "name": "Ice",
+      "call": "“Ice!”",
+      "summary": "Ball-screen defense: force the ball handler toward the sideline, away from the screen."
+    }
+  ]
+}
