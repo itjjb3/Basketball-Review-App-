@@ -57,7 +57,7 @@
     const ds = L && L.y < 170 ? downScreen(P(g), P(L), s) : backside(api.f, [giver.id, receiver.id], s, T);
     if (ds) {
       api.step([ds.screen]);
-      api.step([ds.cut]);
+      api.step([ds.cut, ds.fill]);
     }
   }
   const rabbit = (f, exceptId) => {
@@ -122,13 +122,16 @@
   }
 
   /* A down screen: the screener sets it just above the cutter, who comes off it
-     toward the sideline (side sd) and catches at the slot on the perimeter. */
+     toward the sideline (side sd) and catches at the slot on the perimeter. The
+     screener then replaces: he drops to the corner the cutter left, so we stay 4-out. */
   function downScreen(Hp, L, sd) {
     const DS = add(L, mul(unit(sub(Hp, L)), Math.min(0.4 * dist(L, Hp), 55)));
     const out = [sd > 0 ? 440 : 60, Math.max(DS[1] + 40, 170)];
+    const C = corner(sd);
     return {
       screen: line("screen", [Hp, lerp(Hp, DS, 0.5), DS]),
       cut: line("cut", [L, add(DS, [sd * 18, 0]), out, slot(sd)]),
+      fill: line("cut", [DS, lerp(DS, C, 0.5), C]),
     };
   }
 
@@ -138,7 +141,9 @@
      s: the ball side; near: where the ball is going (keep clear of it).
      Returns { screen, cut } (screen this step, cut off it next step) or null. */
   function backside(f, busy, s, near) {
-    const free = offense(f).filter((t) => !busy.includes(t.id));
+    // Perimeter players only: the Rabbit stays inside (he is on the block after a roll).
+    const rab = rabbit(f);
+    const free = offense(f).filter((t) => !busy.includes(t.id) && (!rab || t.id !== rab.id) && isPerimeter(t));
     const weak = free.filter((t) => sideOf(P(t)) === -s && (!near || dist(P(t), near) > 70));
     let hi = null,
       lo = null;
@@ -280,7 +285,8 @@
         const bs = ctx.noBackside ? null : backside(f, [h.id, L.id], s, M);
         api.step([line("dribble", [H, lerp(H, M, 0.5), M]), line("cut", [Lp, lerp(Lp, M, 0.6), add(M, [s * 14, 0]), R]), line("handoff", [M, R]), bs && bs.screen]);
         const g = P(tok(api.f, h.id));
-        api.step([line("cut", [g, lerp(g, Lp, 0.5), Lp]), bs && bs.cut]);
+        const C = corner(s);
+        api.step([line("cut", [g, lerp(g, C, 0.5), C]), bs && bs.cut, bs && bs.fill]);
       },
     },
     pitch: {
@@ -328,7 +334,7 @@
         const lane = 250 + s * 52;
         const H2 = P(tok(api.f, h.id)),
           L2 = P(tok(api.f, L.id));
-        api.step([line("dribble", [L2, lerp(L2, home, 0.5), home]), line("cut", [H2, [lane, Math.min(H2[1], 185)], [lane, 72], Lp]), bs && bs.cut]);
+        api.step([line("dribble", [L2, lerp(L2, home, 0.5), home]), line("cut", [H2, [lane, Math.min(H2[1], 185)], [lane, 72], corner(s)]), bs && bs.cut, bs && bs.fill]);
         // From here the Lock goes into a Twirl or a Get with the Rabbit (add either next in the call).
       },
     },
