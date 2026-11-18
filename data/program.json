@@ -956,12 +956,11 @@
       "kind": "trigger",
       "name": "5 THRU",
       "call": "“5 Thru”",
-      "summary": "5 runs through to the left wing and down-screens for 3 in the left corner. 1 dribbles over to the right wing and 4 flashes to the right elbow.",
+      "summary": "5 runs through to the left wing and down-screens for 3. 3 comes off the screen to the left wing for a shot.",
       "keys": [
-        "5: run through from the right side to the left wing, then down-screen for 3",
-        "1: dribble over to the right wing",
-        "4: flash from the left block to the right elbow",
-        "Locks (2 and 3) stay locked in the corners"
+        "Step 1: 5 runs through from the right side to the left wing and down-screens for 3. 1 dribbles over to the right wing. 4 flashes from the left block to the right elbow.",
+        "Step 2: 3 comes off the screen to the left wing. 1 skips it to 3.",
+        "Step 3: 3 shoots."
       ],
       "reads": [],
       "updated": "2026-11-18",
@@ -1209,6 +1208,152 @@
                 "y": 256
               }
             ],
+            "strokes": [
+              {
+                "id": "t5cut",
+                "t": "cut",
+                "pts": [
+                  [
+                    27,
+                    31
+                  ],
+                  [
+                    58,
+                    92
+                  ],
+                  [
+                    74,
+                    158
+                  ],
+                  [
+                    85,
+                    215
+                  ]
+                ]
+              },
+              {
+                "id": "t5pass",
+                "t": "pass",
+                "pts": [
+                  [
+                    387,
+                    268
+                  ],
+                  [
+                    85,
+                    215
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 387,
+                "y": 268
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 473,
+                "y": 51
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 85,
+                "y": 215
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 308,
+                "y": 190
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 41,
+                "y": 113
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 98,
+                "y": 203
+              }
+            ],
+            "strokes": [
+              {
+                "id": "t5shot",
+                "t": "shot",
+                "pts": [
+                  [
+                    85,
+                    215
+                  ],
+                  [
+                    250,
+                    52.5
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 387,
+                "y": 268
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 473,
+                "y": 51
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 85,
+                "y": 215
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 308,
+                "y": 190
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 41,
+                "y": 113
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 250,
+                "y": 53
+              }
+            ],
             "strokes": []
           }
         ]
@@ -1219,10 +1364,12 @@
       "kind": "trigger",
       "name": "1 THRU",
       "call": "“1 Thru”",
-      "summary": "1 swings it to 5, then runs through to the right side and down-screens for 2 in the right corner. 5 dribbles back to the left wing and 4 flashes to the left elbow.",
+      "summary": "1 swings it to 5, then runs through and down-screens for 2. 2 comes off the screen to the right wing for a shot.",
       "keys": [
         "Step 1: 1 passes to 5 on the right side. 4 crosses the lane to the right block.",
-        "Step 2: 1 runs through and down-screens for 2 in the right corner. 5 dribbles back to the left wing. 4 flashes to the left elbow."
+        "Step 2: 1 runs through and down-screens for 2 in the right corner. 5 dribbles back to the left wing. 4 flashes to the left elbow.",
+        "Step 3: 2 comes off the screen to the right wing. 5 skips it to 2.",
+        "Step 4: 2 shoots."
       ],
       "reads": [],
       "updated": "2026-11-18",
@@ -1580,6 +1727,152 @@
                 "n": "",
                 "x": 54,
                 "y": 231
+              }
+            ],
+            "strokes": [
+              {
+                "id": "t1cut",
+                "t": "cut",
+                "pts": [
+                  [
+                    472,
+                    38
+                  ],
+                  [
+                    438,
+                    92
+                  ],
+                  [
+                    426,
+                    158
+                  ],
+                  [
+                    415,
+                    215
+                  ]
+                ]
+              },
+              {
+                "id": "t1pass",
+                "t": "pass",
+                "pts": [
+                  [
+                    41,
+                    243
+                  ],
+                  [
+                    415,
+                    215
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 447,
+                "y": 110
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 415,
+                "y": 215
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 22,
+                "y": 27
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 200,
+                "y": 183
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 41,
+                "y": 243
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 428,
+                "y": 203
+              }
+            ],
+            "strokes": [
+              {
+                "id": "t1shot",
+                "t": "shot",
+                "pts": [
+                  [
+                    415,
+                    215
+                  ],
+                  [
+                    250,
+                    52.5
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 447,
+                "y": 110
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 415,
+                "y": 215
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 22,
+                "y": 27
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 200,
+                "y": 183
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 41,
+                "y": 243
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 250,
+                "y": 53
               }
             ],
             "strokes": []
