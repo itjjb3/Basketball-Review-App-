@@ -63,21 +63,38 @@
     return { ahead: toward(dir), behind: toward(-dir) };
   }
 
-  /* What the last pass was: who threw it and which way it went. */
+  /* Who threw the last pass, and which way the ball last moved (a pass, a handoff,
+     or the handler's dribble coming off a ball screen). */
   function ctxFrom(frames) {
-    for (let i = frames.length - 1; i >= 0; i--) {
+    let lastPasser = null,
+      dir = 0;
+    for (let i = frames.length - 1; i >= 0 && (!lastPasser || !dir); i--) {
       const f = frames[i];
-      const ps = (f.strokes || []).filter((s) => s.t === "pass" || s.t === "handoff");
-      if (!ps.length) continue;
-      const s = ps[ps.length - 1];
-      const a = s.pts[0],
-        b = s.pts[s.pts.length - 1];
-      const g = frames[i + 1] || f;
-      const passer = nearest(offense(g), a);
-      const dx = b[0] - a[0];
-      return { lastPasser: passer ? passer.id : null, dir: Math.abs(dx) < 12 ? 0 : Math.sign(dx) };
+      if (!dir) {
+        const chain = D().ballChain(f, D().assignPaths(f));
+        if (chain) {
+          const dx = chain.end[0] - chain.poly[0][0];
+          if (Math.abs(dx) >= 12) dir = Math.sign(dx);
+        }
+      }
+      if (!lastPasser) {
+        const ps = (f.strokes || []).filter((s) => s.t === "pass" || s.t === "handoff");
+        if (ps.length) {
+          const a = ps[ps.length - 1].pts[0];
+          const passer = nearest(offense(frames[i + 1] || f), a);
+          lastPasser = passer ? passer.id : null;
+        }
+      }
     }
-    return { lastPasser: null, dir: 0 };
+    return { lastPasser, dir };
+  }
+
+  /* The Lock on a side: the teammate on that side closest to its corner. */
+  function lockOn(f, h, sd) {
+    return nearest(
+      offense(f).filter((t) => t.id !== h.id && sideOf(P(t)) === sd && Math.abs(t.x - 250) > 40),
+      corner(sd)
+    );
   }
 
   /* Backside down screen, away from the ball, to keep the defense engaged. Every
@@ -200,11 +217,7 @@
         const f = api.f;
         const h = holder(f);
         if (!h) return "nobody has the ball.";
-        const pick = (sd) =>
-          nearest(
-            offense(f).filter((t) => t.id !== h.id && sideOf(P(t)) === sd && Math.abs(t.x - 250) > 40),
-            corner(sd)
-          );
+        const pick = (sd) => lockOn(f, h, sd);
         let s = Math.abs(h.x - 250) > 20 ? sideOf(P(h)) : 0;
         let L = s ? pick(s) : null;
         if (!s) {
@@ -222,6 +235,28 @@
         api.step([line("dribble", [H, lerp(H, M, 0.5), M]), line("cut", [Lp, lerp(Lp, M, 0.6), add(M, [s * 14, 0]), R]), line("handoff", [M, R]), bs && bs.screen]);
         const g = P(tok(api.f, h.id));
         api.step([line("cut", [g, lerp(g, Lp, 0.5), Lp]), bs && bs.cut]);
+      },
+    },
+    twist: {
+      label: "Twist: slot passes to the Lock and rides up the lane line to the corner; the Lock fills with the ball and runs Twirl with the Rabbit",
+      run(api, ctx) {
+        const f = api.f;
+        const h = holder(f);
+        if (!h) return "nobody has the ball.";
+        if (Math.abs(h.x - 250) < 20) return "Twist starts from a slot, not the top.";
+        const s = sideOf(P(h));
+        const L = lockOn(f, h, s);
+        if (!L || L.y > 160) return "there's no Lock on that side to pass to.";
+        const home = P(h),
+          Lp = P(L);
+        api.step([passTo(h, L)]);
+        // The passer rides up the lane line and fills the corner; the Lock fills the slot with the ball.
+        const lane = 250 + s * 52;
+        const H2 = P(tok(api.f, h.id)),
+          L2 = P(tok(api.f, L.id));
+        api.step([line("dribble", [L2, lerp(L2, home, 0.5), home]), line("cut", [H2, [lane, Math.min(H2[1], 185)], [lane, 72], Lp])]);
+        // Then the Lock runs action with the Rabbit.
+        return RULES.twirl.run(api, ctx);
       },
     },
     twirl: {
@@ -313,6 +348,7 @@
     "post-entry": { tokens: [...withBall(1, 85, 215), o(5, 175, 76)] },
     get: { tokens: [...withBall(1, 85, 215), o(5, 190, 190), o(4, 325, 272), o(2, 470, 42)] },
     rub: { tokens: [...withBall(1, 175, 272), o(3, 30, 42), o(4, 325, 272), o(2, 470, 42)] },
+    twist: { tokens: [...withBall(1, 175, 272), o(3, 30, 42), o(5, 325, 76), o(4, 325, 272), o(2, 470, 42)] },
     twirl: { tokens: [...withBall(1, 175, 272), o(5, 175, 76), o(4, 325, 272), o(2, 470, 42)] },
   };
   let demoCache = {};

@@ -539,6 +539,21 @@
       "rule": "rub"
     },
     {
+      "id": "twist",
+      "kind": "action",
+      "name": "Twist",
+      "call": "“Twist”",
+      "summary": "Pass from the slot to the Lock. The passer rides up the lane line, and the Lock fills with the ball and runs action with the Rabbit.",
+      "keys": [
+        "Passer: ride up the lane line and fill the corner",
+        "Lock: fill the slot with the ball",
+        "Then run action with the Rabbit (Twirl), with the backside down screen"
+      ],
+      "reads": [],
+      "updated": "2026-11-18",
+      "rule": "twist"
+    },
+    {
       "id": "zoom",
       "kind": "action",
       "name": "Zoom",
