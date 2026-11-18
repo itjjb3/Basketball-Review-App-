@@ -48,6 +48,7 @@
     pendingOpen: null,
     sheetOpen: false,
     sel: null, // the line being edited (its handles show)
+    paused: false, // Run it was paused: the next Run it picks up from here instead of step 1
   };
   let root = null;
   let svg = null;
@@ -93,6 +94,7 @@
   }
   const frame = () => S.board.frames[S.step];
   function snapshot() {
+    S.paused = false; // the board changed, so Run it starts over
     S.history.push(JSON.stringify({ board: S.board, step: S.step, segs: S.segs }));
     if (S.history.length > 60) S.history.shift();
   }
@@ -103,6 +105,7 @@
     S.board = v.board;
     S.step = v.step;
     S.segs = v.segs;
+    S.paused = false;
     changedAll();
   }
   function changed() {
@@ -233,7 +236,8 @@
     if (parts.length) cont.cycles = (cont.cycles || 0) + 1;
     return parts.length;
   }
-  const MAX_CYCLES = 10;
+  const START_CYCLES = 4;
+  const MAX_CYCLES = 12;
   function runContinuity(it, opts) {
     const actions = baseActions(S.segs.length);
     if (!actions.length) {
@@ -241,8 +245,8 @@
       return false;
     }
     const cont = { id: BH.uid("g"), itemId: it.id, start: 0, parts: [], cycles: 0 };
-    // Over to the other side and back; Run it keeps going from there.
-    for (let c = 0; c < 2; c++) if (!runCycle(cont, actions)) break;
+    // Side to side twice (four trips); Run it keeps going from there.
+    for (let c = 0; c < START_CYCLES; c++) if (!runCycle(cont, actions)) break;
     if (!cont.parts.length) {
       if (!opts.silent) BH.toast("Continuity can't run from here.");
       return false;
@@ -641,7 +645,9 @@
   async function play() {
     const b = S.board;
     if (b.frames.length < 2) return BH.toast("Add a second step to run this.");
-    if (S.step >= b.frames.length - 1) S.step = 0;
+    // From the top, unless it was paused: then pick up where it stopped.
+    if (!S.paused || S.step >= b.frames.length - 1) S.step = 0;
+    S.paused = false;
     drawBoard();
     playToken = { cancelled: false };
     const tok = playToken;
@@ -789,7 +795,11 @@
       ${n > 1 ? `<button class="btn ghost" data-act="del">${icons.trash}<span>Delete step</span></button>` : ""}`;
     BH.$('[data-act="prev"]', el).addEventListener("click", () => goStep(S.step - 1));
     BH.$('[data-act="next"]', el).addEventListener("click", () => goStep(S.step + 1));
-    BH.$('[data-act="play"]', el).addEventListener("click", () => (playToken.cancelled ? play() : stopPlay()));
+    BH.$('[data-act="play"]', el).addEventListener("click", () => {
+      if (playToken.cancelled) return play();
+      stopPlay();
+      S.paused = true;
+    });
     BH.$('[data-act="add"]', el).addEventListener("click", addStep);
     const del = BH.$('[data-act="del"]', el);
     if (del) del.addEventListener("click", deleteStep);

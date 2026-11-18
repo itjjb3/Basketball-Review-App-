@@ -135,6 +135,22 @@
     };
   }
 
+  /* A handoff receiver's path: he comes at the giver, goes around his outside shoulder
+     (the side away from the basket, never between the giver and the rim), like coming
+     off a screen, and comes off toward R. Returns the points around the giver; the
+     path is [start, ...these, R]. */
+  const HANDOFF_OUT = 46; // how far past the giver the receiver catches it and comes off
+  function curl(M, from, R, r = 36) {
+    const TAU = Math.PI * 2;
+    const norm = (a) => ((a % TAU) + TAU) % TAU;
+    const ang = (q) => Math.atan2(q[1] - M[1], q[0] - M[0]);
+    const a0 = ang(from),
+      ccw = norm(ang(R) - a0),
+      out = ang(add(M, sub(M, RIM)));
+    const sweep = norm(out - a0) <= ccw ? ccw : ccw - TAU; // the way round that passes the outside
+    return [0.15, 0.45, 0.75].map((t) => clampPt([M[0] + r * Math.cos(a0 + sweep * t), M[1] + r * Math.sin(a0 + sweep * t)]));
+  }
+
   /* Backside down screen, away from the ball, to keep the defense engaged. Rub and
      Twist each run one (Twirl and Get don't), unless they come straight out of a
      trigger: every trigger has its own down screen, which is the backside action. busy: players in the on-ball action;
@@ -252,9 +268,9 @@
         const T2 = P(tok(api.f, T.id)),
           H2 = P(tok(api.f, h.id));
         const M = clampPt(lerp(T2, H2, 0.45));
-        const R = clampPt(add(M, mul(unit(sub(M, H2)), 34)));
-        const bend = add(M, mul(unit(sub(RIM, M)), 16));
-        api.step([line("dribble", [T2, lerp(T2, M, 0.5), M]), line("cut", [H2, lerp(H2, bend, 0.6), bend, R]), line("handoff", [M, R])]);
+        // The handler goes around the Rabbit's outside shoulder and comes off headed for the nail.
+        const R = clampPt(add(M, mul(unit(sub(NAIL, M)), HANDOFF_OUT)));
+        api.step([line("dribble", [T2, lerp(T2, M, 0.5), M]), line("cut", [H2, ...curl(M, H2, R), R]), line("handoff", [M, R])]);
         const g = P(tok(api.f, T.id));
         const roll = [250 + sideOf(g) * 24, 80];
         const r = P(tok(api.f, h.id));
@@ -281,9 +297,9 @@
         const H = P(h),
           Lp = P(L);
         const M = clampPt(lerp(H, Lp, 0.45));
-        const R = clampPt(add(M, mul(unit(sub(TOP, M)), 34)));
+        const R = clampPt(add(M, mul(unit(sub(TOP, M)), HANDOFF_OUT)));
         const bs = ctx.noBackside ? null : backside(f, [h.id, L.id], s, M);
-        api.step([line("dribble", [H, lerp(H, M, 0.5), M]), line("cut", [Lp, lerp(Lp, M, 0.6), add(M, [s * 14, 0]), R]), line("handoff", [M, R]), bs && bs.screen]);
+        api.step([line("dribble", [H, lerp(H, M, 0.5), M]), line("cut", [Lp, ...curl(M, Lp, R), R]), line("handoff", [M, R]), bs && bs.screen]);
         const g = P(tok(api.f, h.id));
         const C = corner(s);
         api.step([line("cut", [g, lerp(g, C, 0.5), C]), bs && bs.cut, bs && bs.fill]);

@@ -521,7 +521,7 @@
       host.querySelectorAll("[data-act]").forEach((b) =>
         b.addEventListener("click", () => {
           const a = b.dataset.act;
-          if (a === "play") this.playing ? this.stop() : this.play();
+          if (a === "play") this.playing ? (this.stop(), (this.paused = true)) : this.play();
           if (a === "prev") (this.stop(), this.show(this.i - 1));
           if (a === "next") (this.stop(), this.show(this.i + 1));
         })
@@ -543,7 +543,9 @@
     async play() {
       const n = this.diagram.frames.length;
       if (n < 2) return;
-      if (this.i >= n - 1) this.show(0);
+      // From the top, unless it was paused: then pick up where it stopped.
+      if (!this.paused || this.i >= n - 1) this.show(0);
+      this.paused = false;
       this.token = { cancelled: false };
       const token = this.token;
       this.setPlaying(true);
