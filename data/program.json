@@ -511,6 +511,7 @@
       "call": "“Twirl”",
       "summary": "Our ball screen (PNR), set by the Rabbit. The Rabbit rolls. Twirl and Get are interchangeable.",
       "keys": [
+        "Called on its own, Twirl runs on the ball side with whoever has the ball and the Rabbit",
         "Screener: sprint in, wide base, hold until contact",
         "Handler: set your man up first, then go shoulder to hip",
         "Screener rolls on the handler's second dribble",
@@ -797,6 +798,7 @@
       "call": "“Get”",
       "summary": "Pass into a DHO (Rub) back to the passer, run with the Rabbit. Twirl and Get are interchangeable.",
       "keys": [
+        "Rabbit: flash to the ball-side elbow if you're not there",
         "Pass to the Rabbit, then go get it back",
         "Rabbit: hand it back, then roll to the rim"
       ],

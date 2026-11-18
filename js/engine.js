@@ -191,14 +191,21 @@
       },
     },
     get: {
-      label: "Get: pass to the Rabbit, who hands it back and rolls",
+      label: "Get: the Rabbit flashes to the ball-side elbow, takes the pass, hands it back and rolls",
       run(api) {
         const h = holder(api.f);
         if (!h) return "nobody has the ball.";
         if (h.n === "5") return "the Rabbit has the ball. Get runs with the Rabbit.";
         const T = rabbit(api.f, h.id);
         if (!T) return "there's no Rabbit on the floor to get it from.";
-        api.step([passTo(h, T)]);
+        // Run it on the ball side: the Rabbit flashes to the ball-side elbow first if he isn't there.
+        const s = Math.abs(h.x - 250) > 20 ? sideOf(P(h)) : sideOf(P(T));
+        const E = [250 + s * 60, 190];
+        if (dist(P(T), E) > 60) {
+          const Tp = P(T);
+          api.step([line("cut", [Tp, lerp(Tp, E, 0.5), E])]);
+        }
+        api.step([passTo(tok(api.f, h.id), tok(api.f, T.id))]);
         const T2 = P(tok(api.f, T.id)),
           H2 = P(tok(api.f, h.id));
         const M = clampPt(lerp(T2, H2, 0.45));
