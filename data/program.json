@@ -824,6 +824,8 @@
       "call": "",
       "summary": "When added to the call bar, the actions keep repeating, moving the ball side to side when they can.",
       "keys": [
+        "Repeats the actions only. Triggers like 5 Thru don't repeat.",
+        "Rub and Twist run their backside down screen on each repeat",
         "Run it keeps the possession going until you pause"
       ],
       "reads": [],
