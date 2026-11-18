@@ -55,7 +55,7 @@ When the app is published on claude.ai instead (from `dist/artifact.html`), anyo
 ```
 
 - `kind` is one of `position`, `set`, `action`, `trigger`, `formation`, `defense`, `concept`, `principle`, `term`.
-- `rule` (optional) makes an item an **Auto** action that runs from wherever the ball is: `swing`, `skip`, `back`, `post-entry`, `get`, `rub`, `twist`, `twirl` or `continuity`. The rules live in `js/engine.js`. Without a rule, an item plays its diagram as drawn.
+- `rule` (optional) makes an item an **Auto** action that runs from wherever the ball is: `swing`, `skip`, `back`, `post-entry`, `get`, `rub`, `twist`, `twirl`, `continuity`, or the triggers `pitch` and `switch`. The rules live in `js/engine.js`. Without a rule, an item plays its diagram as drawn.
 - Court coordinates are in tenths of a foot. The home basket is at the top: the baseline is `y = 0`, the rim is at `(250, 52.5)` and half court is `y = 420`.
 - Tokens: `{ "id": "o1", "t": "o", "n": "1", "x": 250, "y": 285 }`. `t` is `o` (offense), `x` (defense), `ball` or `cone`.
 - Strokes: `{ "id": "s1", "t": "cut", "pts": [[x, y], …] }`. `t` is `cut`, `dribble`, `pass`, `handoff`, `shot`, `screen` or `pen`, with an optional color `c`. A shot's last point is the rim.

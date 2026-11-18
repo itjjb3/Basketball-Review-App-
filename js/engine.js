@@ -38,6 +38,26 @@
   /* In our diagrams 4 is the Rabbit (the interior player) and 5 is the Dragon.
      Without a 4 on the floor, the Rabbit is whoever is closest to the rim. */
   const RABBIT = "4";
+  const RACKER = "1";
+  const DRAGON = "5";
+  const byNum = (f, n, exceptId) => offense(f).find((t) => t.n === n && t.id !== exceptId);
+  /* A handoff at the top of the key. The giver dribbles to his side of the top and
+     the receiver takes it just past him. Then the backside action every trigger has:
+     the giver down-screens for the Lock on his side, who comes up to the wing. */
+  function pitchAtTop(api, giver, receiver, s) {
+    const M = [250 + s * 30, 276],
+      T = [250 - s * 12, 262];
+    const G = P(tok(api.f, giver.id)),
+      R = P(tok(api.f, receiver.id));
+    api.step([line("dribble", [G, lerp(G, M, 0.5), M]), line("cut", [R, lerp(R, T, 0.6), T]), line("handoff", [M, T])]);
+    const g = tok(api.f, giver.id);
+    const L = lockOn(api.f, g, s);
+    const ds = L && L.y < 170 ? downScreen(P(g), P(L), s, [s > 0 ? 415 : 85, 215]) : backside(api.f, [giver.id, receiver.id], s, T);
+    if (ds) {
+      api.step([ds.screen]);
+      api.step([ds.cut]);
+    }
+  }
   const rabbit = (f, exceptId) => {
     const o = offense(f).filter((t) => t.id !== exceptId);
     return o.find((t) => t.n === RABBIT) || nearest(o, RIM);
@@ -99,9 +119,19 @@
     );
   }
 
+  /* A down screen: the screener sets it just above the cutter, who comes up past it
+     on the sideline side (sd) to the spot "to". */
+  function downScreen(Hp, L, sd, to) {
+    const DS = add(L, mul(unit(sub(Hp, L)), Math.min(0.4 * dist(L, Hp), 55)));
+    return {
+      screen: line("screen", [Hp, lerp(Hp, DS, 0.5), DS]),
+      cut: line("cut", [L, add(DS, [sd * 18, 0]), to]),
+    };
+  }
+
   /* Backside down screen, away from the ball, to keep the defense engaged. Rub and
      Twist each run one (Twirl and Get don't), unless they come straight out of a
-     trigger like 5 Thru, whose down screen is the backside action. busy: players in the on-ball action;
+     trigger: every trigger has its own down screen, which is the backside action. busy: players in the on-ball action;
      s: the ball side; near: where the ball is going (keep clear of it).
      Returns { screen, cut } (screen this step, cut off it next step) or null. */
   function backside(f, busy, s, near) {
@@ -124,14 +154,7 @@
       to = [-s > 0 ? 415 : 85, 215];
     }
     if (!hi || !lo) return null;
-    const L = P(lo),
-      Hp = P(hi);
-    const DS = add(L, mul(unit(sub(Hp, L)), Math.min(0.4 * dist(L, Hp), 55)));
-    return {
-      screener: hi.id,
-      screen: line("screen", [Hp, lerp(Hp, DS, 0.5), DS]),
-      cut: line("cut", [L, add(DS, [-s * 18, 0]), to]),
-    };
+    return downScreen(P(hi), P(lo), -s, to);
   }
 
   /* ---------- the rules ---------- */
@@ -246,6 +269,33 @@
         api.step([line("cut", [g, lerp(g, Lp, 0.5), Lp]), bs && bs.cut]);
       },
     },
+    pitch: {
+      label: "Pitch (trigger): the Racker hands it off to the Dragon at the top of the key",
+      run(api) {
+        const h = holder(api.f);
+        if (!h) return "nobody has the ball.";
+        if (h.n !== RACKER) return "Pitch starts with the ball in the Racker's hands.";
+        const d = byNum(api.f, DRAGON, h.id);
+        if (!d) return "there's no Dragon on the floor.";
+        const s = Math.abs(h.x - 250) > 20 ? sideOf(P(h)) : -sideOf(P(d));
+        pitchAtTop(api, h, d, s);
+      },
+    },
+    switch: {
+      label: "Switch / Swing Pitch (trigger): the Racker swings it to the Dragon, who pitches it back at the top",
+      run(api) {
+        const h = holder(api.f);
+        if (!h) return "nobody has the ball.";
+        if (h.n !== RACKER) return "Switch starts with the ball in the Racker's hands.";
+        const d = byNum(api.f, DRAGON, h.id);
+        if (!d) return "there's no Dragon on the floor.";
+        api.step([passTo(h, d)]);
+        const D2 = P(tok(api.f, d.id)),
+          R2 = P(tok(api.f, h.id));
+        const s = Math.abs(D2[0] - 250) > 20 ? sideOf(D2) : -sideOf(R2);
+        pitchAtTop(api, d, h, s);
+      },
+    },
     twist: {
       label: "Twist: slot passes to the Lock and rides up the lane line to the corner; the Lock fills the slot with the ball, with a backside down screen",
       run(api, ctx) {
@@ -354,6 +404,8 @@
     "post-entry": { tokens: [...withBall(1, 85, 215), o(4, 175, 76)] },
     get: { tokens: [...withBall(1, 85, 215), o(4, 190, 190)] },
     rub: { tokens: [...withBall(1, 175, 272), o(3, 30, 42), o(5, 325, 272), o(2, 470, 42)] },
+    pitch: { tokens: [...withBall(1, 175, 272), o(5, 325, 272), o(3, 30, 42), o(2, 470, 42)] },
+    switch: { tokens: [...withBall(1, 175, 272), o(5, 325, 272), o(3, 30, 42), o(2, 470, 42)] },
     twist: { tokens: [...withBall(1, 175, 272), o(3, 30, 42), o(5, 325, 272), o(2, 470, 42)] },
     twirl: { tokens: [...withBall(1, 175, 272), o(4, 175, 76)] },
   };

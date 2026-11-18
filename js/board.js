@@ -157,6 +157,7 @@
       stopPlay();
       snapshot();
     }
+    if (rule && rule !== "continuity" && !S.segs.length && JSON.stringify(S.board) === JSON.stringify(scratchBoard()) && BH.store.get("4-out")) appendDrawn(BH.store.get("4-out"));
     let ok;
     if (rule === "continuity") ok = runContinuity(it, opts);
     else if (rule) ok = appendRule(it, opts);
@@ -178,7 +179,7 @@
     return ok;
   }
   function appendRule(it, opts) {
-    // Straight out of a trigger (a Thru), its down screen is the backside action.
+    // Straight out of a trigger, the trigger's down screen is the backside action.
     const prev = segItem(S.segs[S.segs.length - 1]);
     const res = E().extend(S.board.frames, it.rule, { noBackside: !!(prev && prev.kind === "trigger") });
     if (res.error) {
@@ -213,12 +214,13 @@
   function baseActions(upto) {
     let from = 0;
     S.segs.slice(0, upto).forEach((g, i) => {
-      if (!BH.isAuto(segItem(g))) from = i + 1;
+      const x = segItem(g);
+      if (!BH.isAuto(x) || x.kind === "trigger") from = i + 1;
     });
     return S.segs
       .slice(from, upto)
       .map(segItem)
-      .filter((x) => x && BH.isAuto(x) && x.rule !== "continuity")
+      .filter((x) => x && BH.isAuto(x) && x.rule !== "continuity" && x.kind !== "trigger")
       .map((x) => x.id);
   }
   /* Run the actions once more inside a Continuity piece. Returns how many ran. */

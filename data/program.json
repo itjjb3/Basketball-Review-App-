@@ -533,7 +533,7 @@
       "summary": "A DHO to the ball-side guard. The ball handler dribbles at the ball-side Lock, the Lock comes up to take the handoff, and the handler fills the corner. Goes into a Twirl or Get.",
       "keys": [
         "Whoever hands the ball off fills to the corner",
-        "Backside: down screen away from the ball to keep the defense engaged, unless we came out of a Thru (its down screen is the backside action)",
+        "Backside: down screen away from the ball to keep the defense engaged, unless we came out of a trigger (its down screen is the backside action)",
         "Next: Twirl or Get with the Rabbit"
       ],
       "reads": [],
@@ -549,7 +549,7 @@
       "keys": [
         "Passer: ride up the lane line and fill the corner",
         "Lock: fill the slot with the ball",
-        "Backside: down screen away from the ball to keep the defense engaged, unless we came out of a Thru (its down screen is the backside action)",
+        "Backside: down screen away from the ball to keep the defense engaged, unless we came out of a trigger (its down screen is the backside action)",
         "Next: Twirl or Get with the Rabbit"
       ],
       "reads": [],
@@ -1608,6 +1608,40 @@
           }
         ]
       }
+    },
+    {
+      "id": "pitch",
+      "kind": "trigger",
+      "name": "Pitch",
+      "call": "“Pitch”",
+      "summary": "The Racker hands the ball off to the Dragon at the top of the key, right into actions.",
+      "keys": [
+        "Racker: dribble at the top and hand it off to the Dragon",
+        "Dragon: come get it at the top of the key",
+        "Racker: then down-screen for the Lock on your side; the Lock comes up to the wing",
+        "Its down screen is our backside action. Going into a Rub or Twist, no extra backside screen.",
+        "Right into actions"
+      ],
+      "reads": [],
+      "updated": "2026-11-18",
+      "rule": "pitch"
+    },
+    {
+      "id": "switch",
+      "kind": "trigger",
+      "name": "Switch",
+      "call": "“Switch” or “Swing Pitch”",
+      "summary": "Or Swing Pitch. The Racker swings it to the Dragon, the Dragon comes over and pitches it back to the Racker at the top of the key, right into actions.",
+      "keys": [
+        "Racker: swing it to the Dragon, then come back to the top",
+        "Dragon: come over and pitch it back to the Racker",
+        "Dragon: then down-screen for the Lock on your side; the Lock comes up to the wing",
+        "Its down screen is our backside action. Going into a Rub or Twist, no extra backside screen.",
+        "Right into actions"
+      ],
+      "reads": [],
+      "updated": "2026-11-18",
+      "rule": "switch"
     },
     {
       "id": "power-zoom",
