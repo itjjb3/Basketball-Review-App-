@@ -512,6 +512,7 @@
       "summary": "Our ball screen (PNR), set by the Rabbit. The Rabbit rolls. Twirl and Get are interchangeable.",
       "keys": [
         "Called on its own, Twirl runs on the ball side with whoever has the ball and the Rabbit",
+        "Ball handler: get to the nail to simulate the drive, then swing it to the other slot",
         "Screener: sprint in, wide base, hold until contact",
         "Handler: set your man up first, then go shoulder to hip",
         "Screener rolls on the handler's second dribble",
@@ -760,7 +761,11 @@
       "name": "Swing",
       "call": "“Swing”",
       "summary": "Passing from one slot to the other, wing to corner or corner to wing, continuing the direction of the previous pass.",
-      "keys": [],
+      "keys": [
+        "Usually slot to slot",
+        "From a wing or corner: to the next player, wing to corner or corner to wing",
+        "Keep going the same direction the ball was moving"
+      ],
       "reads": [],
       "updated": "2026-11-18",
       "rule": "swing"
@@ -800,6 +805,7 @@
       "keys": [
         "Rabbit: flash to the ball-side elbow if you're not there",
         "Pass to the Rabbit, then go get it back",
+        "Ball handler: get to the nail to simulate the drive, then swing it to the other slot",
         "Rabbit: hand it back, then roll to the rim"
       ],
       "reads": [],

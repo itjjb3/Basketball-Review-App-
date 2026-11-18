@@ -7,7 +7,6 @@
   const D = () => BH.diagram;
   const RIM = [250, 52.5];
   const TOP = [250, 285];
-  const NAIL_TOP = [250, 215];
 
   const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
   const add = (a, b) => [a[0] + b[0], a[1] + b[1]];
@@ -25,6 +24,9 @@
   const sideOf = (p) => (p[0] >= 250 ? 1 : -1);
   const corner = (s) => (s > 0 ? [470, 42] : [30, 42]);
   const wing = (s) => (s > 0 ? [415, 215] : [85, 215]);
+  const slot = (s) => [250 + s * 78, 268];
+  const NAIL = [250, 190];
+  const isSlot = (t) => t.y > 200 && Math.abs(t.x - 250) > 40 && Math.abs(t.x - 250) < 135;
 
   const offense = (f) => (f.tokens || []).filter((t) => t.t === "o");
   const tok = (f, id) => (f.tokens || []).find((t) => t.id === id);
@@ -52,7 +54,7 @@
     api.step([line("dribble", [G, lerp(G, M, 0.5), M]), line("cut", [R, lerp(R, T, 0.6), T]), line("handoff", [M, T])]);
     const g = tok(api.f, giver.id);
     const L = lockOn(api.f, g, s);
-    const ds = L && L.y < 170 ? downScreen(P(g), P(L), s, [s > 0 ? 415 : 85, 215]) : backside(api.f, [giver.id, receiver.id], s, T);
+    const ds = L && L.y < 170 ? downScreen(P(g), P(L), s) : backside(api.f, [giver.id, receiver.id], s, T);
     if (ds) {
       api.step([ds.screen]);
       api.step([ds.cut]);
@@ -119,13 +121,14 @@
     );
   }
 
-  /* A down screen: the screener sets it just above the cutter, who comes up past it
-     on the sideline side (sd) to the spot "to". */
-  function downScreen(Hp, L, sd, to) {
+  /* A down screen: the screener sets it just above the cutter, who comes off it
+     toward the sideline (side sd) and catches at the slot on the perimeter. */
+  function downScreen(Hp, L, sd) {
     const DS = add(L, mul(unit(sub(Hp, L)), Math.min(0.4 * dist(L, Hp), 55)));
+    const out = [sd > 0 ? 440 : 60, Math.max(DS[1] + 40, 170)];
     return {
       screen: line("screen", [Hp, lerp(Hp, DS, 0.5), DS]),
-      cut: line("cut", [L, add(DS, [sd * 18, 0]), to]),
+      cut: line("cut", [L, add(DS, [sd * 18, 0]), out, slot(sd)]),
     };
   }
 
@@ -138,37 +141,46 @@
     const free = offense(f).filter((t) => !busy.includes(t.id));
     const weak = free.filter((t) => sideOf(P(t)) === -s && (!near || dist(P(t), near) > 70));
     let hi = null,
-      lo = null,
-      to = null;
+      lo = null;
     if (weak.length >= 2) {
       // The higher player down-screens for the lower one, who comes up to the screener's spot.
       hi = weak.reduce((a, b) => (b.y > a.y ? b : a));
       lo = weak.reduce((a, b) => (b.y < a.y ? b : a));
       if (hi.y - lo.y < 60) return null;
-      to = P(hi);
     } else if (weak.length === 1 && weak[0].y < 170) {
       // One low player on the backside: the closest free teammate comes over to screen,
       // and the low player comes up to the wing.
       lo = weak[0];
       hi = nearest(free.filter((t) => t.id !== lo.id && !inCorner(t) && dist(P(t), P(lo)) < 260), P(lo));
-      to = [-s > 0 ? 415 : 85, 215];
     }
     if (!hi || !lo) return null;
-    return downScreen(P(hi), P(lo), -s, to);
+    return downScreen(P(hi), P(lo), -s);
   }
 
   /* ---------- the rules ---------- */
   const RULES = {
     swing: {
-      label: "Swing: pass to the next perimeter player, same direction as the last pass",
+      label: "Swing: slot to slot (or the next perimeter player), same direction as the ball last moved",
       run(api, ctx) {
         const h = holder(api.f);
         if (!h) return "nobody has the ball.";
         const dir = ctx.dir || -sideOf(P(h));
         const { ahead, behind } = along(api.f, h, dir);
-        const t = ahead[0] || behind[0];
+        // From a slot, the top or the nail, swing it slot to slot; from a wing or corner, to the next player.
+        const hs = Math.abs(h.x - 250) > 20 ? sideOf(P(h)) : 0;
+        const central = Math.abs(h.x - 250) < 135 && h.y > 150;
+        const slotOk = (t) => isSlot(t) && (!hs || sideOf(P(t)) !== hs);
+        const otherSlot = central ? ahead.find(slotOk) || behind.find(slotOk) : null;
+        const t = otherSlot || ahead[0] || behind[0];
         if (!t) return "there's no one on the perimeter to swing it to.";
-        api.step([passTo(h, t)]);
+        const moves = [passTo(h, t)];
+        if (!isPerimeter(h)) {
+          // Passing out of the drive: the passer spaces back out to the open slot (or wing) behind the pass.
+          const back = -Math.sign(t.x - h.x) || -dir;
+          const spot = [slot(back), wing(back)].find((p) => offense(api.f).every((o) => o.id === h.id || o.id === t.id || dist(P(o), p) > 50));
+          if (spot) moves.push(line("cut", [P(h), lerp(P(h), spot, 0.5), spot]));
+        }
+        api.step(moves);
       },
     },
     skip: {
@@ -217,7 +229,7 @@
       },
     },
     get: {
-      label: "Get: the Rabbit flashes to the ball-side elbow, takes the pass, hands it back and rolls",
+      label: "Get: the Rabbit flashes to the ball-side elbow, takes the pass and hands it back; the handler gets to the nail, the Rabbit rolls",
       run(api) {
         const h = holder(api.f);
         if (!h) return "nobody has the ball.";
@@ -240,7 +252,9 @@
         api.step([line("dribble", [T2, lerp(T2, M, 0.5), M]), line("cut", [H2, lerp(H2, bend, 0.6), bend, R]), line("handoff", [M, R])]);
         const g = P(tok(api.f, T.id));
         const roll = [250 + sideOf(g) * 24, 80];
-        api.step([line("cut", [g, lerp(g, roll, 0.5), roll])]);
+        const r = P(tok(api.f, h.id));
+        // The handler gets to the nail (the drive) while the Rabbit rolls.
+        api.step([line("cut", [g, lerp(g, roll, 0.5), roll]), line("dribble", [r, lerp(r, NAIL, 0.5), NAIL])]);
       },
     },
     rub: {
@@ -319,7 +333,7 @@
       },
     },
     twirl: {
-      label: "Twirl: the Rabbit's ball screen; the Rabbit rolls",
+      label: "Twirl: the Rabbit's ball screen; the handler gets to the nail, the Rabbit rolls",
       run(api) {
         const f = api.f;
         const h = holder(f);
@@ -330,9 +344,9 @@
         if (h.n === RABBIT) return "the Rabbit has the ball. Twirl is the Rabbit's ball screen.";
         const S = rabbit(f, h.id);
         if (!S) return "there's no Rabbit on the floor to set the ball screen.";
-        // The handler comes off toward the middle, stopping short of a spot someone already has.
-        const open = (p) => others.every((t) => t.id === S.id || dist(P(t), p) > 55);
-        const G = clampPt([0.8, 0.65, 0.5, 0.35].map((k) => lerp(H, NAIL_TOP, k)).find(open) || lerp(H, NAIL_TOP, 0.35));
+        // The handler comes off and gets to the nail (the drive), stopping short if someone is there.
+        const open = (p) => others.every((t) => t.id === S.id || dist(P(t), p) > 45);
+        const G = clampPt([1, 0.85, 0.7, 0.55].map((k) => lerp(H, NAIL, k)).find(open) || lerp(H, NAIL, 0.55));
         const dirG = unit(sub(G, H));
         const SP = clampPt(add(H, mul(dirG, 26))); // screen on the handler's shoulder
         api.step([line("screen", [P(S), lerp(P(S), SP, 0.55), SP])]);
