@@ -361,9 +361,28 @@
         const dd = dist(s.pts[0], [p.x, p.y]);
         if (dd < bd && !(claimed[p.id] && claimed[p.id].d <= dd)) (bd = dd), (best = p);
       });
-      if (best) claimed[best.id] = { d: bd, poly: sampleSmooth(s.pts) };
+      if (best) claimed[best.id] = { d: bd, s };
     });
-    Object.keys(claimed).forEach((k) => (out[k] = claimed[k].poly));
+    // A player keeps going along any line drawn from where their last one ended,
+    // so a cut into a screen finishes the screen.
+    const used = new Set(Object.values(claimed).map((c) => c.s.id));
+    Object.keys(claimed).forEach((pid) => {
+      let poly = sampleSmooth(claimed[pid].s.pts);
+      for (let guard = 0; guard < 6; guard++) {
+        const end = poly[poly.length - 1];
+        let next = null,
+          bd = 24;
+        strokes.forEach((s) => {
+          if (used.has(s.id)) return;
+          const dd = dist(s.pts[0], end);
+          if (dd < bd) (bd = dd), (next = s);
+        });
+        if (!next) break;
+        used.add(next.id);
+        poly = poly.concat(sampleSmooth(next.pts));
+      }
+      out[pid] = poly;
+    });
     const ball = tokens.find((t) => t.t === "ball");
     if (ball) {
       const chain = ballChain(frame, out);

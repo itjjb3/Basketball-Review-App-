@@ -13,7 +13,8 @@
       "summary": "Our name for the point guard.",
       "keys": [
         "First objective: RACK IT. Beat everyone to the rim.",
-        "Coast to coast or off an outlet"
+        "Coast to coast or off an outlet",
+        "Initiate the Offense"
       ],
       "reads": [],
       "updated": "2026-11-18"
@@ -28,6 +29,8 @@
         "SPRINT to the corners at the start of every offensive possession",
         "Stay LOCKED in the corner until you're involved in an action"
       ],
+      "reads": [],
+      "updated": "2026-11-18",
       "diagram": {
         "court": "half",
         "frames": [
@@ -107,9 +110,7 @@
             "strokes": []
           }
         ]
-      },
-      "reads": [],
-      "updated": "2026-11-18"
+      }
     },
     {
       "id": "dragon",
@@ -136,6 +137,8 @@
         "Transition: SPRINT the center lane to the rabbit hole (either block)",
         "Half court spots: each dunker spot, each block, each elbow, the nail and the top of the key"
       ],
+      "reads": [],
+      "updated": "2026-11-18",
       "diagram": {
         "court": "half",
         "frames": [
@@ -299,9 +302,7 @@
             "strokes": []
           }
         ]
-      },
-      "reads": [],
-      "updated": "2026-11-18"
+      }
     },
     {
       "id": "power",
@@ -951,240 +952,18 @@
       "updated": "2026-11-18"
     },
     {
-      "id": "flare-screen",
-      "kind": "action",
-      "name": "Flare Screen",
-      "call": "“Flare”",
-      "summary": "A screen away from the ball. The cutter fades to the wing behind the screen for a catch-and-shoot three.",
-      "keys": [
-        "Screener's back faces where the shooter is going",
-        "Shooter: walk your man in, then fade — don't drift",
-        "Passer throws the skip on time, to the shooting pocket"
-      ],
-      "reads": [
-        "Defender goes under → shoot it",
-        "Defender chases over the top → curl to the elbow"
-      ],
-      "updated": "2026-11-18",
-      "example": true,
-      "diagram": {
-        "court": "half",
-        "frames": [
-          {
-            "tokens": [
-              {
-                "id": "o1",
-                "t": "o",
-                "n": "1",
-                "x": 165,
-                "y": 285
-              },
-              {
-                "id": "ball",
-                "t": "ball",
-                "n": "",
-                "x": 178,
-                "y": 273
-              },
-              {
-                "id": "o2",
-                "t": "o",
-                "n": "2",
-                "x": 310,
-                "y": 190
-              },
-              {
-                "id": "o4",
-                "t": "o",
-                "n": "4",
-                "x": 335,
-                "y": 285
-              },
-              {
-                "id": "o5",
-                "t": "o",
-                "n": "5",
-                "x": 172,
-                "y": 78
-              },
-              {
-                "id": "o3",
-                "t": "o",
-                "n": "3",
-                "x": 30,
-                "y": 32
-              }
-            ],
-            "strokes": [
-              {
-                "id": "s5",
-                "t": "screen",
-                "pts": [
-                  [
-                    335,
-                    285
-                  ],
-                  [
-                    318,
-                    255
-                  ],
-                  [
-                    300,
-                    232
-                  ]
-                ]
-              },
-              {
-                "id": "s6",
-                "t": "cut",
-                "pts": [
-                  [
-                    310,
-                    190
-                  ],
-                  [
-                    320,
-                    205
-                  ],
-                  [
-                    372,
-                    230
-                  ],
-                  [
-                    430,
-                    245
-                  ]
-                ]
-              }
-            ]
-          },
-          {
-            "tokens": [
-              {
-                "id": "o1",
-                "t": "o",
-                "n": "1",
-                "x": 165,
-                "y": 285
-              },
-              {
-                "id": "ball",
-                "t": "ball",
-                "n": "",
-                "x": 178,
-                "y": 273
-              },
-              {
-                "id": "o2",
-                "t": "o",
-                "n": "2",
-                "x": 430,
-                "y": 245
-              },
-              {
-                "id": "o4",
-                "t": "o",
-                "n": "4",
-                "x": 300,
-                "y": 232
-              },
-              {
-                "id": "o5",
-                "t": "o",
-                "n": "5",
-                "x": 172,
-                "y": 78
-              },
-              {
-                "id": "o3",
-                "t": "o",
-                "n": "3",
-                "x": 30,
-                "y": 32
-              }
-            ],
-            "strokes": [
-              {
-                "id": "s7",
-                "t": "pass",
-                "pts": [
-                  [
-                    165,
-                    285
-                  ],
-                  [
-                    428,
-                    245
-                  ]
-                ]
-              }
-            ]
-          },
-          {
-            "tokens": [
-              {
-                "id": "o1",
-                "t": "o",
-                "n": "1",
-                "x": 165,
-                "y": 285
-              },
-              {
-                "id": "o2",
-                "t": "o",
-                "n": "2",
-                "x": 430,
-                "y": 245
-              },
-              {
-                "id": "ball",
-                "t": "ball",
-                "n": "",
-                "x": 443,
-                "y": 233
-              },
-              {
-                "id": "o4",
-                "t": "o",
-                "n": "4",
-                "x": 300,
-                "y": 232
-              },
-              {
-                "id": "o5",
-                "t": "o",
-                "n": "5",
-                "x": 172,
-                "y": 78
-              },
-              {
-                "id": "o3",
-                "t": "o",
-                "n": "3",
-                "x": 30,
-                "y": 32
-              }
-            ],
-            "strokes": []
-          }
-        ]
-      }
-    },
-    {
       "id": "denied-backdoor",
       "kind": "trigger",
       "name": "5 THRU",
-      "call": "No call. The deny is the call.",
-      "summary": "When the wing's defender is in the passing lane, the wing cuts backdoor right away. The passer leads him to the rim with a bounce pass.",
+      "call": "“5 Thru”",
+      "summary": "5 runs through to the left wing and down-screens for 3 in the left corner. 1 dribbles over to the right wing and 4 flashes to the right elbow.",
       "keys": [
-        "Trigger: defender's hand and foot are in the passing lane",
-        "Take him up one hard step, plant on the outside foot, cut to the rim",
-        "Passer: bounce pass, lead him to the rim"
+        "5: run through from the right side to the left wing, then down-screen for 3",
+        "1: dribble over to the right wing",
+        "4: flash from the left block to the right elbow",
+        "Locks (2 and 3) stay locked in the corners"
       ],
-      "reads": [
-        "Help steps in from the weak side → pass out to the open shooter",
-        "Denied again on the next catch → keep cutting, keep spacing"
-      ],
+      "reads": [],
       "updated": "2026-11-18",
       "diagram": {
         "court": "half",
@@ -1195,93 +974,191 @@
                 "id": "o1",
                 "t": "o",
                 "n": "1",
-                "x": 250,
-                "y": 292
-              },
-              {
-                "id": "ball",
-                "t": "ball",
-                "n": "",
-                "x": 263,
-                "y": 280
-              },
-              {
-                "id": "x1",
-                "t": "x",
-                "n": "1",
-                "x": 250,
-                "y": 255
+                "x": 105,
+                "y": 369
               },
               {
                 "id": "o2",
                 "t": "o",
                 "n": "2",
-                "x": 415,
-                "y": 215
-              },
-              {
-                "id": "x2",
-                "t": "x",
-                "n": "2",
-                "x": 388,
-                "y": 196
+                "x": 473,
+                "y": 51
               },
               {
                 "id": "o3",
                 "t": "o",
                 "n": "3",
-                "x": 85,
-                "y": 215
+                "x": 27,
+                "y": 31
               },
               {
                 "id": "o4",
                 "t": "o",
                 "n": "4",
-                "x": 470,
-                "y": 32
+                "x": 169,
+                "y": 79
               },
               {
                 "id": "o5",
                 "t": "o",
                 "n": "5",
-                "x": 172,
-                "y": 78
+                "x": 441,
+                "y": 383
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 105,
+                "y": 370
               }
             ],
             "strokes": [
               {
-                "id": "s8",
+                "id": "s80ix3nt",
                 "t": "cut",
                 "pts": [
                   [
-                    415,
-                    215
+                    441,
+                    383
                   ],
                   [
-                    432,
-                    245
+                    436.8,
+                    376.7
                   ],
                   [
-                    400,
-                    160
+                    396.8,
+                    375.6
                   ],
                   [
-                    298,
-                    74
+                    326.7,
+                    352.2
+                  ],
+                  [
+                    255.6,
+                    315.6
+                  ],
+                  [
+                    212.2,
+                    302.2
+                  ],
+                  [
+                    184.4,
+                    284.4
+                  ],
+                  [
+                    165.5,
+                    263.3
+                  ],
+                  [
+                    93.2,
+                    208.8
+                  ],
+                  [
+                    82.1,
+                    196.6
                   ]
                 ]
               },
               {
-                "id": "s9",
-                "t": "pass",
+                "id": "sqr02wga",
+                "t": "screen",
                 "pts": [
                   [
-                    250,
-                    292
+                    82.1,
+                    196.6
                   ],
                   [
-                    292,
-                    84
+                    85.4,
+                    198.8
+                  ],
+                  [
+                    63.2,
+                    173.2
+                  ],
+                  [
+                    40.9,
+                    113.2
+                  ]
+                ]
+              },
+              {
+                "id": "s8mh9vzd",
+                "t": "dribble",
+                "pts": [
+                  [
+                    105,
+                    370
+                  ],
+                  [
+                    127.7,
+                    352.2
+                  ],
+                  [
+                    159.9,
+                    343.4
+                  ],
+                  [
+                    186.6,
+                    326.7
+                  ],
+                  [
+                    218.9,
+                    323.3
+                  ],
+                  [
+                    256.7,
+                    307.8
+                  ],
+                  [
+                    284.5,
+                    303.3
+                  ],
+                  [
+                    313.4,
+                    290
+                  ],
+                  [
+                    341.2,
+                    284.4
+                  ],
+                  [
+                    370.1,
+                    271.1
+                  ],
+                  [
+                    386.8,
+                    267.7
+                  ]
+                ]
+              },
+              {
+                "id": "spnfnrhs",
+                "t": "cut",
+                "pts": [
+                  [
+                    169,
+                    79
+                  ],
+                  [
+                    165.5,
+                    99.8
+                  ],
+                  [
+                    187.7,
+                    118.7
+                  ],
+                  [
+                    273.4,
+                    159.9
+                  ],
+                  [
+                    286.7,
+                    175.4
+                  ],
+                  [
+                    307.8,
+                    189.9
                   ]
                 ]
               }
@@ -1293,57 +1170,43 @@
                 "id": "o1",
                 "t": "o",
                 "n": "1",
-                "x": 250,
-                "y": 292
-              },
-              {
-                "id": "x1",
-                "t": "x",
-                "n": "1",
-                "x": 250,
-                "y": 255
+                "x": 387,
+                "y": 268
               },
               {
                 "id": "o2",
                 "t": "o",
                 "n": "2",
-                "x": 298,
-                "y": 74
-              },
-              {
-                "id": "ball",
-                "t": "ball",
-                "n": "",
-                "x": 311,
-                "y": 62
-              },
-              {
-                "id": "x2",
-                "t": "x",
-                "n": "2",
-                "x": 352,
-                "y": 120
+                "x": 473,
+                "y": 51
               },
               {
                 "id": "o3",
                 "t": "o",
                 "n": "3",
-                "x": 85,
-                "y": 215
+                "x": 27,
+                "y": 31
               },
               {
                 "id": "o4",
                 "t": "o",
                 "n": "4",
-                "x": 470,
-                "y": 32
+                "x": 308,
+                "y": 190
               },
               {
                 "id": "o5",
                 "t": "o",
                 "n": "5",
-                "x": 172,
-                "y": 78
+                "x": 41,
+                "y": 113
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 400,
+                "y": 256
               }
             ],
             "strokes": []
@@ -1355,12 +1218,11 @@
       "id": "baseline-drive-lift",
       "kind": "trigger",
       "name": "1 THRU",
-      "call": "No call. The drive is the call.",
-      "summary": "When the wing drives baseline, the corner player lifts to the wing. The driver kicks it out when help comes.",
+      "call": "“1 Thru”",
+      "summary": "1 swings it to 5, then runs through to the right side and down-screens for 2 in the right corner. 5 dribbles back to the left wing and 4 flashes to the left elbow.",
       "keys": [
-        "Lift early, as soon as the driver's first dribble goes baseline",
-        "Show your hands, feet set behind the line",
-        "Driver: two feet in the paint before you kick"
+        "Step 1: 1 passes to 5 on the right side. 4 crosses the lane to the right block.",
+        "Step 2: 1 runs through and down-screens for 2 in the right corner. 5 dribbles back to the left wing. 4 flashes to the left elbow."
       ],
       "reads": [],
       "updated": "2026-11-18",
@@ -1370,144 +1232,90 @@
           {
             "tokens": [
               {
-                "id": "o2",
-                "t": "o",
-                "n": "2",
-                "x": 415,
-                "y": 215
-              },
-              {
-                "id": "ball",
-                "t": "ball",
-                "n": "",
-                "x": 428,
-                "y": 203
-              },
-              {
-                "id": "o4",
-                "t": "o",
-                "n": "4",
-                "x": 470,
-                "y": 32
-              },
-              {
                 "id": "o1",
                 "t": "o",
                 "n": "1",
-                "x": 250,
-                "y": 285
+                "x": 80,
+                "y": 336
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 472,
+                "y": 38
               },
               {
                 "id": "o3",
                 "t": "o",
                 "n": "3",
-                "x": 85,
-                "y": 215
-              },
-              {
-                "id": "o5",
-                "t": "o",
-                "n": "5",
-                "x": 172,
-                "y": 78
-              }
-            ],
-            "strokes": [
-              {
-                "id": "s10",
-                "t": "dribble",
-                "pts": [
-                  [
-                    415,
-                    215
-                  ],
-                  [
-                    432,
-                    150
-                  ],
-                  [
-                    392,
-                    70
-                  ]
-                ]
-              },
-              {
-                "id": "s11",
-                "t": "cut",
-                "pts": [
-                  [
-                    470,
-                    32
-                  ],
-                  [
-                    474,
-                    120
-                  ],
-                  [
-                    440,
-                    196
-                  ]
-                ]
-              }
-            ]
-          },
-          {
-            "tokens": [
-              {
-                "id": "o2",
-                "t": "o",
-                "n": "2",
-                "x": 392,
-                "y": 70
-              },
-              {
-                "id": "ball",
-                "t": "ball",
-                "n": "",
-                "x": 405,
-                "y": 58
+                "x": 22,
+                "y": 27
               },
               {
                 "id": "o4",
                 "t": "o",
                 "n": "4",
-                "x": 440,
-                "y": 196
-              },
-              {
-                "id": "o1",
-                "t": "o",
-                "n": "1",
-                "x": 250,
-                "y": 285
-              },
-              {
-                "id": "o3",
-                "t": "o",
-                "n": "3",
-                "x": 85,
-                "y": 215
+                "x": 178,
+                "y": 87
               },
               {
                 "id": "o5",
                 "t": "o",
                 "n": "5",
-                "x": 172,
-                "y": 78
+                "x": 421,
+                "y": 322
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 83,
+                "y": 334
               }
             ],
             "strokes": [
               {
-                "id": "s12",
+                "id": "si5o7ldl",
                 "t": "pass",
                 "pts": [
                   [
-                    392,
-                    70
+                    83,
+                    334
                   ],
                   [
-                    438,
-                    192
+                    421,
+                    322
+                  ]
+                ]
+              },
+              {
+                "id": "slbtz77q",
+                "t": "cut",
+                "pts": [
+                  [
+                    178,
+                    87
+                  ],
+                  [
+                    179,
+                    80.7
+                  ],
+                  [
+                    204,
+                    69
+                  ],
+                  [
+                    256.7,
+                    58.8
+                  ],
+                  [
+                    288.9,
+                    60.2
+                  ],
+                  [
+                    321.2,
+                    71.9
                   ]
                 ]
               }
@@ -1516,46 +1324,262 @@
           {
             "tokens": [
               {
-                "id": "o2",
-                "t": "o",
-                "n": "2",
-                "x": 392,
-                "y": 70
-              },
-              {
-                "id": "o4",
-                "t": "o",
-                "n": "4",
-                "x": 440,
-                "y": 196
-              },
-              {
-                "id": "ball",
-                "t": "ball",
-                "n": "",
-                "x": 453,
-                "y": 184
-              },
-              {
                 "id": "o1",
                 "t": "o",
                 "n": "1",
-                "x": 250,
-                "y": 285
+                "x": 80,
+                "y": 336
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 472,
+                "y": 38
               },
               {
                 "id": "o3",
                 "t": "o",
                 "n": "3",
-                "x": 85,
-                "y": 215
+                "x": 22,
+                "y": 27
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 321,
+                "y": 72
               },
               {
                 "id": "o5",
                 "t": "o",
                 "n": "5",
-                "x": 172,
-                "y": 78
+                "x": 421,
+                "y": 322
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 434,
+                "y": 310
+              }
+            ],
+            "strokes": [
+              {
+                "id": "skpyr8en",
+                "t": "cut",
+                "pts": [
+                  [
+                    80,
+                    336
+                  ],
+                  [
+                    83.8,
+                    329.9
+                  ],
+                  [
+                    126.3,
+                    326.9
+                  ],
+                  [
+                    158.5,
+                    319.6
+                  ],
+                  [
+                    236.2,
+                    315.2
+                  ],
+                  [
+                    275.8,
+                    306.4
+                  ],
+                  [
+                    313.9,
+                    285.9
+                  ],
+                  [
+                    346.1,
+                    262.5
+                  ],
+                  [
+                    353.4,
+                    250.7
+                  ]
+                ]
+              },
+              {
+                "id": "s650ir3c",
+                "t": "screen",
+                "pts": [
+                  [
+                    353.4,
+                    250.7
+                  ],
+                  [
+                    356.4,
+                    240.5
+                  ],
+                  [
+                    365.2,
+                    230.2
+                  ],
+                  [
+                    378.3,
+                    222.9
+                  ],
+                  [
+                    404.7,
+                    193.6
+                  ],
+                  [
+                    432.6,
+                    142.3
+                  ],
+                  [
+                    438.4,
+                    120.3
+                  ],
+                  [
+                    445.8,
+                    117.4
+                  ],
+                  [
+                    447.2,
+                    110
+                  ]
+                ]
+              },
+              {
+                "id": "sn2ebmu1",
+                "t": "dribble",
+                "pts": [
+                  [
+                    421,
+                    322
+                  ],
+                  [
+                    412.1,
+                    310.8
+                  ],
+                  [
+                    331.4,
+                    313.8
+                  ],
+                  [
+                    297.7,
+                    307.9
+                  ],
+                  [
+                    280.2,
+                    300.6
+                  ],
+                  [
+                    243.5,
+                    300.6
+                  ],
+                  [
+                    195.2,
+                    287.4
+                  ],
+                  [
+                    98.4,
+                    285.9
+                  ],
+                  [
+                    75,
+                    271.3
+                  ],
+                  [
+                    58.9,
+                    268.3
+                  ],
+                  [
+                    41.3,
+                    243.4
+                  ]
+                ]
+              },
+              {
+                "id": "s88tb28m",
+                "t": "cut",
+                "pts": [
+                  [
+                    321,
+                    72
+                  ],
+                  [
+                    316.8,
+                    85.1
+                  ],
+                  [
+                    305.1,
+                    93.9
+                  ],
+                  [
+                    287.5,
+                    98.3
+                  ],
+                  [
+                    249.4,
+                    129.1
+                  ],
+                  [
+                    230.3,
+                    159.9
+                  ],
+                  [
+                    199.6,
+                    183.3
+                  ]
+                ]
+              }
+            ]
+          },
+          {
+            "tokens": [
+              {
+                "id": "o1",
+                "t": "o",
+                "n": "1",
+                "x": 447,
+                "y": 110
+              },
+              {
+                "id": "o2",
+                "t": "o",
+                "n": "2",
+                "x": 472,
+                "y": 38
+              },
+              {
+                "id": "o3",
+                "t": "o",
+                "n": "3",
+                "x": 22,
+                "y": 27
+              },
+              {
+                "id": "o4",
+                "t": "o",
+                "n": "4",
+                "x": 200,
+                "y": 183
+              },
+              {
+                "id": "o5",
+                "t": "o",
+                "n": "5",
+                "x": 41,
+                "y": 243
+              },
+              {
+                "id": "ball",
+                "t": "ball",
+                "n": "",
+                "x": 54,
+                "y": 231
               }
             ],
             "strokes": []
@@ -2165,21 +2189,6 @@
         "Catch with your feet ready to shoot, drive or pass",
         "Make your decision in half a second",
         "A good shot now beats a great shot later only if the advantage is gone"
-      ],
-      "reads": [],
-      "updated": "2026-11-18",
-      "example": true
-    },
-    {
-      "id": "spacing",
-      "kind": "concept",
-      "name": "Spacing",
-      "call": "“Space!”",
-      "summary": "Keep 15 to 18 feet between teammates so one defender can't guard two of us.",
-      "keys": [
-        "If you can hand it to a teammate, you're too close",
-        "Corners are spots, not suggestions",
-        "When a teammate cuts, fill the spot they left"
       ],
       "reads": [],
       "updated": "2026-11-18",
