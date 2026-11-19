@@ -760,14 +760,14 @@
       "kind": "action",
       "name": "Swing",
       "call": "“Swing”",
-      "summary": "Passing from one slot to the other, wing to corner or corner to wing, continuing the direction of the previous pass.",
+      "summary": "A pass that switches sides: slot to slot, continuing the direction the ball was moving.",
       "keys": [
         "Usually slot to slot",
-        "From a wing or corner: to the next player, wing to corner or corner to wing",
+        "From a wing or corner: to the first man on the other side (a same-side pass is a Kick)",
         "Keep going the same direction the ball was moving"
       ],
       "reads": [],
-      "updated": "2026-11-18",
+      "updated": "2026-11-19",
       "rule": "swing"
     },
     {
@@ -855,11 +855,12 @@
     {
       "id": "kick-out",
       "kind": "action",
-      "name": "Kick Out",
+      "name": "Kick",
       "call": "“Kick”",
-      "summary": "Out of a drive, kick it to the closest teammate on the ball side.",
+      "summary": "A same-side pass: slot to corner, wing to corner, or out of a drive to the open shooter on that side.",
       "keys": [
-        "Same-side pass to the open shooter"
+        "Same side of the floor",
+        "Out of a drive: the driver spaces back out"
       ],
       "reads": [],
       "updated": "2026-11-19",
@@ -2174,10 +2175,28 @@
       "kind": "term",
       "name": "Kick",
       "call": "",
-      "summary": "A same-side pass.",
-      "keys": [],
+      "summary": "A same-side pass: the ball stays on the side of the floor it's on.",
+      "keys": [
+        "On the whiteboard: Kick"
+      ],
       "reads": [],
-      "updated": "2026-11-18"
+      "updated": "2026-11-19",
+      "rule": "kick"
+    },
+    {
+      "id": "swing-pass",
+      "kind": "term",
+      "name": "Swing Pass",
+      "call": "“Swing”",
+      "summary": "A pass that switches the ball from one side of the floor to the other.",
+      "keys": [
+        "Usually slot to slot",
+        "Makes the defense move with the ball (the string)",
+        "On the whiteboard: Swing"
+      ],
+      "reads": [],
+      "updated": "2026-11-19",
+      "rule": "swing"
     },
     {
       "id": "lift",

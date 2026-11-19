@@ -145,7 +145,7 @@
           ${
             dg
               ? `<div class="item-diagram"><div id="item-player"></div>${
-                  auto && !BH.hasDiagram(it) ? `<p class="auto-note">${icons.info} A small example. On the whiteboard, ${esc(it.name)} runs from wherever the ball is: add it after any play to keep the possession going.</p>` : ""
+                  auto && !BH.hasDiagram(it) && it.kind !== "term" ? `<p class="auto-note">${icons.info} A small example. On the whiteboard, ${esc(it.name)} runs from wherever the ball is: add it after any play to keep the possession going.</p>` : ""
                 }${showJobs ? jobsMarkup(job) : ""}</div>`
               : ""
           }

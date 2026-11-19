@@ -184,7 +184,7 @@
   /* ---------- the rules ---------- */
   const RULES = {
     swing: {
-      label: "Swing: slot to slot (or the next perimeter player), same direction as the ball last moved",
+      label: "Swing: a pass that switches sides (slot to slot), the same direction the ball last moved",
       run(api, ctx) {
         const h = holder(api.f);
         if (!h) return "nobody has the ball.";
@@ -196,8 +196,15 @@
         const central = (Math.abs(h.x - 250) < 135 && h.y > 150) || !isPerimeter(h);
         const slotOk = (t) => isSlot(t) && (!hs || sideOf(P(t)) !== hs);
         const otherSlot = central ? ahead.find(slotOk) || behind.find(slotOk) : null;
-        const t = otherSlot || ahead[0] || behind[0];
-        if (!t) return "there's no one on the perimeter to swing it to.";
+        // A swing switches sides: from a wing or corner it goes to the first man across (a same-side pass is a Kick).
+        const across = (t) => !hs || Math.abs(t.x - 250) <= 40 || sideOf(P(t)) !== hs;
+        let t = otherSlot;
+        if (!t) {
+          const next = ahead[0] || behind[0];
+          if (!next) return "there's no one on the perimeter to swing it to.";
+          if (!across(next)) return "a Swing switches sides, and the next man is on this side. Kick it to him instead.";
+          t = next;
+        }
         const moves = [passTo(h, t)];
         if (!isPerimeter(h)) {
           // Passing out of the drive: the passer spaces back out on his own side, to the open slot (or wing).
@@ -413,7 +420,7 @@
       },
     },
     kick: {
-      label: "Kick: a same-side pass out of the drive to the closest teammate on the perimeter",
+      label: "Kick: a same-side pass (slot to corner, or out of a drive to the open man on that side)",
       run(api) {
         const h = holder(api.f);
         if (!h) return "nobody has the ball.";
@@ -424,9 +431,11 @@
         const t = nearest(same.length ? same : per, P(h));
         const moves = [passTo(h, t)];
         if (!isPerimeter(h)) {
-          // The driver kicks it and spaces back out to the open slot on his side (or the wing).
+          // The driver kicks it and spaces back out to the nearest open spot on his side
+          // (a baseline driver refills his corner, a slot driver his slot).
           const sd = s || -sideOf(P(t));
-          const spot = [slot(sd), wing(sd), slot(-sd)].find((q) => offense(api.f).every((o) => o.id === h.id || o.id === t.id || dist(P(o), q) > 50));
+          const open = (q) => offense(api.f).every((o) => o.id === h.id || dist(P(o), q) > 50);
+          const spot = [slot(sd), wing(sd), corner(sd)].filter(open).sort((a, b) => dist(a, P(h)) - dist(b, P(h)))[0];
           if (spot) moves.push(line("cut", [P(h), lerp(P(h), spot, 0.5), spot]));
         }
         api.step(moves);
