@@ -1013,13 +1013,15 @@
     { group: "Triggers", id: "sc-1thru", name: "1 Thru into Twist", call: ["baseline-drive-lift", "twist", "get", "swing", "continuity"], about: "The 1 Thru trigger, a Twist, a Get and Swing, then Continuity" },
     { group: "Triggers", id: "sc-pitch", name: "Pitch", call: ["4-out", "pitch", "twirl", "swing", "continuity"], about: "Pitch at the top into a Twirl and Swing, then Continuity" },
     { group: "Triggers", id: "sc-switch", name: "Switch", call: ["4-out", "switch", "rub", "get", "swing", "continuity"], about: "Swing Pitch into a Rub, a Get and Swing, then Continuity" },
-    { group: "Drive & kick", id: "sc-slot", name: "Slot drive", call: ["4-out", "drive", "kick-out"], about: "Drive left from the slot: Wall up, Bear fills, Gap snipes and grabs, Scram" },
-    { group: "Drive & kick", id: "sc-top", name: "Top drive", call: [["5-out", "power"], "drive", "kick-out", "swing"], about: "Drive from the top of the key: corner Wall and Gap snipe and grab, Deny drops" },
-    { group: "Drive & kick", id: "sc-wing", name: "Wing drive", call: ["baseline-drive-lift", "drive", "kick-out"], about: "1 Thru leaves 5 on the wing; he drives and kicks" },
-    { group: "Drive & kick", id: "sc-corner", name: "Corner drive", call: ["4-out", "swing", "swing", "drive", "kick-out"], about: "The ball swings to the corner, he drives baseline and kicks" },
-    { group: "Drive & kick", id: "sc-beat", name: "Beat: Scram", call: ["4-out", { id: "drive", beat: true }, "kick-out"], about: "He gets beat left on a slot drive: the Gap picks up the ball, the on-ball sprints to the Gap's man" },
-    { group: "Ball screens", id: "sc-ice", name: "Ice", call: ["4-out", "twirl", "kick-out"], about: "Twirl going right: we ICE it, he rejects and drives left, the big Contains" },
-    { group: "Ball screens", id: "sc-fire", name: "Fire", call: ["4-out", "swing", "twirl", "swing"], about: "Twirl going left: FIRE, we trap; the Bear tags the roller, he passes out" },
+    { group: "Drive & X-out", id: "sc-slot", name: "Slot drive", call: ["4-out", "drive", "kick-out"], about: "Watch the Wall help, the Bear help the helper (he takes the Wall's man), and the Wall and Bear X-out; the Gap snipes and grabs" },
+    { group: "Drive & X-out", id: "sc-top", name: "Top drive", call: [["5-out", "power"], "drive", "kick-out", "swing"], about: "Watch the Gap and the corner (the Wall) snipe and grab, the weak wing drop to the corner's man, and the weak wing and corner X-out" },
+    { group: "Drive & X-out", id: "sc-wing", name: "Wing drive", call: ["baseline-drive-lift", "drive", "kick-out"], about: "1 Thru leaves 5 on the wing; watch the rotation and the X-out on his drive" },
+    { group: "Drive & X-out", id: "sc-corner", name: "Corner drive", call: ["4-out", "swing", "swing", "drive", "kick-out"], about: "The ball swings to the corner and he drives baseline; watch the rotation and the X-out" },
+    { group: "Beat: Scram", id: "sc-beat", name: "Slot drive", call: ["4-out", { id: "drive", beat: true }, "kick-out"], about: "He gets beat on a slot drive: the Gap picks up the ball, the on-ball sprints to the Gap's man (Scram)" },
+    { group: "Beat: Scram", id: "sc-beat-top", name: "Top drive", call: [["5-out", "power"], { id: "drive", beat: true }, "kick-out"], about: "He gets beat at the top: the drive-side wing picks up the ball, the on-ball sprints to his man, the corner stays home (Scram)" },
+    { group: "Beat: Scram", id: "sc-beat-wing", name: "Wing drive", call: ["baseline-drive-lift", { id: "drive", beat: true }, "kick-out"], about: "He gets beat on a wing drive: the Gap picks up the ball, the on-ball sprints to the Gap's man (Scram)" },
+    { group: "Ball screens", id: "sc-ice", name: "Ice", call: ["4-out", "twirl", "kick-out"], about: "Twirl going right: we ICE it, he rejects and drives left, the big plays Contain, then the Wall and Bear X-out" },
+    { group: "Ball screens", id: "sc-fire", name: "Fire", call: ["4-out", "swing", "twirl", "swing"], about: "Twirl going left: FIRE, we trap; the Bear tags the roller, the big and Bear X-out out of the trap" },
   ];
   /* The program's item for a scenario step (the first that exists when there's a choice). */
   const scenarioItem = (step) => [].concat(step && step.id ? step.id : step).find((id) => BH.store.get(id));

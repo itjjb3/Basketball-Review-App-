@@ -425,6 +425,15 @@
         // X-out: the weak wing keeps the corner man he dropped to, the corner recovers to the open wing.
         if (wkCorner && guard[wkCorner.id]) xout.push([num(wx), num(guard[wkCorner.id])]);
       }
+      // He got beat: Scram. The drive-side wing picks up the ball, the on-ball sprints to that
+      // wing's man, and the drive-side corner (the Wall) stays home. The weak side still rotates.
+      const pickX = dsWing && guard[dsWing.id];
+      if (drive.beat && pickX && ballX && pickX !== ballX) {
+        move[pickX] = "pickup";
+        move[ballX] = "sprint";
+        if (dsCorner && guard[dsCorner.id]) move[guard[dsCorner.id]] = "home";
+        scram.push([num(ballX), num(pickX)]);
+      }
     } else {
       const gapX = xOfJob("gap"),
         wallX = xOfJob("wall"),
