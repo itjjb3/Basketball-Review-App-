@@ -349,6 +349,13 @@ body[data-view="board"] main { max-width: 1600px; padding-block: 16px 24px; }
 .tok-x .x-num { fill: var(--def); font-family: var(--font-display); font-weight: 700; font-size: 14px; pointer-events: none; }
 .tok-x .x-back { fill: none; stroke: var(--def); stroke-width: 3.2; stroke-linecap: round; }
 .tok-x .x-hands path { stroke: var(--def); stroke-width: 2.6; stroke-linecap: round; fill: none; }
+.tok-x .x-scram rect { fill: #b3261e; }
+.tok-x .x-scram text { fill: #fff; font-family: var(--font-display); font-weight: 700; font-size: 11.5px; letter-spacing: 0.07em; text-anchor: middle; pointer-events: none; }
+/* Who's guarding who: a faint dotted line from each X to his man. */
+.matchups line { stroke: var(--def); stroke-width: 1.7; stroke-dasharray: 0.1 5; stroke-linecap: round; opacity: 0.5; pointer-events: none; }
+.matchups line.lit { stroke: #c48a00; stroke-width: 2.4; opacity: 0.95; }
+.matchups line.dim { opacity: 0.18; }
+.matchups line.scram { stroke: #b3261e; stroke-dasharray: 6 4; stroke-linecap: butt; opacity: 0.8; }
 .tok-x .x-hands circle { fill: var(--def); }
 .tok-x .x-sel { fill: none; stroke: var(--brand); stroke-width: 2.5; stroke-dasharray: 4 3; }
 .stk.inert { pointer-events: none; }
@@ -688,3 +695,8 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
 .stance-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .btn.small { min-height: 34px; padding: 5px 10px; font-size: 0.85rem; }
 .stance-tip { margin: 8px 0 0; }
+
+.switch-row { margin-top: 10px; display: grid; gap: 6px; }
+.switch-row p { margin: 0; }
+.switch-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 0.88rem; }
+.linkish { border: 0; background: none; padding: 0 2px; color: var(--brand-text); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }

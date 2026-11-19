@@ -259,8 +259,11 @@
       // Hands high on a closeout: arms out in front with the hands up.
       const hands = tk.hh && extra.face != null ? `<g class="x-hands" transform="rotate(${extra.face.toFixed(1)})"><path d="M2,-5 L11,-12 M2,5 L11,12" /><circle cx="12.5" cy="-13" r="3" /><circle cx="12.5" cy="13" r="3" /></g>` : "";
       const ring = extra.sel ? `<circle class="x-sel" r="18" />` : "";
-      const tag = extra.hl && extra.tag ? `<g class="x-tag" transform="translate(0,${+tk.y < 80 ? 31 : -31})"><rect x="${-(extra.tag.length * 4.6 + 7).toFixed(1)}" y="-9.5" width="${(extra.tag.length * 9.2 + 14).toFixed(1)}" height="19" rx="9.5" /><text y="4.6">${esc(extra.tag)}</text></g>` : "";
-      return `<g class="tok tok-x${extra.hl ? " hl" : ""}${extra.dim ? " dim" : ""}${extra.sel ? " sel" : ""}" ${id} ${tr}><circle class="tok-hit" r="15" />${glow}${ring}${back}${hands}<path class="x-mark" d="M-8,-8 L8,8 M8,-8 L-8,8" /><text class="x-num" x="10" y="16">${n}</text>${tag}</g>`;
+      const up = +tk.y < 80 ? 31 : -31; // labels go above the X, or below him near the baseline
+      const tag = extra.hl && extra.tag ? `<g class="x-tag" transform="translate(0,${up})"><rect x="${-(extra.tag.length * 4.6 + 7).toFixed(1)}" y="-9.5" width="${(extra.tag.length * 9.2 + 14).toFixed(1)}" height="19" rx="9.5" /><text y="4.6">${esc(extra.tag)}</text></g>` : "";
+      // Switched (Scram) on this step: a red SCRAM label on the other side of him.
+      const scram = tk.sc ? `<g class="x-scram" transform="translate(0,${-up})"><rect x="-26" y="-8.5" width="52" height="17" rx="8.5" /><text y="4.2">SCRAM</text></g>` : "";
+      return `<g class="tok tok-x${extra.hl ? " hl" : ""}${extra.dim ? " dim" : ""}${extra.sel ? " sel" : ""}" ${id} ${tr}><circle class="tok-hit" r="15" />${glow}${ring}${back}${hands}<path class="x-mark" d="M-8,-8 L8,8 M8,-8 L-8,8" /><text class="x-num" x="10" y="16">${n}</text>${tag}${scram}</g>`;
     }
     if (tk.t === "ball") {
       return `<g class="tok tok-ball" ${id} ${tr}><circle r="7.5" /><path class="seam" d="M-7.5,0 L7.5,0 M0,-7.5 L0,7.5 M-5,-5.3 Q-1.5,0 -5,5.3 M5,-5.3 Q1.5,0 5,5.3" /></g>`;
@@ -269,6 +272,32 @@
       return `<g class="tok tok-cone" ${id} ${tr}><path d="M0,-11 L9,8 L-9,8 Z" /><path class="cone-band" d="M-4.6,-1.5 L4.6,-1.5" /></g>`;
     }
     return `<g class="tok tok-o" ${id} ${tr}><circle r="14" /><text y="5.6">${n}</text></g>`;
+  }
+
+  /* A matchup line from a defender at X to his man at O: off the X, to the edge of the
+     man's circle. null when they're right on top of each other. */
+  function muEnds(X, O) {
+    const d = dist(X, O);
+    if (d < 24) return null;
+    const u = [(O[0] - X[0]) / d, (O[1] - X[1]) / d];
+    return [X[0] + u[0] * 12, X[1] + u[1] * 12, O[0] - u[0] * 16, O[1] - u[1] * 16];
+  }
+  /* Who's guarding who: one line per defender, under everything else. */
+  function matchupMarkup(frame, jobs, opts = {}) {
+    if (!BH.defense) return "";
+    const m = BH.defense.matchups(frame);
+    const tok = (id) => (frame.tokens || []).find((t) => t.id === id);
+    return Object.keys(m)
+      .map((xId) => {
+        const x = tok(xId),
+          o = tok(m[xId]);
+        const e = x && o ? muEnds([x.x, x.y], [o.x, o.y]) : null;
+        const lit = !!opts.hl && (jobs[xId] || []).includes(opts.hl);
+        const cls = `mu${lit ? " lit" : opts.hl ? " dim" : ""}${x && x.sc ? " scram" : ""}`;
+        const at = e ? `x1="${e[0].toFixed(1)}" y1="${e[1].toFixed(1)}" x2="${e[2].toFixed(1)}" y2="${e[3].toFixed(1)}"` : `x1="0" y1="0" x2="0" y2="0" style="display:none"`;
+        return `<line class="${cls}" data-mx="${esc(xId)}" data-mo="${esc(m[xId])}" ${at} />`;
+      })
+      .join("");
   }
 
   /* A defender: facing face (degrees), lit up if he has the job opts.hl (jobs: { xId: [jobs] }). */
@@ -294,7 +323,8 @@
       .sort((a, b) => rank(a) - rank(b))
       .map((t) => (t.t === "x" ? xMarkup(t, face[t.id], jobs, opts) : tokenMarkup(t)))
       .join("");
-    return `<g class="strokes">${strokes}</g><g class="tokens">${toks}</g>`;
+    const mu = def ? matchupMarkup(frame, jobs, opts) : "";
+    return `${mu ? `<g class="matchups">${mu}</g>` : ""}<g class="strokes">${strokes}</g><g class="tokens">${toks}</g>`;
   }
 
   /* A static picture of one frame, cropped to where the action is. */
@@ -628,6 +658,7 @@
     layer.querySelectorAll(".tok").forEach((el) => (els[el.dataset.tok] = el));
     // The defense moves and turns with the ball as it moves (Lock Left's string).
     const live = BH.defense && BH.defense.liveStep ? BH.defense.liveStep(from, to, opts) : null;
+    const muLines = Array.from(layer.querySelectorAll(".matchups line"));
     let lastKey = null;
     const show = (t) => {
       const pos = tween(from, to, t);
@@ -648,11 +679,27 @@
             }
           });
           lastKey = L.key;
+          muLines.forEach((ln) => {
+            const lit = !!opts.hl && (L.jobs[ln.dataset.mx] || []).includes(opts.hl);
+            ln.classList.toggle("lit", lit);
+            ln.classList.toggle("dim", !!opts.hl && !lit);
+          });
         }
       }
       Object.keys(pos).forEach((id) => {
         const el = els[id];
         if (el) el.setAttribute("transform", `translate(${pos[id][0].toFixed(1)},${pos[id][1].toFixed(1)})`);
+      });
+      muLines.forEach((ln) => {
+        const a = pos[ln.dataset.mx],
+          b = pos[ln.dataset.mo];
+        const e = a && b ? muEnds(a, b) : null;
+        if (!e) return void (ln.style.display = "none");
+        ln.style.display = "";
+        ln.setAttribute("x1", e[0].toFixed(1));
+        ln.setAttribute("y1", e[1].toFixed(1));
+        ln.setAttribute("x2", e[2].toFixed(1));
+        ln.setAttribute("y2", e[3].toFixed(1));
       });
       if (L)
         Object.keys(L.face).forEach((id) => {

@@ -51,6 +51,7 @@
     defense: null, // "lock-left": our X's guard the offense on every step
     hl: null, // the defensive job lit up ("gap", "deny"...)
     selX: null, // the defender picked to turn (his rotate dot shows)
+    switching: null, // a defender's number waiting for the X he switches with
     stance: {}, // stances turned on this device, not saved for everyone yet: { ball: 40, ... }
   };
   let root = null;
@@ -470,12 +471,24 @@
         return;
       }
       const id = tokEl.dataset.tok;
-      // Tapping a defender picks him: drag the dot that shows to turn him.
       const shown = (shownFrame().tokens || []).find((x) => x.id === id);
+      // Waiting to switch: this X is the one he switches with.
+      if (S.switching && shown && shown.t === "x" && shown.n && shown.n !== S.switching) {
+        doSwitch(S.switching, shown.n);
+        S.selX = id;
+        return;
+      }
+      S.switching = null;
+      // Tapping a defender picks him: drag the dot that shows to turn him.
       S.selX = shown && shown.t === "x" ? id : null;
       if (S.selX) S.sel = null;
       const tk = frame().tokens.find((x) => x.id === id);
-      if (!tk) return drawBoard(); // one of Lock Left's X's: turn him, he goes where the defense puts him
+      if (!tk) {
+        // One of Lock Left's X's: turn him or switch him; he goes where the defense puts him.
+        drawBoard();
+        renderInfo();
+        return;
+      }
       snapshot();
       gesture = { type: "drag", id, el: tokEl, dx: tk.x - p[0], dy: tk.y - p[1], moved: false };
       // The ball goes where the player who has it goes.
@@ -598,6 +611,7 @@
       } else {
         S.history.pop();
         drawBoard();
+        renderInfo();
       }
     } else if (g.type === "draw") {
       svg.querySelector(".draft-layer").innerHTML = "";
@@ -763,6 +777,7 @@
   function goStep(i) {
     stopPlay();
     S.sel = null;
+    S.switching = null;
     S.step = Math.max(0, Math.min(S.board.frames.length - 1, i));
     changed();
   }
@@ -1052,6 +1067,35 @@
   }
 
   const defItem = () => BH.store.items().find((x) => x.rule === "lock-left");
+  /* Switch (Scram) defenders a and b (numbers) from this step on: each takes the other's man. */
+  function doSwitch(a, b) {
+    snapshot();
+    S.switching = null;
+    if (S.defense) {
+      // Lock Left's X's: the switch is marked on this step and lasts the rest of the possession.
+      const f = frame();
+      f.sw = [...(f.sw || []), [String(a), String(b)]];
+    } else {
+      // X's you placed: each guards the other's man from here on.
+      S.board.frames.forEach((f, k) => {
+        if (k < S.step) return;
+        const xa = (f.tokens || []).find((t) => t.t === "x" && t.n === String(a)),
+          xb = (f.tokens || []).find((t) => t.t === "x" && t.n === String(b));
+        if (!xa || !xb) return;
+        const ma = xa.m || xa.n,
+          mb = xb.m || xb.n;
+        xa.m = mb;
+        xb.m = ma;
+        if (xa.m === xa.n) delete xa.m;
+        if (xb.m === xb.n) delete xb.m;
+        delete xa.sc;
+        delete xb.sc;
+        if (k === S.step) xa.sc = xb.sc = true;
+      });
+    }
+    changed();
+    BH.toast(`Switch: X${a} and X${b} swap men from here on.`);
+  }
   /* The defense box on the right: tap a job to light up the X doing it. */
   function defBoxMarkup() {
     const f = shownFrame();
@@ -1074,13 +1118,61 @@
           </div>
         </div>`
       : `<p class="muted small stance-tip">With Move, tap an X and drag his dot to turn him${S.defense ? " (On Ball Shade, Deny, Gap...)" : ""}.</p>`;
+    // Switches (Scram): on this step, who's switched now, and the switch button.
+    const xs = (f.tokens || []).filter((t) => t.t === "x");
+    const sel = xs.find((x) => x.id === S.selX);
+    const events = (f.scram || []).map(
+      (e, i) =>
+        `<li><b>${e.how === "natural" ? "SCRAM" : "Switch"}:</b> X${esc(e.a)} ↔ X${esc(e.b)} <span class="muted">${e.how === "natural" ? "(natural, after the rotation)" : "(marked)"}</span> <button class="linkish" data-unswitch="${i}">Undo</button></li>`
+    );
+    const mu = BH.defense.matchups(f);
+    const numOf = (id) => ((f.tokens || []).find((t) => t.id === id) || {}).n;
+    const switched = xs.filter((x) => mu[x.id] && numOf(mu[x.id]) && numOf(mu[x.id]) !== x.n).map((x) => `X${esc(x.n)} on ${esc(numOf(mu[x.id]))}`);
+    const switchRow = `<div class="switch-row">
+        ${events.length ? `<ul class="switch-list">${events.join("")}</ul>` : ""}
+        ${switched.length ? `<p class="small"><b>Switched:</b> ${switched.join(" · ")}</p>` : ""}
+        ${
+          S.switching
+            ? `<p class="small"><b>Tap the X to switch with X${esc(S.switching)}.</b> <button class="linkish" data-act="switch-cancel">Cancel</button></p>`
+            : sel && sel.n
+              ? `<button class="btn ghost small" data-act="switch-start">${icons.swap || "⇄"} Switch X${esc(sel.n)} with…</button>`
+              : ""
+        }
+      </div>`;
     return `<div class="def-box k-defense">
         <p class="eyebrow">Defense${d ? " · " + esc(d.name) : ""}</p>
         ${BH.defense.jobsMarkup(S.hl, present)}
+        ${switchRow}
         ${stanceRow}
       </div>`;
   }
   function wireDefBox(box) {
+    const start = BH.$('[data-act="switch-start"]', box);
+    if (start)
+      start.addEventListener("click", () => {
+        const x = (shownFrame().tokens || []).find((t) => t.id === S.selX);
+        if (!x) return;
+        S.switching = x.n;
+        renderInfo();
+      });
+    const cancel = BH.$('[data-act="switch-cancel"]', box);
+    if (cancel)
+      cancel.addEventListener("click", () => {
+        S.switching = null;
+        renderInfo();
+      });
+    BH.$$("[data-unswitch]", box).forEach((b) =>
+      b.addEventListener("click", () => {
+        const e = (shownFrame().scram || [])[+b.dataset.unswitch];
+        if (!e) return;
+        snapshot();
+        const f = frame();
+        const same = (q) => (String(q[0]) === e.a && String(q[1]) === e.b) || (String(q[0]) === e.b && String(q[1]) === e.a);
+        if (e.how === "coach") f.sw = (f.sw || []).filter((q) => !same(q));
+        else f.nosw = [...(f.nosw || []), [e.a, e.b]]; // the coach says this one doesn't switch
+        changed();
+      })
+    );
     const save = BH.$('[data-act="stance-save"]', box);
     if (save)
       save.addEventListener("click", async () => {
@@ -1233,10 +1325,12 @@
       S.sel = null;
       return changed();
     }
-    if (e.key === "Escape" && (S.sel || S.selX)) {
+    if (e.key === "Escape" && (S.sel || S.selX || S.switching)) {
       S.sel = null;
       S.selX = null;
-      return drawBoard();
+      S.switching = null;
+      drawBoard();
+      return renderInfo();
     }
     const t = TOOLS.find((x) => x.key === e.key.toLowerCase());
     if (t) return setTool(t.id);

@@ -56,22 +56,23 @@
     return BH.engine ? BH.engine.holder(f) : null;
   }
 
-  /* Who each defender is guarding: { xId: oId }. X3 guards 3 when there's a 3 on the
-     floor; anyone left over is paired with the closest open man. */
+  /* Who each defender is guarding: { xId: oId }. X3 guards 3 (X1 on 1, X2 on 2...);
+     after a switch (Scram) an X guards m. Anyone left over takes the closest open man. */
   function matchups(f) {
     const xs = defenders(f),
       os = offense(f);
     const out = {},
       takenO = new Set(),
       takenX = new Set();
-    xs.forEach((x) => {
-      const o = x.n && os.find((q) => q.n === x.n && !takenO.has(q.id));
-      if (o) {
-        out[x.id] = o.id;
-        takenO.add(o.id);
-        takenX.add(x.id);
-      }
-    });
+    const pair = (x, num) => {
+      const o = num && os.find((q) => q.n === String(num) && !takenO.has(q.id));
+      if (!o) return;
+      out[x.id] = o.id;
+      takenO.add(o.id);
+      takenX.add(x.id);
+    };
+    xs.filter((x) => x.m).forEach((x) => pair(x, x.m));
+    xs.filter((x) => !takenX.has(x.id)).forEach((x) => pair(x, x.n));
     const pairs = [];
     xs.forEach((x) => !takenX.has(x.id) && os.forEach((o) => !takenO.has(o.id) && pairs.push([dist(P(x), P(o)), x, o])));
     pairs
@@ -190,12 +191,20 @@
     return h ? P(h) : ball ? [ball.x, ball.y] : [250, 300];
   }
 
-  /* Lock Left: X tokens for the offense on this frame (X1 on 1, and so on). */
-  function place(f) {
+  /* Lock Left: X tokens for the offense on this frame (X1 on 1, and so on).
+     guard: { defender number: man number } for anyone switched (Scram). */
+  function place(f, guard) {
     const os = offense(f);
     if (!os.length) return [];
     const ball = (f.tokens || []).find((t) => t.t === "ball");
-    const xs = os.map((o) => ({ id: "dx" + (o.n || o.id), t: "x", n: o.n, x: o.x, y: o.y }));
+    const defOf = {};
+    Object.keys(guard || {}).forEach((d) => (defOf[guard[d]] = d));
+    const xs = os.map((o) => {
+      const d = defOf[o.n] || o.n;
+      const x = { id: "dx" + (d || o.id), t: "x", n: d, x: o.x, y: o.y };
+      if (d !== o.n) x.m = o.n;
+      return x;
+    });
     const r = roles({ tokens: [...os, ...xs, ...(ball ? [ball] : [])] });
     const B = ballPoint(f);
     return xs.map((x, i) => {
@@ -461,12 +470,80 @@
   /* Lock Left over a whole possession: our X's where Lock Left puts them each step, and
      on a drive the rotation (Wall, Bear, Gap's snipe and grab) drawn as our lines, with
      the next step starting from where everyone rotated to. */
+  /* Natural switches after a rotation: two defenders who are each closer to the other's
+     man than to their own (by 6 ft or more) Scram. nosw: pairs the coach said not to.
+     Returns [[a, b], ...] (defender numbers), biggest saving first. */
+  function naturalSwitches(f, nosw) {
+    const m = matchups(f);
+    const xs = defenders(f).filter((x) => m[x.id]);
+    const man = (id) => P((f.tokens || []).find((t) => t.id === id));
+    const no = (a, b) => (nosw || []).some((q) => (String(q[0]) === a && String(q[1]) === b) || (String(q[0]) === b && String(q[1]) === a));
+    const cands = [];
+    for (let i = 0; i < xs.length; i++)
+      for (let k = i + 1; k < xs.length; k++) {
+        const A = xs[i],
+          B = xs[k];
+        const stay = dist(P(A), man(m[A.id])) + dist(P(B), man(m[B.id]));
+        const swap = dist(P(A), man(m[B.id])) + dist(P(B), man(m[A.id]));
+        if (swap + 60 < stay && !no(A.n, B.n)) cands.push([stay - swap, A.n, B.n]);
+      }
+    const used = new Set(),
+      out = [];
+    cands
+      .sort((a, b) => b[0] - a[0])
+      .forEach(([, a, b]) => {
+        if (used.has(a) || used.has(b)) return;
+        used.add(a);
+        used.add(b);
+        out.push([a, b]);
+      });
+    return out;
+  }
+
   function defendFrames(frames) {
     const out = [];
     let carry = null;
+    // Who's guarding whom, carried through the possession: { defender number: man number }.
+    let guard = {};
+    const swap = (a, b) => {
+      const ma = guard[a] || a,
+        mb = guard[b] || b;
+      guard[a] = mb;
+      guard[b] = ma;
+      if (guard[a] === a) delete guard[a];
+      if (guard[b] === b) delete guard[b];
+    };
     frames.forEach((f, i) => {
       const keep = (f.tokens || []).filter((t) => t.t !== "x");
-      const g = { ...f, tokens: [...keep, ...(carry || place(f))], strokes: (f.strokes || []).slice(), def: "lock-left" };
+      if (f.mreset) guard = {};
+      const events = [];
+      // The coach's switches start on this step.
+      (f.sw || []).forEach((q) => {
+        const a = String(q[0]),
+          b = String(q[1]);
+        if (a === b) return;
+        swap(a, b);
+        events.push({ a, b, how: "coach" });
+      });
+      let xs = carry || place(f, guard);
+      if (carry) {
+        // Out of a rotation: switch if that's the natural play (Scram), otherwise recover.
+        naturalSwitches({ ...f, tokens: [...keep, ...xs] }, f.nosw).forEach(([a, b]) => {
+          swap(a, b);
+          events.push({ a, b, how: "natural" });
+        });
+      }
+      xs = xs.map((x) => {
+        const nx = { ...x };
+        const mm = guard[x.n];
+        if (mm && mm !== x.n) nx.m = mm;
+        else delete nx.m;
+        delete nx.sc;
+        if (events.some((e) => e.a === x.n || e.b === x.n)) nx.sc = true;
+        return nx;
+      });
+      const g = { ...f, tokens: [...keep, ...xs], strokes: (f.strokes || []).slice(), def: "lock-left" };
+      if (events.length) g.scram = events;
       if (carry) g.carried = true;
       carry = null;
       const next = frames[i + 1];
@@ -503,7 +580,8 @@
     };
     const rFrom = main(jFrom),
       rTo = main(jTo);
-    const mTo = matchups(to);
+    const mFrom = matchups(from),
+      mTo = matchups(to);
     const start = {};
     defenders(from).forEach((x) => (start[x.id] = P(x)));
     const ballTo = (to.tokens || []).find((t) => t.t === "ball");
@@ -528,10 +606,11 @@
       const xsNow = defenders(to).map((x) => {
         let q;
         if (auto && !drive) {
-          const man = offNow.find((o) => o.id === mTo[x.id]);
-          const M = man ? P(man) : P(x);
-          const b = spotFor(rTo[x.id], M, B);
-          const a = from.carried ? start[x.id] || b : spotFor(rFrom[x.id], M, B);
+          // From his man at the start of the step to his man at the end (they differ on a switch).
+          const manA = offNow.find((o) => o.id === (mFrom[x.id] || mTo[x.id])),
+            manB = offNow.find((o) => o.id === mTo[x.id]);
+          const b = spotFor(rTo[x.id], manB ? P(manB) : P(x), B);
+          const a = from.carried ? start[x.id] || b : spotFor(rFrom[x.id], manA ? P(manA) : P(x), B);
           q = lerp(a, b, w);
         } else q = pos[x.id] || P(x);
         out[x.id] = q;
@@ -598,7 +677,7 @@
           const same = spots.every((t) => t.t === "ball" || last.tokens.some((u) => u.id === t.id));
           if (same) {
             topBall.h = top.id;
-            frames.push({ tokens: spots, strokes: [] });
+            frames.push({ tokens: spots, strokes: [], mreset: true });
             for (const r of ["drive", "kick"]) {
               const res = BH.engine.extend(frames, r);
               if (res.error) break;
@@ -650,5 +729,5 @@
     return `<b>${esc(name)}.</b> ${what}${none}${t ? ` <a href="#item-${esc(t.id)}">Open ${esc(name)}</a>` : ""}`;
   }
 
-  BH.defense = { ROLES, role, TERMS, termRole, terms, matchups, jobsOf, roles, isTop, spotFor, place, withDefense, defendFrames, driveIn, respond, liveStep, facing, stance, stanceFor, DEFAULT_STANCE, demo, jobTerm, jobsMarkup, jobText };
+  BH.defense = { ROLES, role, TERMS, termRole, terms, matchups, naturalSwitches, jobsOf, roles, isTop, spotFor, place, withDefense, defendFrames, driveIn, respond, liveStep, facing, stance, stanceFor, DEFAULT_STANCE, demo, jobTerm, jobsMarkup, jobText };
 })();

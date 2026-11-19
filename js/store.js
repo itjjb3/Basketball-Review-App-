@@ -30,6 +30,8 @@
       if (t.f != null && isFinite(t.f)) out.f = Math.round(wrapDeg(t.f)); // the way he faces
       if (t.hh) out.hh = true; // hands high
       if (JOBS.includes(t.j)) out.j = t.j; // his job, kept through a rotation
+      if (t.m != null && /^[\w-]{1,3}$/.test(String(t.m))) out.m = String(t.m); // the man he guards after a switch
+      if (t.sc) out.sc = true; // switched (Scram) on this step
     }
     return out;
   }
