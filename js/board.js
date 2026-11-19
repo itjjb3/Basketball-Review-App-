@@ -1056,8 +1056,8 @@
   function defBoxMarkup() {
     const f = shownFrame();
     if (!BH.defense || !(f.tokens || []).some((t) => t.t === "x")) return "";
-    const jobs = BH.defense.roles(f);
-    const present = S.hl ? Object.values(jobs).includes(S.hl) : true;
+    const jobs = BH.defense.jobsOf(f);
+    const present = S.hl ? Object.values(jobs).some((js) => js.includes(S.hl)) : true;
     const d = S.defense && defItem();
     const saved = BH.defense.stance();
     const moved = Object.keys(S.stance || {}).filter((j) => BH.defense.role(j) && S.stance[j] !== saved[j]);

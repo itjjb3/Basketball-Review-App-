@@ -85,83 +85,121 @@
     return out;
   }
 
-  /* Each defender's job right now: { xId: "ball" | "gap" | "deny" | "wall" | "bear" }.
-     On Ball guards the ball. Gap: the first off-ball defender to the left (toward JAIL).
-     Deny: the first off-ball defender to the right. Of the rest, the one whose man is
-     closest to the rim is the Wall (paint help) and the next is the Bear, who drops to
-     fill for the Wall. */
-  function roles(f) {
+  /* The ball is at the top of the key: out on the perimeter, in the middle of the floor. */
+  const isTop = (p) => dist(p, RIM) > 155 && Math.abs(p[0] - 250) < 45;
+  /* A corner: out on the perimeter, low, wide. */
+  const isCorner = (p) => isPerimeter(p) && p[1] < 130 && Math.abs(p[0] - 250) > 150;
+
+  /* Each defender's jobs right now: { xId: ["gap", "bear"] }, the main one first.
+     - On Ball guards the ball. Gap: the first off-ball defender to the left (toward
+       JAIL). Deny: the first off-ball defender to the right.
+     - Ball at the top of the key: each corner's defender is a Wall (which one depends
+       on the drive), and the Gap and Deny are also the Bear.
+     - Otherwise: of the rest, the one whose man is closest to the rim is the Wall
+       (paint help) and the next is the Bear, who drops to fill for the Wall.
+     Right after a drive, everyone keeps the jobs he had when it started (j). */
+  function jobsOf(f) {
     const out = {};
-    // Right after a drive, everyone keeps the job he had when it started.
-    const kept = defenders(f).filter((x) => x.j && role(x.j));
+    const xs = defenders(f);
+    const kept = xs.filter((x) => x.j);
     if (kept.length) {
-      kept.forEach((x) => (out[x.id] = x.j));
+      kept.forEach((x) => {
+        const js = (Array.isArray(x.j) ? x.j : [x.j]).filter((j) => role(j));
+        if (js.length) out[x.id] = js;
+      });
       return out;
     }
     const h = holder(f);
-    if (!h || !defenders(f).length) return out;
+    if (!h || !xs.length) return out;
     const m = matchups(f);
     const guard = {};
     Object.keys(m).forEach((x) => (guard[m[x]] = x));
+    const give = (xId, j) => {
+      if (!xId) return;
+      out[xId] = out[xId] || [];
+      if (!out[xId].includes(j)) out[xId].push(j);
+    };
     const os = offense(f);
-    if (guard[h.id]) out[guard[h.id]] = "ball";
+    give(guard[h.id], "ball");
     const hk = arcKey(P(h));
     const per = os.filter((o) => o.id !== h.id && isPerimeter(P(o)));
     const left = per.filter((o) => arcKey(P(o)) < hk).sort((a, b) => arcKey(P(b)) - arcKey(P(a)))[0];
     const right = per.filter((o) => arcKey(P(o)) > hk).sort((a, b) => arcKey(P(a)) - arcKey(P(b)))[0];
-    if (left && guard[left.id]) out[guard[left.id]] = "gap";
-    if (right && guard[right.id]) out[guard[right.id]] = "deny";
-    const rest = os.filter((o) => o.id !== h.id && guard[o.id] && !out[guard[o.id]]).sort((a, b) => dist(P(a), RIM) - dist(P(b), RIM));
-    if (rest[0]) out[guard[rest[0].id]] = "wall";
-    if (rest[1]) out[guard[rest[1].id]] = "bear";
+    if (left) give(guard[left.id], "gap");
+    if (right) give(guard[right.id], "deny");
+    if (isTop(P(h))) {
+      os.filter((o) => o.id !== h.id && isCorner(P(o))).forEach((o) => give(guard[o.id], "wall"));
+      if (left) give(guard[left.id], "bear");
+      if (right) give(guard[right.id], "bear");
+    } else {
+      const rest = os.filter((o) => o.id !== h.id && guard[o.id] && !out[guard[o.id]]).sort((a, b) => dist(P(a), RIM) - dist(P(b), RIM));
+      if (rest[0]) give(guard[rest[0].id], "wall");
+      if (rest[1]) give(guard[rest[1].id], "bear");
+    }
+    return out;
+  }
+  /* Each defender's main job: { xId: "ball" | "gap" | "deny" | "wall" | "bear" }. */
+  function roles(f) {
+    const js = jobsOf(f),
+      out = {};
+    Object.keys(js).forEach((x) => (out[x] = js[x][0]));
     return out;
   }
 
   const clampPt = (p) => [Math.round(Math.max(14, Math.min(486, p[0]))), Math.round(Math.max(14, Math.min(460, p[1])))];
+
+  /* Where Lock Left puts a defender with this job, guarding a man at M, ball at B. */
+  function spotFor(job, M, B) {
+    const toRim = unit(sub(RIM, M)),
+      toBall = unit(sub(B, M));
+    let q;
+    switch (job) {
+      case "ball": {
+        // Between him and the rim, shaded to his right hand (he faces the rim) so he goes left.
+        const right = [-toRim[1], toRim[0]];
+        q = add(add(M, mul(toRim, 28)), mul(right, 12));
+        break;
+      }
+      case "deny": // a step off him in the passing lane, hand in the lane
+        q = add(add(M, mul(toBall, 31)), mul(toRim, 6));
+        break;
+      case "gap": {
+        // between the driving lane and the passing lane
+        const g = lerp(M, B, 0.38);
+        q = add(g, mul(unit(sub(RIM, g)), 30));
+        break;
+      }
+      case "wall": // paint help: in the paint on the ball side of his man
+        q = dist(M, RIM) < 140 ? add(M, mul(toBall, 27)) : lerp(M, [250 + Math.sign(B[0] - 250) * 30, 135], 0.65);
+        break;
+      case "bear": {
+        // drops toward the rim on the help side, ready to fill for the Wall
+        const d = lerp(M, RIM, 0.5);
+        q = [d[0] + (250 - d[0]) * 0.35, d[1] + 18];
+        break;
+      }
+      default:
+        q = lerp(M, RIM, 0.3);
+    }
+    return clampPt(q);
+  }
+  /* The ball point: the handler if someone has it, else where the ball is. */
+  function ballPoint(f) {
+    const h = holder(f);
+    const ball = (f.tokens || []).find((t) => t.t === "ball");
+    return h ? P(h) : ball ? [ball.x, ball.y] : [250, 300];
+  }
 
   /* Lock Left: X tokens for the offense on this frame (X1 on 1, and so on). */
   function place(f) {
     const os = offense(f);
     if (!os.length) return [];
     const ball = (f.tokens || []).find((t) => t.t === "ball");
-    const h = holder(f);
     const xs = os.map((o) => ({ id: "dx" + (o.n || o.id), t: "x", n: o.n, x: o.x, y: o.y }));
     const r = roles({ tokens: [...os, ...xs, ...(ball ? [ball] : [])] });
-    const B = h ? P(h) : ball ? [ball.x, ball.y] : [250, 300];
+    const B = ballPoint(f);
     return xs.map((x, i) => {
-      const M = P(os[i]);
-      const toRim = unit(sub(RIM, M)),
-        toBall = unit(sub(B, M));
-      let q;
-      switch (r[x.id]) {
-        case "ball": {
-          // Between him and the rim, shaded to his right hand (he faces the rim) so he goes left.
-          const right = [-toRim[1], toRim[0]];
-          q = add(add(M, mul(toRim, 28)), mul(right, 12));
-          break;
-        }
-        case "deny": // a step off him in the passing lane, hand in the lane
-          q = add(add(M, mul(toBall, 31)), mul(toRim, 6));
-          break;
-        case "gap": {
-          // between the driving lane and the passing lane
-          const g = lerp(M, B, 0.38);
-          q = add(g, mul(unit(sub(RIM, g)), 30));
-          break;
-        }
-        case "wall": // paint help: in the paint on the ball side of his man
-          q = dist(M, RIM) < 140 ? add(M, mul(toBall, 27)) : lerp(M, [250 + Math.sign(B[0] - 250) * 30, 135], 0.65);
-          break;
-        case "bear": {
-          // drops toward the rim on the help side, ready to fill for the Wall
-          const d = lerp(M, RIM, 0.5);
-          q = [d[0] + (250 - d[0]) * 0.35, d[1] + 18];
-          break;
-        }
-        default:
-          q = lerp(M, RIM, 0.3);
-      }
-      const c = clampPt(q);
+      const c = spotFor(r[x.id], P(os[i]), B);
       return { ...x, x: c[0], y: c[1] };
     });
   }
@@ -240,14 +278,15 @@
   }
   const turned = (fr, deg) => (fr.to && deg ? rot(fr.base, cross(fr.base, fr.to) >= 0 ? deg : -deg) : fr.base);
 
-  /* Which way each defender faces, in degrees. An X with his own angle (f) keeps it. */
-  function facing(f, draft) {
+  /* Which way each defender faces, in degrees. An X with his own angle (f) keeps it.
+     jobs: the main job per X to use (the replay passes them), else worked out here. */
+  function facing(f, draft, jobs) {
     const out = {};
     const xs = defenders(f);
     if (!xs.length) return out;
     const st = stance(draft);
-    const jobs = roles(f),
-      m = matchups(f);
+    jobs = jobs || roles(f);
+    const m = matchups(f);
     xs.forEach((x) => {
       if (typeof x.f === "number" && isFinite(x.f)) return (out[x.id] = x.f);
       const fr = jobFrame(f, x, jobs, m);
@@ -294,12 +333,26 @@
     return { pid: h.id, from, to, mid: poly[Math.floor(endIdx / 2)], side };
   }
 
-  /* How everyone rotates on a drive. f: the step the drive starts on (with our X's);
-     next: the step after (where the offense ends up). Returns { strokes, ends }: our
-     lines for this step, and our X's for the next step (each keeps his job as j). */
+  /* How everyone rotates on a drive: five people connected by a string. When the ball
+     moves you move, and when a teammate rotates you rotate.
+     - On Ball stays on the driver's right hip (Gnaw).
+     - Ball at the top: the drive-side wing and the drive-side corner (the Wall) snipe
+       and grab: one step at the ball, then close out hands high. The weak-side corner
+       shifts to the block or middle, and the weak-side wing (the Bear) drops to that
+       corner's man.
+     - Ball on a slot or wing: the Gap snipes and grabs, the Wall steps up in front of
+       the driver outside the paint, the Bear splits the middle of the paint, the weak
+       block and the Wall's man, and the Deny drops to the corner man the Bear left.
+     - Everyone else goes to his Lock Left spot for where the ball is now.
+     f: the step the drive starts on (with our X's); next: the step after (where the
+     offense ends up). Returns { strokes, ends }: our lines for this step, and our X's
+     for the next step (each keeps his jobs as j). */
   function respond(f, drive, next) {
-    const jobs = roles(f),
+    const js = jobsOf(f),
+      jobs = roles(f),
       m = matchups(f);
+    const guard = {};
+    Object.keys(m).forEach((x) => (guard[m[x]] = x));
     const endOf = (oid) => {
       const t = (next.tokens || []).find((x) => x.id === oid) || (f.tokens || []).find((x) => x.id === oid);
       return t ? P(t) : null;
@@ -307,37 +360,89 @@
     const Dv = drive.to;
     const toRimD = unit(sub(RIM, Dv));
     const rightD = [-toRimD[1], toRimD[0]];
-    const wallX = Object.keys(jobs).find((x) => jobs[x] === "wall");
-    const wallMan = wallX && m[wallX] ? endOf(m[wallX]) : null;
+    const side = drive.side,
+      weak = -side;
+    const h = holder(f);
+    const top = h && isTop(P(h));
+    const sideOfP = (p) => (p[0] >= 250 ? 1 : -1);
+    const others = offense(f).filter((o) => o.id !== drive.pid);
+    const cornerOn = (sd) => others.filter((o) => isCorner(P(o)) && sideOfP(P(o)) === sd).sort((a, b) => dist(P(a), B0) - dist(P(b), B0))[0];
+    const wingOn = (sd) => others.filter((o) => isPerimeter(P(o)) && !isCorner(P(o)) && sideOfP(P(o)) === sd).sort((a, b) => dist(P(a), B0) - dist(P(b), B0))[0];
+    const B0 = P(h || { x: drive.from[0], y: drive.from[1] });
+
+    // Who does what: { xId: "hip" | "snipe" | "step" | "fill" | "drop" }, and what he leaves.
+    const move = {},
+      label = {};
+    const xOfJob = (j) => Object.keys(jobs).find((x) => jobs[x] === j);
+    const ballX = xOfJob("ball");
+    if (ballX) (move[ballX] = "hip"), (label[ballX] = ["ball"]);
+    let fillMan = null,
+      wallMan = null,
+      dropTo = null;
+    if (top) {
+      const dsWing = wingOn(side),
+        dsCorner = cornerOn(side),
+        wkCorner = cornerOn(weak),
+        wkWing = wingOn(weak);
+      if (dsWing && guard[dsWing.id]) (move[guard[dsWing.id]] = "snipe"), (label[guard[dsWing.id]] = [jobs[guard[dsWing.id]] || "gap"].filter((j) => j !== "bear"));
+      if (dsCorner && guard[dsCorner.id]) (move[guard[dsCorner.id]] = "snipe"), (label[guard[dsCorner.id]] = ["wall"]);
+      if (wkCorner && guard[wkCorner.id]) (move[guard[wkCorner.id]] = "fill"), (label[guard[wkCorner.id]] = []);
+      if (wkWing && guard[wkWing.id]) {
+        const wx = guard[wkWing.id];
+        move[wx] = wkCorner ? "drop" : "spot";
+        label[wx] = [...(js[wx] || []).filter((j) => j !== "bear"), "bear"];
+        dropTo = wkCorner ? endOf(wkCorner.id) : null;
+      }
+    } else {
+      const gapX = xOfJob("gap"),
+        wallX = xOfJob("wall"),
+        bearX = xOfJob("bear"),
+        denyX = xOfJob("deny");
+      if (gapX) move[gapX] = "snipe";
+      if (wallX) (move[wallX] = "step"), (wallMan = m[wallX] ? endOf(m[wallX]) : null);
+      if (bearX) move[bearX] = "fill";
+      // The string: the Bear left a corner man, so the Deny drops to him.
+      const bearMan = bearX && m[bearX] ? (f.tokens || []).find((t) => t.id === m[bearX]) : null;
+      if (denyX && bearMan && isCorner(P(bearMan))) (move[denyX] = "drop"), (dropTo = endOf(bearMan.id));
+    }
+    fillMan = wallMan && dist(wallMan, RIM) < 150 ? wallMan : null;
+
     const strokes = [],
       ends = [];
     const rnd = (q) => [Math.round(q[0] * 10) / 10, Math.round(q[1] * 10) / 10];
     defenders(f).forEach((x) => {
       const X = P(x),
-        job = jobs[x.id],
         man = m[x.id] ? endOf(m[x.id]) : null;
       let end,
         path = null,
         hh = false;
-      if (job === "ball") {
-        end = add(add(Dv, mul(rightD, 24)), mul(toRimD, -4)); // Gnaw: stay on his right hip
-      } else if (job === "wall") {
-        end = add(Dv, mul(toRimD, 36)); // stop the ball at the edge of the paint
-      } else if (job === "bear") {
-        // Split the difference: the middle of the paint, the opposite block, the Wall's man.
-        const spots = [[250, 100], [250 - drive.side * 45, 78]];
-        if (wallMan) spots.push(wallMan);
-        end = [spots.reduce((a, q) => a + q[0], 0) / spots.length, spots.reduce((a, q) => a + q[1], 0) / spots.length];
-      } else if (job === "gap") {
-        // Snipe and grab: one step at the ball (the stunt), then close out hands high in the lane.
-        const stunt = add(X, mul(unit(sub(drive.mid, X)), 28));
-        end = man ? lerp(Dv, man, 0.7) : X;
-        path = [X, stunt, end];
-        hh = true;
-      } else if (job === "deny" && man) {
-        end = add(add(man, mul(unit(sub(Dv, man)), 31)), mul(unit(sub(RIM, man)), 6)); // still in the lane
-      } else {
-        end = lerp(X, RIM, 0.15);
+      switch (move[x.id]) {
+        case "hip":
+          end = add(add(Dv, mul(rightD, 24)), mul(toRimD, -4)); // Gnaw: stay on his right hip
+          break;
+        case "snipe": {
+          // Snipe and grab: one step at the ball (the stunt), then close out hands high in the lane.
+          const stunt = add(X, mul(unit(sub(drive.mid, X)), 28));
+          end = man ? lerp(Dv, man, 0.7) : X;
+          path = [X, stunt, end];
+          hh = true;
+          break;
+        }
+        case "step":
+          end = add(Dv, mul(toRimD, 36)); // the Wall stops the ball at the edge of the paint
+          break;
+        case "fill": {
+          // The block or the middle: split the middle of the paint and the weak block (and the Wall's man in the post).
+          const spots = [[250, 100], [250 + weak * 45, 78]];
+          if (fillMan) spots.push(fillMan);
+          end = [spots.reduce((a, q) => a + q[0], 0) / spots.length, spots.reduce((a, q) => a + q[1], 0) / spots.length];
+          break;
+        }
+        case "drop":
+          end = dropTo ? add(dropTo, mul(unit(sub(Dv, dropTo)), 28)) : X; // one step off the corner man, toward the ball
+          break;
+        default:
+          end = man ? spotFor(jobs[x.id] === "deny" ? "deny" : jobs[x.id] === "ball" ? "ball" : null, man, Dv) : lerp(X, RIM, 0.15);
       }
       end = clampPt(end);
       if (path) path[path.length - 1] = end;
@@ -345,7 +450,8 @@
       const nx = { ...x, x: end[0], y: end[1] };
       delete nx.hh;
       delete nx.j;
-      if (job) nx.j = job;
+      const keepJobs = label[x.id] !== undefined ? label[x.id] : js[x.id] || [];
+      if (keepJobs.length) nx.j = keepJobs.length === 1 ? keepJobs[0] : keepJobs;
       if (hh) nx.hh = true;
       ends.push(nx);
     });
@@ -360,7 +466,8 @@
     let carry = null;
     frames.forEach((f, i) => {
       const keep = (f.tokens || []).filter((t) => t.t !== "x");
-      const g = { ...f, tokens: [...keep, ...(carry || place(f))], strokes: (f.strokes || []).slice() };
+      const g = { ...f, tokens: [...keep, ...(carry || place(f))], strokes: (f.strokes || []).slice(), def: "lock-left" };
+      if (carry) g.carried = true;
       carry = null;
       const next = frames[i + 1];
       const dv = next && driveIn(g);
@@ -372,6 +479,82 @@
       out.push(g);
     });
     return out;
+  }
+
+  /* The replay: everyone moves with the ball while it moves (the string). Returns null
+     with no defenders, else update(pos, t) for each tick of the step from -> to, given
+     where the offense and the ball are now (pos, from the tween):
+     { pos: our X's spots, face: the way each faces, jobs: { xId: [jobs] }, key, tokens }.
+     - A Lock Left step: each X heads for his spot for where his man and the ball are
+       right now; his job hands over halfway (the passer's man jumps to the ball, the
+       catcher's man closes out). After a drive he starts from where he rotated to.
+     - A drive (our lines): X's follow their rotation; only the way they face is live.
+     - X's someone drew: where they were drawn; only the way they face is live. */
+  function liveStep(from, to, opts = {}) {
+    if (!defenders(from).length && !defenders(to).length) return null;
+    const auto = from.def === "lock-left" && to.def === "lock-left";
+    const drive = (from.strokes || []).some((x) => /^dz/.test(x.id || ""));
+    const jFrom = jobsOf(from),
+      jTo = jobsOf(to);
+    const main = (js) => {
+      const o = {};
+      Object.keys(js).forEach((k) => (o[k] = js[k][0]));
+      return o;
+    };
+    const rFrom = main(jFrom),
+      rTo = main(jTo);
+    const mTo = matchups(to);
+    const start = {};
+    defenders(from).forEach((x) => (start[x.id] = P(x)));
+    const ballTo = (to.tokens || []).find((t) => t.t === "ball");
+    const smooth = (u) => {
+      u = Math.max(0, Math.min(1, u));
+      return u * u * (3 - 2 * u);
+    };
+    return function update(pos, t) {
+      const w = smooth((t - 0.25) / 0.5);
+      const at = (tk) => (pos[tk.id] ? { ...tk, x: pos[tk.id][0], y: pos[tk.id][1] } : tk);
+      const offNow = offense(to).map(at);
+      let ballNow = ballTo ? at(ballTo) : null;
+      if (ballNow) {
+        // Who has it right now (nobody while it's in the air).
+        const near = offNow.reduce((b, o) => (dist(P(o), P(ballNow)) < 25 && (!b || dist(P(o), P(ballNow)) < dist(P(b), P(ballNow))) ? o : b), null);
+        ballNow = { ...ballNow };
+        if (near) ballNow.h = near.id;
+        else delete ballNow.h;
+      }
+      const B = ballNow ? (ballNow.h ? P(offNow.find((o) => o.id === ballNow.h)) : P(ballNow)) : [250, 300];
+      const out = {};
+      const xsNow = defenders(to).map((x) => {
+        let q;
+        if (auto && !drive) {
+          const man = offNow.find((o) => o.id === mTo[x.id]);
+          const M = man ? P(man) : P(x);
+          const b = spotFor(rTo[x.id], M, B);
+          const a = from.carried ? start[x.id] || b : spotFor(rFrom[x.id], M, B);
+          q = lerp(a, b, w);
+        } else q = pos[x.id] || P(x);
+        out[x.id] = q;
+        const nx = { ...x, x: q[0], y: q[1] };
+        // On a drive the hands go up after the stunt.
+        if (drive && x.hh && t < 0.6) delete nx.hh;
+        delete nx.j;
+        return nx;
+      });
+      const late = w >= 0.5;
+      const live = { tokens: [...offNow, ...(ballNow ? [ballNow] : []), ...xsNow] };
+      // He turns from his old job's stance to his new one as the job hands over.
+      const fA = facing(live, opts.stance, rFrom),
+        fB = facing(live, opts.stance, rTo);
+      const face = {};
+      Object.keys(fB).forEach((id) => {
+        const a = fA[id] == null ? fB[id] : fA[id];
+        face[id] = a + wrap(fB[id] - a) * w;
+      });
+      const jobs = late ? jTo : jFrom;
+      const key = JSON.stringify(jobs) + "|" + xsNow.filter((x) => x.hh).map((x) => x.id).join(",");
+      return { pos: out, face, jobs, key, tokens: xsNow };
+    };
   }
 
   /* The Lock Left example for the playbook and the terms: 4-Out, the ball goes around
@@ -401,6 +584,28 @@
         const res = BH.engine.extend(frames, r);
         if (res.error) break;
         frames = res.frames;
+      }
+      // Then the ball at the top of the key: reverse it to the top, he drives left, kicks.
+      const topSet = ["5-out", "power"].map((id) => BH.store && BH.store.get(id)).find((it) => it && BH.hasDiagram(it) && it.diagram.frames[0].tokens.some((t) => t.t === "ball"));
+      const last = frames[frames.length - 1];
+      const h = holder(last);
+      if (topSet && h) {
+        const spots = BH.clone(topSet.diagram.frames[0].tokens).filter((t) => t.t !== "x");
+        const topBall = spots.find((t) => t.t === "ball");
+        const top = holder({ tokens: spots });
+        if (top && isTop(P(top))) {
+          last.strokes = [...(last.strokes || []), { id: "dtop", t: "pass", pts: [P(h), P(top)] }];
+          const same = spots.every((t) => t.t === "ball" || last.tokens.some((u) => u.id === t.id));
+          if (same) {
+            topBall.h = top.id;
+            frames.push({ tokens: spots, strokes: [] });
+            for (const r of ["drive", "kick"]) {
+              const res = BH.engine.extend(frames, r);
+              if (res.error) break;
+              frames = res.frames;
+            }
+          } else last.strokes.pop();
+        }
       }
     }
     demoCache = { court: "half", frames: defendFrames(frames) };
@@ -445,5 +650,5 @@
     return `<b>${esc(name)}.</b> ${what}${none}${t ? ` <a href="#item-${esc(t.id)}">Open ${esc(name)}</a>` : ""}`;
   }
 
-  BH.defense = { ROLES, role, TERMS, termRole, terms, matchups, roles, place, withDefense, defendFrames, driveIn, respond, facing, stance, stanceFor, DEFAULT_STANCE, demo, jobTerm, jobsMarkup, jobText };
+  BH.defense = { ROLES, role, TERMS, termRole, terms, matchups, jobsOf, roles, isTop, spotFor, place, withDefense, defendFrames, driveIn, respond, liveStep, facing, stance, stanceFor, DEFAULT_STANCE, demo, jobTerm, jobsMarkup, jobText };
 })();

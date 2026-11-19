@@ -271,22 +271,28 @@
     return `<g class="tok tok-o" ${id} ${tr}><circle r="14" /><text y="5.6">${n}</text></g>`;
   }
 
+  /* A defender: facing face (degrees), lit up if he has the job opts.hl (jobs: { xId: [jobs] }). */
+  function xMarkup(tk, face, jobs, opts = {}) {
+    const lit = !!opts.hl && (jobs[tk.id] || []).includes(opts.hl);
+    const r = lit && opts.tags !== false && BH.defense ? BH.defense.role(opts.hl) : null;
+    return tokenMarkup(tk, { face, hl: lit, dim: !!opts.hl && !lit, tag: r ? r.tag : "", sel: opts.selX === tk.id });
+  }
+
   /* opts.hl: a defensive job ("gap", "deny"...) to light up on whichever X has it.
      opts.tags: false hides the job's name over the X (flashcards and the quiz). */
   function frameMarkup(frame, opts = {}) {
     const strokes = (frame.strokes || []).map((s) => strokeMarkup(s, /^dz/.test(s.id || "") ? { ...opts, interactive: false, inert: true } : opts)).join("");
     const def = BH.defense && (frame.tokens || []).some((t) => t.t === "x") ? BH.defense : null;
     const face = def ? def.facing(frame, opts.stance) : {};
-    const jobs = def && opts.hl ? def.roles(frame) : {};
-    const lit = opts.hl ? Object.keys(jobs).filter((id) => jobs[id] === opts.hl) : [];
-    const tagOf = (r) => (def && def.role(r) ? def.role(r).tag : "");
+    const jobs = def && opts.hl ? def.jobsOf(frame) : {};
+    const lit = opts.hl ? Object.keys(jobs).filter((id) => jobs[id].includes(opts.hl)) : [];
     // Draw players first, ball last, so the ball sits on top; a lit-up X goes over the rest.
     const order = { cone: 0, x: 1, o: 2, ball: 3 };
     const rank = (t) => (lit.includes(t.id) ? 4 : order[t.t] ?? 2);
     const toks = (frame.tokens || [])
       .slice()
       .sort((a, b) => rank(a) - rank(b))
-      .map((t) => (t.t === "x" ? tokenMarkup(t, { face: face[t.id], hl: lit.includes(t.id), dim: opts.hl && !lit.includes(t.id), tag: opts.tags === false ? "" : tagOf(jobs[t.id]), sel: opts.selX === t.id }) : tokenMarkup(t)))
+      .map((t) => (t.t === "x" ? xMarkup(t, face[t.id], jobs, opts) : tokenMarkup(t)))
       .join("");
     return `<g class="strokes">${strokes}</g><g class="tokens">${toks}</g>`;
   }
@@ -620,17 +626,50 @@
     layer.innerHTML = `<g class="strokes fading">${(from.strokes || []).map((s) => strokeMarkup(s)).join("")}</g>` + frameMarkup({ tokens: startTokens, strokes: [] }, opts).replace('<g class="strokes"></g>', "");
     const els = {};
     layer.querySelectorAll(".tok").forEach((el) => (els[el.dataset.tok] = el));
+    // The defense moves and turns with the ball as it moves (Lock Left's string).
+    const live = BH.defense && BH.defense.liveStep ? BH.defense.liveStep(from, to, opts) : null;
+    let lastKey = null;
+    const show = (t) => {
+      const pos = tween(from, to, t);
+      const L = live ? live(pos, t) : null;
+      if (L) {
+        Object.assign(pos, L.pos);
+        if (L.key !== lastKey) {
+          // A job changed hands (or the hands went up): redraw those X's.
+          L.tokens.forEach((tk) => {
+            const el = els[tk.id];
+            if (!el) return;
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            g.innerHTML = xMarkup(tk, L.face[tk.id], L.jobs, opts);
+            const nu = g.firstElementChild;
+            if (nu) {
+              el.replaceWith(nu);
+              els[tk.id] = nu;
+            }
+          });
+          lastKey = L.key;
+        }
+      }
+      Object.keys(pos).forEach((id) => {
+        const el = els[id];
+        if (el) el.setAttribute("transform", `translate(${pos[id][0].toFixed(1)},${pos[id][1].toFixed(1)})`);
+      });
+      if (L)
+        Object.keys(L.face).forEach((id) => {
+          const el = els[id];
+          if (!el) return;
+          const r = `rotate(${L.face[id].toFixed(1)})`;
+          el.querySelectorAll(".x-back, .x-hands").forEach((n) => n.setAttribute("transform", r));
+        });
+    };
+    show(0);
     const dur = 1150;
     return new Promise((resolve) => {
       const t0 = performance.now();
       const frameFn = (now) => {
         if (token.cancelled) return resolve(false);
         const t = Math.min(1, (now - t0) / dur);
-        const pos = tween(from, to, t);
-        Object.keys(pos).forEach((id) => {
-          const el = els[id];
-          if (el) el.setAttribute("transform", `translate(${pos[id][0].toFixed(1)},${pos[id][1].toFixed(1)})`);
-        });
+        show(t);
         if (t < 1) requestAnimationFrame(frameFn);
         else resolve(true);
       };
