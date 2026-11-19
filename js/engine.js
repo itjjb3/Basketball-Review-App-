@@ -359,7 +359,7 @@
     },
     twirl: {
       label: "Twirl: the Rabbit's ball screen; the handler gets to the nail, the Rabbit rolls",
-      run(api) {
+      run(api, ctx = {}) {
         const f = api.f;
         const h = holder(f);
         if (!h) return "nobody has the ball.";
@@ -381,7 +381,20 @@
         let perp = [-dirG[1], dirG[0]];
         if (dot(perp, sub(RIM, S2)) > 0) perp = mul(perp, -1); // go over the top of the screen
         const roll = [250 + s * 24, 80];
-        api.step([line("dribble", [H2, add(S2, mul(perp, 22)), G]), line("cut", [S2, lerp(S2, roll, 0.5), roll])]);
+        const rollCut = line("cut", [S2, lerp(S2, roll, 0.5), roll]);
+        // Against Lock Left: a screen going right gets ICED (he rejects it and drives left);
+        // a screen going left is FIRE (he comes off it and gets stopped in the trap).
+        const sx = SP[0] - H[0];
+        const cover = ctx.defense === "lock-left" ? (sx > 8 ? "ice" : sx < -8 ? "fire" : null) : null;
+        if (cover === "ice") {
+          const fH = unit(sub(RIM, H2));
+          const left = [fH[1], -fH[0]];
+          const T = clampPt(add(RIM, mul(unit(sub(add(H2, mul(left, 55)), RIM)), 120)));
+          api.step([line("dribble", [H2, lerp(H2, T, 0.5), T]), rollCut]);
+          return;
+        }
+        const end = cover === "fire" ? lerp(H2, G, 0.45) : G;
+        api.step([line("dribble", [H2, add(S2, mul(perp, 22)), end]), rollCut]);
       },
     },
     drive: {

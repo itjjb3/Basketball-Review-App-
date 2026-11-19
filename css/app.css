@@ -350,6 +350,8 @@ body[data-view="board"] main { max-width: 1600px; padding-block: 16px 24px; }
 .tok-x .x-back { fill: none; stroke: var(--def); stroke-width: 3.2; stroke-linecap: round; }
 .tok-x .x-hands path { stroke: var(--def); stroke-width: 2.6; stroke-linecap: round; fill: none; }
 .tok-x .x-scram rect { fill: #b3261e; }
+.tok-x .x-cover rect { fill: #ffc400; stroke: #c48a00; stroke-width: 1; }
+.tok-x .x-cover text { fill: #1b1430; font-family: var(--font-display); font-weight: 700; font-size: 11.5px; letter-spacing: 0.07em; text-anchor: middle; pointer-events: none; }
 .tok-x .x-scram text { fill: #fff; font-family: var(--font-display); font-weight: 700; font-size: 11.5px; letter-spacing: 0.07em; text-anchor: middle; pointer-events: none; }
 /* Who's guarding who: a faint dotted line from each X to his man. */
 .matchups line { stroke: var(--def); stroke-width: 1.7; stroke-dasharray: 0.1 5; stroke-linecap: round; opacity: 0.5; pointer-events: none; }
@@ -700,3 +702,9 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
 .switch-row p { margin: 0; }
 .switch-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 0.88rem; }
 .linkish { border: 0; background: none; padding: 0 2px; color: var(--brand-text); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+
+/* Scenarios in the whiteboard library */
+.k-scenario { --k: var(--brand); }
+.lib-group h3 small { font-weight: 600; letter-spacing: 0.04em; text-transform: none; color: var(--fg-muted); }
+.lib-sub { margin: 6px 0 4px; font-size: 0.78rem; font-weight: 600; color: var(--fg-muted); }
+.lib-item.k-scenario { cursor: pointer; }

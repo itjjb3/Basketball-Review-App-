@@ -207,6 +207,7 @@
     S.defense = "lock-left";
     S.note = null;
     if (!opts.silent) {
+      rebuildForDefense();
       changedAll();
       BH.toast("Lock Left is on. Tap a job (Gap, Deny...) to light up who's doing it.");
     }
@@ -217,12 +218,22 @@
     snapshot();
     S.defense = null;
     S.hl = null;
+    rebuildForDefense();
     changedAll();
+  }
+  /* Twirl plays out differently against Lock Left (Ice, Fire), so rebuild a call that has one. */
+  function rebuildForDefense() {
+    const ids = S.segs.map((g) => g.itemId);
+    if (!ids.some((id) => (BH.store.get(id) || {}).rule === "twirl")) return;
+    S.board = scratchBoard();
+    S.segs = [];
+    ids.forEach((id) => addToCall(id, { silent: true }));
+    S.step = Math.min(S.step, S.board.frames.length - 1);
   }
   function appendRule(it, opts) {
     // Straight out of a trigger, the trigger's down screen is the backside action.
     const prev = segItem(S.segs[S.segs.length - 1]);
-    const res = E().extend(S.board.frames, it.rule, { noBackside: !!(prev && prev.kind === "trigger") });
+    const res = E().extend(S.board.frames, it.rule, { noBackside: !!(prev && prev.kind === "trigger"), defense: S.defense });
     if (res.error) {
       if (!opts.silent) BH.toast(`Couldn't run ${it.name}: ${res.error}`);
       return false;
@@ -996,6 +1007,42 @@
     if (on && chips.scrollWidth > chips.clientWidth) chips.scrollLeft = on.offsetLeft - chips.offsetLeft - 40;
   }
 
+  /* ---------- scenarios: full calls with Lock Left on, built live by the engine ---------- */
+  const SCENARIOS = [
+    { group: "Triggers", id: "sc-5thru", name: "5 Thru into Rub", call: ["denied-backdoor", "rub", "twirl", "swing", "continuity"], about: "The 5 Thru trigger, a Rub, a Twirl and Swing, then Continuity side to side" },
+    { group: "Triggers", id: "sc-1thru", name: "1 Thru into Twist", call: ["baseline-drive-lift", "twist", "get", "swing", "continuity"], about: "The 1 Thru trigger, a Twist, a Get and Swing, then Continuity" },
+    { group: "Triggers", id: "sc-pitch", name: "Pitch", call: ["4-out", "pitch", "twirl", "swing", "continuity"], about: "Pitch at the top into a Twirl and Swing, then Continuity" },
+    { group: "Triggers", id: "sc-switch", name: "Switch", call: ["4-out", "switch", "rub", "get", "swing", "continuity"], about: "Swing Pitch into a Rub, a Get and Swing, then Continuity" },
+    { group: "Drive & kick", id: "sc-slot", name: "Slot drive", call: ["4-out", "drive", "kick-out"], about: "Drive left from the slot: Wall up, Bear fills, Gap snipes and grabs, Scram" },
+    { group: "Drive & kick", id: "sc-top", name: "Top drive", call: [["5-out", "power"], "drive", "kick-out", "swing"], about: "Drive from the top of the key: corner Wall and Gap snipe and grab, Deny drops" },
+    { group: "Drive & kick", id: "sc-wing", name: "Wing drive", call: ["baseline-drive-lift", "drive", "kick-out"], about: "1 Thru leaves 5 on the wing; he drives and kicks" },
+    { group: "Drive & kick", id: "sc-corner", name: "Corner drive", call: ["4-out", "swing", "swing", "drive", "kick-out"], about: "The ball swings to the corner, he drives baseline and kicks" },
+    { group: "Ball screens", id: "sc-ice", name: "Ice", call: ["4-out", "twirl", "kick-out"], about: "Twirl going right: we ICE it, he rejects and drives left, the big Contains" },
+    { group: "Ball screens", id: "sc-fire", name: "Fire", call: ["4-out", "swing", "twirl", "swing"], about: "Twirl going left: FIRE, we trap; the Bear tags the roller, he passes out" },
+  ];
+  /* The program's item for a scenario step (the first that exists when there's a choice). */
+  const scenarioItem = (step) => [].concat(step).find((id) => BH.store.get(id));
+  const scenarioReady = (sc) => sc.call.every((step) => scenarioItem(step));
+  /* Load a scenario: a fresh call with Lock Left on, each piece added in order. */
+  function startScenario(sc) {
+    stopPlay();
+    snapshot();
+    S.board = scratchBoard();
+    S.segs = [];
+    S.step = 0;
+    S.note = null;
+    S.hl = null;
+    S.sel = null;
+    S.selX = null;
+    S.switching = null;
+    S.defense = "lock-left";
+    const failed = sc.call.map(scenarioItem).filter((id) => !addToCall(id, { silent: true }));
+    S.step = 0;
+    if (S.sheetOpen) toggleSheet(false);
+    changedAll();
+    BH.toast(failed.length ? `Loaded ${sc.name}, but ${failed.map((id) => (BH.store.get(id) || {}).name).join(", ")} couldn't run from there.` : `Loaded ${sc.name}. Hit Run it.`);
+  }
+
   function renderLibrary() {
     const lib = BH.$("#lib-drawer", root);
     if (!lib) return;
@@ -1039,8 +1086,24 @@
                 .join("")
             : `<p class="lib-empty">${items.length ? "No matches." : "Nothing installed yet."}</p>`
         }
+        ${(() => {
+          const scs = SCENARIOS.filter((sc) => scenarioReady(sc) && (!q || (sc.name + " " + sc.group + " " + sc.about).toLowerCase().includes(q)));
+          if (!scs.length) return "";
+          const groupsSc = [...new Set(scs.map((sc) => sc.group))];
+          return `<section class="lib-group k-scenario">
+                <h3><i class="dot"></i>Scenarios <small>vs Lock Left</small></h3>
+                ${groupsSc
+                  .map(
+                    (gn) => `<p class="lib-sub">${esc(gn)}</p><div class="lib-chips">${scs
+                      .filter((sc) => sc.group === gn)
+                      .map((sc) => `<button class="lib-item k-scenario" data-scenario="${esc(sc.id)}" title="${esc(sc.about)}">${esc(sc.name)}</button>`)
+                      .join("")}</div>`
+                  )
+                  .join("")}
+              </section>`;
+        })()}
       </div>
-      <p class="lib-hint">Tap or drag onto the call. Actions pick up wherever the ball is.</p>`;
+      <p class="lib-hint">Tap or drag onto the call. Actions pick up wherever the ball is. Scenarios load a whole call with Lock Left on.</p>`;
     const input = BH.$("#lib-search", lib);
     input.addEventListener("input", () => {
       S.libQ = input.value;
@@ -1053,6 +1116,12 @@
       } catch (e) {}
     });
     BH.$('[data-act="close"]', lib).addEventListener("click", () => toggleSheet(false));
+    BH.$$("[data-scenario]", lib).forEach((b) =>
+      b.addEventListener("click", () => {
+        const sc = SCENARIOS.find((x) => x.id === b.dataset.scenario);
+        if (sc) startScenario(sc);
+      })
+    );
     BH.$$("[data-lib]", lib).forEach((b) => {
       const it = BH.store.get(b.dataset.lib);
       b.addEventListener("pointerdown", (e) => {
@@ -1403,5 +1472,8 @@
     queueOpen(id) {
       S.pendingOpen = id;
     },
+    /* What's drawn, step by step (the defense included): for tests. */
+    viewFrames: () => viewBoard(S.board).frames,
+    SCENARIOS,
   };
 })();

@@ -32,6 +32,7 @@
       if (JOBS.includes(t.j)) out.j = t.j; // his job, kept through a rotation
       if (t.m != null && /^[\w-]{1,3}$/.test(String(t.m))) out.m = String(t.m); // the man he guards after a switch
       if (t.sc) out.sc = true; // switched (Scram) on this step
+      if (["ice", "fire", "contain"].includes(t.cv)) out.cv = t.cv; // ball-screen coverage on this step
     }
     return out;
   }
