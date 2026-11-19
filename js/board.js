@@ -50,6 +50,8 @@
     paused: false, // Run it was paused: the next Run it picks up from here instead of step 1
     defense: null, // "lock-left": our X's guard the offense on every step
     hl: null, // the defensive job lit up ("gap", "deny"...)
+    selX: null, // the defender picked to turn (his rotate dot shows)
+    stance: {}, // stances turned on this device, not saved for everyone yet: { ball: 40, ... }
   };
   let root = null;
   let svg = null;
@@ -73,6 +75,7 @@
       S.step = Math.min(saved.step || 0, S.board.frames.length - 1);
       S.tool = saved.tool || "move";
       S.defense = saved.defense === "lock-left" ? "lock-left" : null;
+      S.stance = saved.stance && typeof saved.stance === "object" ? saved.stance : {};
       return;
     }
     // Earlier versions kept a board per tab: carry over the one that was open.
@@ -92,15 +95,16 @@
   let saveTimer;
   function persist() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => BH.local.set(SAVE_KEY, { board: S.board, step: S.step, segs: S.segs, tool: S.tool, defense: S.defense }), 300);
+    saveTimer = setTimeout(() => BH.local.set(SAVE_KEY, { board: S.board, step: S.step, segs: S.segs, tool: S.tool, defense: S.defense, stance: S.stance }), 300);
   }
   const frame = () => S.board.frames[S.step];
-  /* What's drawn: the board as is, or with Lock Left's X's on the offense. */
-  const viewFrame = (f) => (S.defense && BH.defense ? BH.defense.withDefense(f) : f);
-  const viewBoard = (b) => (S.defense && BH.defense ? { ...b, frames: b.frames.map(BH.defense.withDefense) } : b);
+  /* What's drawn: the board as is, or with Lock Left on the offense for the whole
+     possession (X's move with the ball and rotate on drives). */
+  const viewBoard = (b) => (S.defense && BH.defense ? { ...b, frames: BH.defense.defendFrames(b.frames) } : b);
+  const shownFrame = () => (S.defense && BH.defense ? viewBoard(S.board).frames[S.step] : frame());
   function snapshot() {
     S.paused = false; // the board changed, so Run it starts over
-    S.history.push(JSON.stringify({ board: S.board, step: S.step, segs: S.segs, defense: S.defense }));
+    S.history.push(JSON.stringify({ board: S.board, step: S.step, segs: S.segs, defense: S.defense, stance: S.stance }));
     if (S.history.length > 60) S.history.shift();
   }
   function undo() {
@@ -111,6 +115,7 @@
     S.step = v.step;
     S.segs = v.segs;
     S.defense = v.defense || null;
+    S.stance = v.stance || {};
     if (!S.defense) S.hl = null;
     S.paused = false;
     changedAll();
@@ -202,7 +207,7 @@
     S.note = null;
     if (!opts.silent) {
       changedAll();
-      BH.toast("Lock Left is on. Tap a job on the right (Gap, Deny...) to light up who's doing it.");
+      BH.toast("Lock Left is on. Tap a job (Gap, Deny...) to light up who's doing it.");
     }
     return true;
   }
@@ -358,7 +363,7 @@
       courtG.innerHTML = BH.court.markup(mode);
       courtG.dataset.mode = mode;
     }
-    svg.querySelector(".diagram-layer").innerHTML = D().frameMarkup(viewFrame(frame()), { interactive: true, hl: S.hl });
+    svg.querySelector(".diagram-layer").innerHTML = D().frameMarkup(shownFrame(), { interactive: true, hl: S.hl, stance: S.stance, selX: S.selX });
     svg.querySelector(".handle-layer").innerHTML = handlesMarkup();
     if (S.sel) {
       const el = svg.querySelector(`.diagram-layer [data-stroke="${CSS.escape(S.sel)}"]`);
@@ -401,7 +406,17 @@
   const STRAIGHT = ["pass", "handoff"]; // these stay straight; the other lines can be bent
 
   /* Handles on the selected line: drag an end to move it, drag the middle dot to bend it. */
+  /* The dot that turns a picked defender: out in front of him, the way he faces. */
+  function rotateMarkup() {
+    const f = shownFrame();
+    const x = S.selX && (f.tokens || []).find((t) => t.id === S.selX && t.t === "x");
+    if (!x || !BH.defense) return "";
+    const a = ((BH.defense.facing(f, S.stance)[x.id] || 0) * Math.PI) / 180;
+    const k = [x.x + Math.cos(a) * 30, x.y + Math.sin(a) * 30];
+    return `<g class="handles"><line class="rot-arm" x1="${x.x}" y1="${x.y}" x2="${k[0].toFixed(1)}" y2="${k[1].toFixed(1)}" /><circle class="hd hd-rot" data-h="rot" cx="${k[0].toFixed(1)}" cy="${k[1].toFixed(1)}" r="8"><title>Drag to turn him</title></circle></g>`;
+  }
   function handlesMarkup() {
+    if (S.selX) return rotateMarkup();
     const st = S.sel && (frame().strokes || []).find((x) => x.id === S.sel);
     if (!st || st.t === "pen" || st.t === "shot" || !st.pts || st.pts.length < 2) return "";
     const a = st.pts[0],
@@ -440,19 +455,27 @@
     const p = svgPoint(evt);
     const tokEl = evt.target.closest && evt.target.closest(".tok");
     const hd = evt.target.closest && evt.target.closest(".hd");
-    if (hd && S.sel) {
+    if (hd && hd.dataset.h === "rot" && S.selX) {
+      snapshot();
+      gesture = { type: "rot", id: S.selX, moved: false };
+    } else if (hd && S.sel) {
       snapshot();
       gesture = { type: "handle", which: hd.dataset.h, sid: S.sel, moved: false };
     } else if (S.tool === "move") {
       if (!tokEl) {
         const stEl = evt.target.closest && evt.target.closest("[data-stroke]");
         S.sel = stEl ? stEl.dataset.stroke : null;
+        S.selX = null;
         drawBoard();
         return;
       }
       const id = tokEl.dataset.tok;
+      // Tapping a defender picks him: drag the dot that shows to turn him.
+      const shown = (shownFrame().tokens || []).find((x) => x.id === id);
+      S.selX = shown && shown.t === "x" ? id : null;
+      if (S.selX) S.sel = null;
       const tk = frame().tokens.find((x) => x.id === id);
-      if (!tk) return;
+      if (!tk) return drawBoard(); // one of Lock Left's X's: turn him, he goes where the defense puts him
       snapshot();
       gesture = { type: "drag", id, el: tokEl, dx: tk.x - p[0], dy: tk.y - p[1], moved: false };
       // The ball goes where the player who has it goes.
@@ -512,6 +535,21 @@
       svg.querySelector(".draft-line").setAttribute("d", pathD(pts));
     } else if (gesture.type === "erase") {
       eraseAt(evt);
+    } else if (gesture.type === "rot") {
+      const f = shownFrame();
+      const x = (f.tokens || []).find((t) => t.id === gesture.id);
+      if (!x) return;
+      const deg = (Math.atan2(p[1] - x.y, p[0] - x.x) * 180) / Math.PI;
+      gesture.moved = true;
+      const tk = frame().tokens.find((t) => t.id === gesture.id);
+      if (tk) tk.f = Math.round(deg);
+      else {
+        // One of Lock Left's X's: this sets the stance for his job, on every step.
+        const r = BH.defense.stanceFor(f, gesture.id, deg);
+        if (!r) return;
+        S.stance = { ...S.stance, [r.job]: r.deg };
+      }
+      drawBoard();
     } else if (gesture.type === "handle") {
       const st = frame().strokes.find((x) => x.id === gesture.sid);
       if (!st) return;
@@ -557,7 +595,10 @@
           }
         }
         changed();
-      } else S.history.pop();
+      } else {
+        S.history.pop();
+        drawBoard();
+      }
     } else if (g.type === "draw") {
       svg.querySelector(".draft-layer").innerHTML = "";
       const pts = D().simplify(g.pts, S.tool === "pen" ? 1.2 : 2.5);
@@ -591,6 +632,9 @@
     } else if (g.type === "erase") {
       if (!g.any) S.history.pop();
       else changed();
+    } else if (g.type === "rot") {
+      if (!g.moved) return void S.history.pop();
+      changed();
     } else if (g.type === "handle") {
       const st = frame().strokes.find((x) => x.id === g.sid);
       if (!g.moved || !st) return void S.history.pop();
@@ -735,7 +779,7 @@
     await new Promise((r) => setTimeout(r, 200));
     while (!tok.cancelled && S.board === b && (S.step < b.frames.length - 1 || keepGoing())) {
       if (BH.prefersReducedMotion()) await new Promise((r) => setTimeout(r, 700));
-      else if (!(await D().animateStep(svg, viewBoard(b), S.step, tok, { hl: S.hl }))) break;
+      else if (!(await D().animateStep(svg, viewBoard(b), S.step, tok, { hl: S.hl, stance: S.stance }))) break;
       if (tok.cancelled) break;
       S.step += 1;
       drawBoard();
@@ -1010,17 +1054,55 @@
   const defItem = () => BH.store.items().find((x) => x.rule === "lock-left");
   /* The defense box on the right: tap a job to light up the X doing it. */
   function defBoxMarkup() {
-    const f = viewFrame(frame());
+    const f = shownFrame();
     if (!BH.defense || !(f.tokens || []).some((t) => t.t === "x")) return "";
     const jobs = BH.defense.roles(f);
     const present = S.hl ? Object.values(jobs).includes(S.hl) : true;
     const d = S.defense && defItem();
+    const saved = BH.defense.stance();
+    const moved = Object.keys(S.stance || {}).filter((j) => BH.defense.role(j) && S.stance[j] !== saved[j]);
+    const jobName = (j) => {
+      const t = BH.defense.jobTerm(j);
+      return t ? t.name : BH.defense.role(j).label;
+    };
+    const stanceRow = moved.length
+      ? `<div class="stance-row">
+          <p><b>Stance turned:</b> ${moved.map((j) => esc(jobName(j))).join(", ")}${BH.store.isCoach ? "" : ". It stays on this device."}</p>
+          <div class="stance-actions">
+            ${BH.store.isCoach && defItem() ? `<button class="btn primary small" data-act="stance-save">${icons.save} Save stance for everyone</button>` : ""}
+            <button class="btn ghost small" data-act="stance-reset">${icons.undo} ${BH.store.isCoach ? "Reset" : "Back to the coach's stance"}</button>
+          </div>
+        </div>`
+      : `<p class="muted small stance-tip">With Move, tap an X and drag his dot to turn him${S.defense ? " (On Ball Shade, Deny, Gap...)" : ""}.</p>`;
     return `<div class="def-box k-defense">
         <p class="eyebrow">Defense${d ? " · " + esc(d.name) : ""}</p>
         ${BH.defense.jobsMarkup(S.hl, present)}
+        ${stanceRow}
       </div>`;
   }
   function wireDefBox(box) {
+    const save = BH.$('[data-act="stance-save"]', box);
+    if (save)
+      save.addEventListener("click", async () => {
+        const it = defItem();
+        if (!it) return;
+        const stance = { ...(it.stance || {}), ...S.stance };
+        save.disabled = true;
+        // Clear this device's draft first: once saved, the coach's stance is the stance.
+        const draft = S.stance;
+        S.stance = {};
+        BH.local.set(SAVE_KEY, { board: S.board, step: S.step, segs: S.segs, tool: S.tool, defense: S.defense, stance: {} });
+        const ok = await BH.store.saveItem({ ...it, stance }, `Saved the ${it.name} stance. Everyone sees it now.`);
+        if (!ok) S.stance = draft;
+        changedAll();
+      });
+    const reset = BH.$('[data-act="stance-reset"]', box);
+    if (reset)
+      reset.addEventListener("click", () => {
+        snapshot();
+        S.stance = {};
+        changedAll();
+      });
     BH.$$("[data-job]", box).forEach((b) =>
       b.addEventListener("click", () => {
         S.hl = S.hl === b.dataset.job ? null : b.dataset.job;
@@ -1058,7 +1140,8 @@
           <ol class="howto">
             <li><b>Build the call:</b> tap a play from the Library, like 5 Thru, then tap actions like Rub, Twirl and Swing. Each one picks up where the last one ended.</li>
             <li><b>Continuity</b> runs your actions again from the other side.</li>
-            <li><b>Defense:</b> tap Lock Left in the Library to put our X's on the offense. They move with the ball; tap a job like Gap or Deny to light up who's doing it.</li>
+            <li><b>Defense:</b> tap Lock Left in the Library to put our X's on the offense. They move with the ball and rotate on a drive (Wall, Bear, Gap's snipe and grab); tap a job like Gap or Deny to light up who's doing it.</li>
+            <li><b>Stance:</b> with Move, tap an X and drag his dot to turn him.</li>
             <li><b>Players:</b> tap one in the tray, then drag it where it goes.</li>
             <li><b>Lines:</b> drag from where it starts to where it ends for a straight line. Drag the dot in the middle to bend it, or the end dots to move it. Tap a line with Move to edit it later; Delete or Erase removes it.</li>
             <li>Start a pass at the end of a dribble and the ball follows both.</li>
@@ -1150,8 +1233,9 @@
       S.sel = null;
       return changed();
     }
-    if (e.key === "Escape" && S.sel) {
+    if (e.key === "Escape" && (S.sel || S.selX)) {
       S.sel = null;
+      S.selX = null;
       return drawBoard();
     }
     const t = TOOLS.find((x) => x.key === e.key.toLowerCase());

@@ -839,6 +839,33 @@
       "rule": "continuity"
     },
     {
+      "id": "drive",
+      "kind": "action",
+      "name": "Drive",
+      "call": "",
+      "summary": "Attack the paint off the dribble. On the whiteboard he drives left, the way Lock Left forces him, so you can see our help: Wall steps up, Bear fills, Gap snipes and grabs.",
+      "keys": [
+        "Get to the edge of the paint",
+        "Eyes up for the kick"
+      ],
+      "reads": [],
+      "updated": "2026-11-19",
+      "rule": "drive"
+    },
+    {
+      "id": "kick-out",
+      "kind": "action",
+      "name": "Kick Out",
+      "call": "“Kick”",
+      "summary": "Out of a drive, kick it to the closest teammate on the ball side.",
+      "keys": [
+        "Same-side pass to the open shooter"
+      ],
+      "reads": [],
+      "updated": "2026-11-19",
+      "rule": "kick"
+    },
+    {
       "id": "denied-backdoor",
       "kind": "trigger",
       "name": "5 THRU",

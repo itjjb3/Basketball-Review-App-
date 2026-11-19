@@ -384,6 +384,40 @@
         api.step([line("dribble", [H2, add(S2, mul(perp, 22)), G]), line("cut", [S2, lerp(S2, roll, 0.5), roll])]);
       },
     },
+    drive: {
+      label: "Drive: the ball handler attacks the edge of the paint going left (the way Lock Left forces him)",
+      run(api) {
+        const h = holder(api.f);
+        if (!h) return "nobody has the ball.";
+        const H = P(h);
+        if (dist(H, RIM) < 150) return "he's already in the paint.";
+        // Toward the rim, angled to his left hand, to about 12 ft out (the edge of the paint).
+        const f = unit(sub(RIM, H));
+        const left = [f[1], -f[0]];
+        const T = clampPt(add(RIM, mul(unit(sub(add(H, mul(left, 55)), RIM)), 120)));
+        api.step([line("dribble", [H, lerp(H, T, 0.5), T])]);
+      },
+    },
+    kick: {
+      label: "Kick: a same-side pass out of the drive to the closest teammate on the perimeter",
+      run(api) {
+        const h = holder(api.f);
+        if (!h) return "nobody has the ball.";
+        const per = offense(api.f).filter((t) => t.id !== h.id && isPerimeter(t));
+        if (!per.length) return "there's no one on the perimeter to kick it to.";
+        const s = Math.abs(h.x - 250) > 15 ? sideOf(P(h)) : 0;
+        const same = s ? per.filter((t) => sideOf(P(t)) === s) : [];
+        const t = nearest(same.length ? same : per, P(h));
+        const moves = [passTo(h, t)];
+        if (!isPerimeter(h)) {
+          // The driver kicks it and spaces back out to the open slot on his side (or the wing).
+          const sd = s || -sideOf(P(t));
+          const spot = [slot(sd), wing(sd), slot(-sd)].find((q) => offense(api.f).every((o) => o.id === h.id || o.id === t.id || dist(P(o), q) > 50));
+          if (spot) moves.push(line("cut", [P(h), lerp(P(h), spot, 0.5), spot]));
+        }
+        api.step(moves);
+      },
+    },
     continuity: {
       label: "Continuity: keep running the actions side to side from wherever the ball is",
     },
@@ -447,6 +481,8 @@
     switch: { tokens: [...withBall(1, 175, 272), o(5, 325, 272), o(3, 30, 42), o(2, 470, 42)] },
     twist: { tokens: [...withBall(1, 175, 272), o(3, 30, 42), o(5, 325, 272), o(2, 470, 42)] },
     twirl: { tokens: [...withBall(1, 175, 272), o(4, 175, 76)] },
+    drive: { tokens: [...withBall(1, 175, 272), o(3, 30, 42)] },
+    kick: { tokens: [...withBall(1, 175, 272), o(3, 30, 42), o(5, 325, 272)], seq: ["drive", "kick"] },
   };
   let demoCache = {};
   function demo(item) {

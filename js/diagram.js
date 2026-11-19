@@ -243,6 +243,7 @@
       hitPoly = poly;
     }
     const hitPath = hit ? `<path class="s-hit" d="${d(hitPoly)}" />` : "";
+    if (opts.inert) return `<g class="stk stk-${esc(s.t)} inert"${style}>${line}${head}</g>`;
     return `<g class="stk stk-${esc(s.t)}" data-stroke="${esc(s.id)}"${style}>${line}${head}${hitPath}</g>`;
   }
 
@@ -255,8 +256,11 @@
       // The "(" is his back: it sits behind the X, opposite the way he faces.
       const back = extra.face == null ? "" : `<path class="x-back" transform="rotate(${extra.face.toFixed(1)})" d="M-6.5,11.3 A13,13 0 0 1 -6.5,-11.3" />`;
       const glow = extra.hl ? `<circle class="x-glow" r="20" />` : "";
+      // Hands high on a closeout: arms out in front with the hands up.
+      const hands = tk.hh && extra.face != null ? `<g class="x-hands" transform="rotate(${extra.face.toFixed(1)})"><path d="M2,-5 L11,-12 M2,5 L11,12" /><circle cx="12.5" cy="-13" r="3" /><circle cx="12.5" cy="13" r="3" /></g>` : "";
+      const ring = extra.sel ? `<circle class="x-sel" r="18" />` : "";
       const tag = extra.hl && extra.tag ? `<g class="x-tag" transform="translate(0,${+tk.y < 80 ? 31 : -31})"><rect x="${-(extra.tag.length * 4.6 + 7).toFixed(1)}" y="-9.5" width="${(extra.tag.length * 9.2 + 14).toFixed(1)}" height="19" rx="9.5" /><text y="4.6">${esc(extra.tag)}</text></g>` : "";
-      return `<g class="tok tok-x${extra.hl ? " hl" : ""}${extra.dim ? " dim" : ""}" ${id} ${tr}><circle class="tok-hit" r="15" />${glow}${back}<path class="x-mark" d="M-8,-8 L8,8 M8,-8 L-8,8" /><text class="x-num" x="10" y="16">${n}</text>${tag}</g>`;
+      return `<g class="tok tok-x${extra.hl ? " hl" : ""}${extra.dim ? " dim" : ""}${extra.sel ? " sel" : ""}" ${id} ${tr}><circle class="tok-hit" r="15" />${glow}${ring}${back}${hands}<path class="x-mark" d="M-8,-8 L8,8 M8,-8 L-8,8" /><text class="x-num" x="10" y="16">${n}</text>${tag}</g>`;
     }
     if (tk.t === "ball") {
       return `<g class="tok tok-ball" ${id} ${tr}><circle r="7.5" /><path class="seam" d="M-7.5,0 L7.5,0 M0,-7.5 L0,7.5 M-5,-5.3 Q-1.5,0 -5,5.3 M5,-5.3 Q1.5,0 5,5.3" /></g>`;
@@ -270,9 +274,9 @@
   /* opts.hl: a defensive job ("gap", "deny"...) to light up on whichever X has it.
      opts.tags: false hides the job's name over the X (flashcards and the quiz). */
   function frameMarkup(frame, opts = {}) {
-    const strokes = (frame.strokes || []).map((s) => strokeMarkup(s, opts)).join("");
+    const strokes = (frame.strokes || []).map((s) => strokeMarkup(s, /^dz/.test(s.id || "") ? { ...opts, interactive: false, inert: true } : opts)).join("");
     const def = BH.defense && (frame.tokens || []).some((t) => t.t === "x") ? BH.defense : null;
-    const face = def ? def.facing(frame) : {};
+    const face = def ? def.facing(frame, opts.stance) : {};
     const jobs = def && opts.hl ? def.roles(frame) : {};
     const lit = opts.hl ? Object.keys(jobs).filter((id) => jobs[id] === opts.hl) : [];
     const tagOf = (r) => (def && def.role(r) ? def.role(r).tag : "");
@@ -282,7 +286,7 @@
     const toks = (frame.tokens || [])
       .slice()
       .sort((a, b) => rank(a) - rank(b))
-      .map((t) => (t.t === "x" ? tokenMarkup(t, { face: face[t.id], hl: lit.includes(t.id), dim: opts.hl && !lit.includes(t.id), tag: opts.tags === false ? "" : tagOf(jobs[t.id]) }) : tokenMarkup(t)))
+      .map((t) => (t.t === "x" ? tokenMarkup(t, { face: face[t.id], hl: lit.includes(t.id), dim: opts.hl && !lit.includes(t.id), tag: opts.tags === false ? "" : tagOf(jobs[t.id]), sel: opts.selX === t.id }) : tokenMarkup(t)))
       .join("");
     return `<g class="strokes">${strokes}</g><g class="tokens">${toks}</g>`;
   }
@@ -369,7 +373,7 @@
       const last = phases[phases.length - 1];
       if (pid && last && last.kind === "carry" && last.pid === pid && last.sids) last.sids.push(s.id);
       else if (pid) phases.push({ kind: "carry", pid, sids: [s.id] });
-      else phases.push({ kind: "fly", poly: bp });
+      else phases.push({ kind: "fly", t: s.t, poly: bp });
       at = s.pts[s.pts.length - 1];
       if (s.t === "shot") {
         shot = true;

@@ -21,6 +21,28 @@
     loaded: false,
   };
 
+  const JOBS = ["ball", "gap", "deny", "wall", "bear"];
+  const wrapDeg = (d) => ((((+d + 180) % 360) + 360) % 360) - 180;
+  function normalizeToken(t) {
+    const out = { id: String(t.id), t: t.t, n: t.n == null ? "" : String(t.n), x: +t.x, y: +t.y };
+    if (t.t === "ball" && t.h) out.h = String(t.h);
+    if (t.t === "x") {
+      if (t.f != null && isFinite(t.f)) out.f = Math.round(wrapDeg(t.f)); // the way he faces
+      if (t.hh) out.hh = true; // hands high
+      if (JOBS.includes(t.j)) out.j = t.j; // his job, kept through a rotation
+    }
+    return out;
+  }
+  /* A defense's stance for each job, in degrees. */
+  function normalizeStance(st) {
+    if (!st || typeof st !== "object") return null;
+    const out = {};
+    JOBS.forEach((j) => {
+      if (st[j] != null && isFinite(st[j])) out[j] = Math.round(wrapDeg(st[j]));
+    });
+    return Object.keys(out).length ? out : null;
+  }
+
   function normalizeItem(it) {
     const kind = BH.KINDS.some((k) => k.id === it.kind) ? it.kind : "term";
     const out = {
@@ -35,11 +57,13 @@
     };
     if (it.example) out.example = true;
     if (typeof it.rule === "string" && /^[a-z-]{2,20}$/.test(it.rule)) out.rule = it.rule;
+    const st = normalizeStance(it.stance);
+    if (st) out.stance = st;
     if (it.diagram && Array.isArray(it.diagram.frames) && it.diagram.frames.length) {
       out.diagram = {
         court: it.diagram.court === "full" ? "full" : "half",
         frames: it.diagram.frames.map((f) => ({
-          tokens: (f.tokens || []).filter((t) => t && isFinite(t.x) && isFinite(t.y)).map((t) => ({ id: String(t.id), t: t.t, n: t.n == null ? "" : String(t.n), x: +t.x, y: +t.y, ...(t.t === "ball" && t.h ? { h: String(t.h) } : {}) })),
+          tokens: (f.tokens || []).filter((t) => t && isFinite(t.x) && isFinite(t.y)).map(normalizeToken),
           strokes: (f.strokes || []).filter((s) => s && Array.isArray(s.pts) && s.pts.length > 1).map((s) => ({ id: String(s.id || BH.uid("s")), t: s.t, pts: s.pts.map((p) => [+p[0], +p[1]]), ...(s.c ? { c: String(s.c) } : {}) })),
         })),
       };
