@@ -266,7 +266,7 @@
       const cvText = { ice: "ICE", fire: "FIRE", contain: "CONTAIN" }[tk.cv] || "";
       const cvY = extra.hl && extra.tag ? -up : up; // above him unless his job label is there
       const cover = cvText ? `<g class="x-cover" transform="translate(0,${cvY})"><rect x="${-(cvText.length * 4.4 + 7).toFixed(1)}" y="-8.5" width="${(cvText.length * 8.8 + 14).toFixed(1)}" height="17" rx="8.5" /><text y="4.2">${cvText}</text></g>` : "";
-      const scram = tk.sc ? `<g class="x-scram" transform="translate(0,${cvText ? -cvY : -up})"><rect x="-26" y="-8.5" width="52" height="17" rx="8.5" /><text y="4.2">SCRAM</text></g>` : "";
+      const scram = tk.sc ? `<g class="x-scram" transform="translate(0,${cvText ? -cvY : -up})"><rect x="-26" y="-8.5" width="52" height="17" rx="8.5" /><text y="4.2">${tk.sc === "xout" ? "X-OUT" : "SCRAM"}</text></g>` : "";
       return `<g class="tok tok-x${extra.hl ? " hl" : ""}${extra.dim ? " dim" : ""}${extra.sel ? " sel" : ""}" ${id} ${tr}><circle class="tok-hit" r="15" />${glow}${ring}${back}${hands}<path class="x-mark" d="M-8,-8 L8,8 M8,-8 L-8,8" /><text class="x-num" x="10" y="16">${n}</text>${tag}${cover}${scram}</g>`;
     }
     if (tk.t === "ball") {

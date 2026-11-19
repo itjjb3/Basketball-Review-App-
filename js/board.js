@@ -1017,11 +1017,12 @@
     { group: "Drive & kick", id: "sc-top", name: "Top drive", call: [["5-out", "power"], "drive", "kick-out", "swing"], about: "Drive from the top of the key: corner Wall and Gap snipe and grab, Deny drops" },
     { group: "Drive & kick", id: "sc-wing", name: "Wing drive", call: ["baseline-drive-lift", "drive", "kick-out"], about: "1 Thru leaves 5 on the wing; he drives and kicks" },
     { group: "Drive & kick", id: "sc-corner", name: "Corner drive", call: ["4-out", "swing", "swing", "drive", "kick-out"], about: "The ball swings to the corner, he drives baseline and kicks" },
+    { group: "Drive & kick", id: "sc-beat", name: "Beat: Scram", call: ["4-out", { id: "drive", beat: true }, "kick-out"], about: "He gets beat left on a slot drive: the Gap picks up the ball, the on-ball sprints to the Gap's man" },
     { group: "Ball screens", id: "sc-ice", name: "Ice", call: ["4-out", "twirl", "kick-out"], about: "Twirl going right: we ICE it, he rejects and drives left, the big Contains" },
     { group: "Ball screens", id: "sc-fire", name: "Fire", call: ["4-out", "swing", "twirl", "swing"], about: "Twirl going left: FIRE, we trap; the Bear tags the roller, he passes out" },
   ];
   /* The program's item for a scenario step (the first that exists when there's a choice). */
-  const scenarioItem = (step) => [].concat(step).find((id) => BH.store.get(id));
+  const scenarioItem = (step) => [].concat(step && step.id ? step.id : step).find((id) => BH.store.get(id));
   const scenarioReady = (sc) => sc.call.every((step) => scenarioItem(step));
   /* Load a scenario: a fresh call with Lock Left on, each piece added in order. */
   function startScenario(sc) {
@@ -1036,7 +1037,15 @@
     S.selX = null;
     S.switching = null;
     S.defense = "lock-left";
-    const failed = sc.call.map(scenarioItem).filter((id) => !addToCall(id, { silent: true }));
+    const failed = [];
+    sc.call.forEach((step) => {
+      const id = scenarioItem(step);
+      const n = S.segs.length;
+      if (!addToCall(id, { silent: true })) return void failed.push(id);
+      // A drive he gets beat on (the Scram scenario).
+      const seg = S.segs[n] || S.segs[S.segs.length - 1];
+      if (step && step.beat && seg && S.board.frames[seg.start]) S.board.frames[seg.start].beat = true;
+    });
     S.step = 0;
     if (S.sheetOpen) toggleSheet(false);
     changedAll();
@@ -1192,12 +1201,18 @@
     const sel = xs.find((x) => x.id === S.selX);
     const events = (f.scram || []).map(
       (e, i) =>
-        `<li><b>${e.how === "natural" ? "SCRAM" : "Switch"}:</b> X${esc(e.a)} ↔ X${esc(e.b)} <span class="muted">${e.how === "natural" ? "(natural, after the rotation)" : "(marked)"}</span> <button class="linkish" data-unswitch="${i}">Undo</button></li>`
+        `<li><b>${e.how === "natural" ? "X-out" : e.how === "scram" ? "SCRAM" : "Switch"}:</b> X${esc(e.a)} ↔ X${esc(e.b)} <span class="muted">${e.how === "natural" ? "(help the helper, off the ball)" : e.how === "scram" ? "(he got beat)" : "(marked)"}</span> <button class="linkish" data-unswitch="${i}">Undo</button></li>`
     );
     const mu = BH.defense.matchups(f);
     const numOf = (id) => ((f.tokens || []).find((t) => t.id === id) || {}).n;
     const switched = xs.filter((x) => mu[x.id] && numOf(mu[x.id]) && numOf(mu[x.id]) !== x.n).map((x) => `X${esc(x.n)} on ${esc(numOf(mu[x.id]))}`);
+    // A drive on this step: if the on-ball got beat, the Gap and he Scram.
+    const beatOn = !!(frame() && frame().beat);
+    const beatRow = f.drive
+      ? `<p class="small">${beatOn ? `<b>He got beat:</b> the Gap picks up the ball, the on-ball sprints to the Gap's man. <button class="linkish" data-act="beat">Undo</button>` : `<button class="btn ghost small" data-act="beat">He got beat → Scram</button>`}</p>`
+      : "";
     const switchRow = `<div class="switch-row">
+        ${beatRow}
         ${events.length ? `<ul class="switch-list">${events.join("")}</ul>` : ""}
         ${switched.length ? `<p class="small"><b>Switched:</b> ${switched.join(" · ")}</p>` : ""}
         ${
@@ -1216,6 +1231,15 @@
       </div>`;
   }
   function wireDefBox(box) {
+    const beat = BH.$('[data-act="beat"]', box);
+    if (beat)
+      beat.addEventListener("click", () => {
+        snapshot();
+        const f = frame();
+        if (f.beat) delete f.beat;
+        else f.beat = true;
+        changed();
+      });
     const start = BH.$('[data-act="switch-start"]', box);
     if (start)
       start.addEventListener("click", () => {
@@ -1238,7 +1262,10 @@
         const f = frame();
         const same = (q) => (String(q[0]) === e.a && String(q[1]) === e.b) || (String(q[0]) === e.b && String(q[1]) === e.a);
         if (e.how === "coach") f.sw = (f.sw || []).filter((q) => !same(q));
-        else f.nosw = [...(f.nosw || []), [e.a, e.b]]; // the coach says this one doesn't switch
+        else if (e.how === "scram") {
+          const d = S.board.frames[S.step - 1]; // the drive he got beat on
+          if (d) delete d.beat;
+        } else f.nosw = [...(f.nosw || []), [e.a, e.b]]; // the coach says this one doesn't switch
         changed();
       })
     );

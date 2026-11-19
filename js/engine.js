@@ -192,15 +192,16 @@
         const { ahead, behind } = along(api.f, h, dir);
         // From a slot, the top or the nail, swing it slot to slot; from a wing or corner, to the next player.
         const hs = Math.abs(h.x - 250) > 20 ? sideOf(P(h)) : 0;
-        const central = Math.abs(h.x - 250) < 135 && h.y > 150;
+        // Central: the top, a slot, the nail, or anywhere inside the arc (out of a drive or an Ice reject).
+        const central = (Math.abs(h.x - 250) < 135 && h.y > 150) || !isPerimeter(h);
         const slotOk = (t) => isSlot(t) && (!hs || sideOf(P(t)) !== hs);
         const otherSlot = central ? ahead.find(slotOk) || behind.find(slotOk) : null;
         const t = otherSlot || ahead[0] || behind[0];
         if (!t) return "there's no one on the perimeter to swing it to.";
         const moves = [passTo(h, t)];
         if (!isPerimeter(h)) {
-          // Passing out of the drive: the passer spaces back out to the open slot (or wing) behind the pass.
-          const back = -Math.sign(t.x - h.x) || -dir;
+          // Passing out of the drive: the passer spaces back out on his own side, to the open slot (or wing).
+          const back = hs || -Math.sign(t.x - h.x) || -dir;
           const spot = [slot(back), wing(back)].find((p) => offense(api.f).every((o) => o.id === h.id || o.id === t.id || dist(P(o), p) > 50));
           if (spot) moves.push(line("cut", [P(h), lerp(P(h), spot, 0.5), spot]));
         }
@@ -443,6 +444,12 @@
     if (!rule || !rule.run) return { error: "that action doesn't run on its own." };
     let cur = BH.clone(start);
     cur.strokes = [];
+    // Pin the ball to whoever has it now, so a screener walking up next to it doesn't "take" it.
+    const ballTok = (cur.tokens || []).find((t) => t.t === "ball");
+    if (ballTok && !ballTok.h) {
+      const hh = holder(cur);
+      if (hh) ballTok.h = hh.id;
+    }
     const out = [];
     const api = {
       get f() {

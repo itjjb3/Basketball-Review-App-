@@ -403,7 +403,12 @@
     if (ballX) (move[ballX] = "hip"), (label[ballX] = ["ball"]);
     let fillMan = null,
       wallMan = null,
-      dropTo = null;
+      dropTo = null,
+      tagTo = null;
+    // Switches that come out of the rotation: off-ball X-outs, and an on-ball Scram when he got beat.
+    const xout = [],
+      scram = [];
+    const num = (xId) => (defenders(f).find((x) => x.id === xId) || {}).n;
     if (top) {
       const dsWing = wingOn(side),
         dsCorner = cornerOn(side),
@@ -417,6 +422,8 @@
         move[wx] = wkCorner ? "drop" : "spot";
         label[wx] = [...(js[wx] || []).filter((j) => j !== "bear"), "bear"];
         dropTo = wkCorner ? endOf(wkCorner.id) : null;
+        // X-out: the weak wing keeps the corner man he dropped to, the corner recovers to the open wing.
+        if (wkCorner && guard[wkCorner.id]) xout.push([num(wx), num(guard[wkCorner.id])]);
       }
     } else {
       const gapX = xOfJob("gap"),
@@ -425,10 +432,26 @@
         denyX = xOfJob("deny");
       if (gapX) move[gapX] = "snipe";
       if (wallX) (move[wallX] = "step"), (wallMan = m[wallX] ? endOf(m[wallX]) : null);
-      if (bearX) move[bearX] = "fill";
-      // The string: the Bear left a corner man, so the Deny drops to him.
-      const bearMan = bearX && m[bearX] ? (f.tokens || []).find((t) => t.id === m[bearX]) : null;
-      if (denyX && bearMan && isCorner(P(bearMan))) (move[denyX] = "drop"), (dropTo = endOf(bearMan.id));
+      if (bearX) {
+        // The Bear helps the helper: he takes the Wall's man, the first pass out on that side.
+        // The Wall recovers to the open guy (the Bear's man): an off-ball X-out.
+        if (wallX && wallMan) {
+          move[bearX] = "tag";
+          tagTo = wallMan;
+          xout.push([num(wallX), num(bearX)]);
+        } else move[bearX] = "fill";
+      }
+      // He got beat: Scram. The Gap picks up the ball, the on-ball sprints to the Gap's man,
+      // and the Wall stays home (the Gap stepped up).
+      if (drive.beat && gapX && ballX) {
+        move[gapX] = "pickup";
+        move[ballX] = "sprint";
+        if (wallX) move[wallX] = "home";
+        if (bearX) move[bearX] = "fill";
+        xout.length = 0;
+        scram.push([num(ballX), num(gapX)]);
+      }
+      void denyX; // the Deny stays in the lane
     }
     fillMan = wallMan && dist(wallMan, RIM) < 150 ? wallMan : null;
 
@@ -466,6 +489,23 @@
         case "drop":
           end = dropTo ? add(dropTo, mul(unit(sub(Dv, dropTo)), 28)) : X; // one step off the corner man, toward the ball
           break;
+        case "tag":
+          end = tagTo ? add(tagTo, mul(unit(sub(Dv, tagTo)), 20)) : X; // on the Wall's man, ball side
+          break;
+        case "pickup":
+          end = add(add(Dv, mul(toRimD, 26)), mul(rightD, 10)); // the Gap steps up on the driver, shading his right hand
+          break;
+        case "sprint": {
+          // The beaten on-ball sprints to the Gap's man, hands high.
+          const gm = guard && Object.keys(m).find((xId) => move[xId] === "pickup");
+          const gMan = gm && m[gm] ? endOf(m[gm]) : null;
+          end = gMan ? add(gMan, mul(unit(sub(Dv, gMan)), 24)) : X;
+          hh = true;
+          break;
+        }
+        case "home":
+          end = man ? spotFor(null, man, Dv) : X;
+          break;
         default:
           end = man ? spotFor(jobs[x.id] === "deny" ? "deny" : jobs[x.id] === "ball" ? "ball" : null, man, Dv) : lerp(X, RIM, 0.15);
       }
@@ -480,7 +520,7 @@
       if (hh) nx.hh = true;
       ends.push(nx);
     });
-    return { strokes, ends };
+    return { strokes, ends, xout, scram };
   }
 
   /* ---- ball screens: Ice, Fire, Contain ----
@@ -591,7 +631,11 @@
     const denyMan = denyX && m[denyX] ? endOf(m[denyX]) : null;
     // The Deny sinks to split his man and the Bear's man, staying on his side of it.
     if (denyX && denyMan && bearMan && denyX !== bigX) plan[denyX] = { ...plan[denyX], end: lerp(lerp(denyMan, bearMan, 0.35), stop, 0.2) };
-    return moveAll(f, plan);
+    const r = moveAll(f, plan);
+    // X-out: the Bear keeps the roller, the big recovers out of the trap to the Bear's man.
+    const n = (xId) => (defenders(f).find((x) => x.id === xId) || {}).n;
+    r.xout = bigX && bearX && bigX !== bearX && roller ? [[n(bigX), n(bearX)]] : [];
+    return r;
   }
 
   /* Lock Left over a whole possession: our X's where Lock Left puts them each step, and
@@ -630,6 +674,7 @@
   function defendFrames(frames) {
     const out = [];
     let carry = null,
+      carrySw = [], // switches the rotation calls for, applied on the next step
       pending = null; // a ball screen set last step (the next step is how it's used)
     // Who's guarding whom, carried through the possession: { defender number: man number }.
     let guard = {};
@@ -655,10 +700,14 @@
       });
       let xs = carry || place(f, guard);
       if (carry) {
-        // Out of a rotation: switch if that's the natural play (Scram), otherwise recover.
-        naturalSwitches({ ...f, tokens: [...keep, ...xs] }, f.nosw).forEach(([a, b]) => {
+        // Out of a rotation: the off-ball X-out (help the helper), or Scram if he got beat.
+        const vetoed = (a, b) => (f.nosw || []).some((q) => (String(q[0]) === a && String(q[1]) === b) || (String(q[0]) === b && String(q[1]) === a));
+        carrySw.forEach(([a, b, how]) => {
+          a = String(a);
+          b = String(b);
+          if (!a || !b || a === b || (how === "natural" && vetoed(a, b))) return;
           swap(a, b);
-          events.push({ a, b, how: "natural" });
+          events.push({ a, b, how });
         });
       }
       xs = xs.map((x) => {
@@ -667,13 +716,15 @@
         if (mm && mm !== x.n) nx.m = mm;
         else delete nx.m;
         delete nx.sc;
-        if (events.some((e) => e.a === x.n || e.b === x.n)) nx.sc = true;
+        const ev = events.find((e) => e.a === x.n || e.b === x.n);
+        if (ev) nx.sc = ev.how === "natural" ? "xout" : true; // X-OUT off the ball; SCRAM when beat or marked
         return nx;
       });
       const g = { ...f, tokens: [...keep, ...xs], strokes: (f.strokes || []).slice(), def: "lock-left" };
       if (events.length) g.scram = events;
       if (carry) g.carried = true;
       carry = null;
+      carrySw = [];
       const next = frames[i + 1];
       const fire = pending && pending.dir === "left" ? pending : null;
       pending = null;
@@ -686,10 +737,15 @@
         pending = sc;
         g.cover = sc.dir === "right" ? "ice" : sc.dir === "left" ? "fire" : "contain";
       } else if (fire) r = trapRespond(g, fire, next);
-      else if (dv) r = respond(g, dv, next);
+      else if (dv) {
+        dv.beat = !!f.beat;
+        g.drive = true;
+        r = respond(g, dv, next);
+      }
       if (r) {
         g.strokes.push(...r.strokes);
         carry = r.ends;
+        carrySw = [...(r.xout || []).map((q) => [q[0], q[1], "natural"]), ...(r.scram || []).map((q) => [q[0], q[1], "scram"])];
       }
       out.push(g);
     });
