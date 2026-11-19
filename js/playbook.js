@@ -101,6 +101,24 @@
     );
   }
 
+  /* ---- defense: tap a job (Gap, Deny...) to light up the X doing it ---- */
+  const jobsMarkup = (sel) => BH.defense.jobsMarkup(sel);
+  const jobText = (job) => BH.defense.jobText(job);
+  function wireJobs(root) {
+    BH.$$("[data-job]", root).forEach((b) =>
+      b.addEventListener("click", () => {
+        const job = player && player.hl === b.dataset.job ? null : b.dataset.job;
+        if (player) player.highlight(job);
+        BH.$$("[data-job]", root).forEach((x) => {
+          x.classList.toggle("on", x.dataset.job === job);
+          x.setAttribute("aria-pressed", String(x.dataset.job === job));
+        });
+        const d = BH.$(".job-def", root);
+        if (d) d.innerHTML = jobText(job);
+      })
+    );
+  }
+
   /* ---- item detail ---- */
   function renderItem(root, id) {
     if (player) player.destroy();
@@ -114,11 +132,23 @@
     const dg = BH.viewDiagram(it);
     const auto = BH.isAuto(it);
     const related = BH.store.items().filter((o) => o.id !== it.id && o.kind === it.kind);
+    // Lock Left and its words: the X's can be lit up by job.
+    const DF = BH.defense;
+    const job = DF ? DF.termRole(it) : null;
+    const isDefense = it.rule === "lock-left";
+    const showJobs = !!(dg && DF && (isDefense || job) && dg.frames.some((f) => (f.tokens || []).some((t) => t.t === "x")));
+    const defWords = isDefense && DF ? DF.terms() : [];
     root.innerHTML = `
       <section class="view-item">
         <a class="back" href="#playbook">${icons.prev} Playbook</a>
         <div class="item-layout${dg ? "" : " no-diagram"}">
-          ${dg ? `<div class="item-diagram"><div id="item-player"></div>${auto && !BH.hasDiagram(it) ? `<p class="auto-note">${icons.info} A small example. On the whiteboard, ${esc(it.name)} runs from wherever the ball is: add it after any play to keep the possession going.</p>` : ""}</div>` : ""}
+          ${
+            dg
+              ? `<div class="item-diagram"><div id="item-player"></div>${
+                  auto && !BH.hasDiagram(it) ? `<p class="auto-note">${icons.info} A small example. On the whiteboard, ${esc(it.name)} runs from wherever the ball is: add it after any play to keep the possession going.</p>` : ""
+                }${showJobs ? jobsMarkup(job) : ""}</div>`
+              : ""
+          }
           <article class="item-text">
             <div class="card-meta"><span class="kind-chip k-${esc(it.kind)}">${esc(k.one)}</span>${it.example ? '<span class="ex-chip">Example</span>' : ""}</div>
             <h1>${esc(it.name)}</h1>
@@ -133,6 +163,11 @@
               ${BH.store.isCoach ? `<a class="btn ghost" href="#install" data-edit="${esc(it.id)}">${icons.edit} Edit</a>` : ""}
             </div>
             ${
+              defWords.length
+                ? `<h2>${esc(it.name)} words</h2><div class="related">${defWords.map((r) => `<a class="chip" href="#item-${esc(r.id)}">${esc(r.name)}</a>`).join("")}</div>`
+                : ""
+            }
+            ${
               related.length
                 ? `<h2>More ${esc(k.label.toLowerCase())}</h2><div class="related">${related
                     .slice(0, 8)
@@ -143,7 +178,8 @@
           </article>
         </div>
       </section>`;
-    if (dg) player = new BH.diagram.Player(BH.$("#item-player", root), dg, { label: it.name + " diagram" });
+    if (dg) player = new BH.diagram.Player(BH.$("#item-player", root), dg, { label: it.name + " diagram", hl: job });
+    if (showJobs) wireJobs(root);
     const ob = BH.$("[data-open-board]", root);
     ob.addEventListener("click", () => BH.board && BH.board.queueOpen(it.id));
     const sk = BH.$("[data-study-kind]", root);

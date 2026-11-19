@@ -104,7 +104,7 @@
     const keys = it.keys.slice(0, 4);
     const dg = BH.viewDiagram(it);
     return `<div class="face-inner meaning-face${dg ? " with-diagram" : ""}">
-        ${dg ? `<div class="fc-diagram">${BH.diagram.thumbSVG(dg, { label: "Diagram" })}</div>` : ""}
+        ${dg ? `<div class="fc-diagram">${BH.diagram.thumbSVG(dg, { label: "Diagram", tags: false })}</div>` : ""}
         <div class="fc-text">
           ${it.summary ? `<p class="fc-summary">${esc(it.summary)}</p>` : ""}
           ${keys.length ? `<ul class="keys">${keys.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
@@ -375,7 +375,7 @@
             : ""
         }
       </div>`;
-    if (q.type === "diagram") player = new BH.diagram.Player(BH.$("#q-player", body), BH.viewDiagram(it), { label: "Mystery diagram" });
+    if (q.type === "diagram") player = new BH.diagram.Player(BH.$("#q-player", body), BH.viewDiagram(it), { label: "Mystery diagram", tags: false });
     BH.$$("[data-opt]", body).forEach((b) =>
       b.addEventListener("click", () => {
         q.picked = b.dataset.opt;

@@ -86,6 +86,7 @@
           <select id="f-rule">
             <option value="">Play the diagram as drawn</option>
             ${BH.engine.LIST.map((r) => `<option value="${r.id}" ${it.rule === r.id ? "selected" : ""}>Auto: ${esc(r.label)}</option>`).join("")}
+            <option value="lock-left" ${it.rule === "lock-left" ? "selected" : ""}>Defense: Lock Left (puts our X's on the offense, step by step)</option>
           </select>
         </label>
         <label class="field"><span>Call or signal</span>

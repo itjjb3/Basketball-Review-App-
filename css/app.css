@@ -347,6 +347,11 @@ body[data-view="board"] main { max-width: 1600px; padding-block: 16px 24px; }
 .tok-x .tok-hit { fill: transparent; }
 .tok-x .x-mark { stroke: var(--def); stroke-width: 4.2; stroke-linecap: round; fill: none; }
 .tok-x .x-num { fill: var(--def); font-family: var(--font-display); font-weight: 700; font-size: 14px; pointer-events: none; }
+.tok-x .x-back { fill: none; stroke: var(--def); stroke-width: 3.2; stroke-linecap: round; }
+.tok-x .x-glow { fill: rgba(255, 196, 0, 0.55); stroke: #c48a00; stroke-width: 2.5; }
+.tok-x.dim { opacity: 0.38; }
+.tok-x .x-tag rect { fill: var(--def); }
+.tok-x .x-tag text { fill: #fff; font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: 0.06em; text-anchor: middle; pointer-events: none; }
 .tok-ball circle { fill: #e0701c; stroke: #6e3307; stroke-width: 1.3; }
 .tok-ball .seam { stroke: #6e3307; stroke-width: 1; fill: none; }
 .tok-cone path { fill: #f28a22; stroke: #8c4507; stroke-width: 1.2; }
@@ -372,21 +377,18 @@ body[data-view="board"] main { max-width: 1600px; padding-block: 16px 24px; }
 .lib-head { display: flex; justify-content: space-between; align-items: center; }
 .lib-head h2 { font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.04em; }
 .sheet-close { display: none; }
-.lib-kinds { display: flex; flex-wrap: wrap; gap: 6px; }
-.lib-kinds .chip { min-height: 30px; padding: 3px 10px; font-size: 0.82rem; }
-.lib-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-height: 0; flex: 1; align-content: start; }
+.lib-list { overflow-y: auto; display: grid; gap: 14px; min-height: 0; flex: 1; align-content: start; padding-right: 2px; }
+.lib-group h3 { display: flex; align-items: center; gap: 7px; margin: 0 0 6px; font-family: var(--font-display); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--fg-muted); }
+.lib-group h3 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--k); }
+.lib-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .lib-item {
-  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
-  border: 1px solid transparent; border-radius: 8px; background: transparent; padding: 7px 8px; cursor: grab;
-  border-left: 3px solid var(--k);
+  min-height: 34px; padding: 5px 11px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+  font: 600 0.88rem var(--font-body); cursor: grab; touch-action: none; /* drag onto the call */
+  box-shadow: inset 3px 0 0 var(--k);
 }
-.lib-item:hover { background: var(--surface-2); border-color: var(--line); border-left-color: var(--k); }
-.lib-grip { color: var(--fg-muted); touch-action: none; display: flex; }
-.lib-text { display: grid; min-width: 0; flex: 1; }
-.lib-text b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lib-text small { color: var(--fg-muted); font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lib-has { color: var(--fg-muted); display: flex; }
-.lib-has .ic { width: 16px; height: 16px; }
+.lib-item:hover { background: var(--surface-2); border-color: color-mix(in srgb, var(--k) 45%, var(--line)); }
+.lib-item.notes-only { border-style: dashed; box-shadow: none; color: var(--fg-muted); }
 .lib-empty { color: var(--fg-muted); padding: 12px 4px; font-size: 0.9rem; }
 .lib-hint { font-size: 0.8rem; color: var(--fg-muted); }
 
@@ -442,7 +444,8 @@ body[data-view="board"] main { max-width: 1600px; padding-block: 16px 24px; }
 .call-sep { color: var(--fg-muted); font-weight: 700; flex: none; }
 .new-call { min-height: 34px; padding: 4px 10px; flex: none; }
 .steps .step-label em { font-style: normal; color: var(--fg-muted); }
-.lib-auto { font-family: var(--font-display); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--k-action); border: 1px solid currentColor; border-radius: 4px; padding: 0 5px; flex: none; }
+.lib-has { color: var(--fg-muted); display: flex; }
+.lib-has .ic { width: 16px; height: 16px; }
 .auto-note { display: flex; gap: 8px; align-items: flex-start; color: var(--fg-muted); font-size: 0.9rem; margin-top: 10px; max-width: 60ch; }
 .auto-note .ic { flex: none; width: 18px; height: 18px; margin-top: 2px; color: var(--k-action); }
 .lib-toggle { display: none; }
@@ -578,7 +581,7 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
     align-items: stretch;
   }
   .lib-drawer, .board-info { position: static; top: auto; max-height: none; height: 100%; min-height: 0; }
-  .lib-list { padding-bottom: 24px; -webkit-mask-image: linear-gradient(#000 calc(100% - 24px), transparent); mask-image: linear-gradient(#000 calc(100% - 24px), transparent); }
+  .lib-list { padding-bottom: 20px; -webkit-mask-image: linear-gradient(#000 calc(100% - 20px), transparent); mask-image: linear-gradient(#000 calc(100% - 20px), transparent); }
   .board-main { grid-template-rows: auto auto auto minmax(0, 1fr) auto; height: 100%; min-height: 0; }
   .board-stage { display: flex; min-height: 0; }
   .board-stage svg { flex: 1; width: 100%; height: 100%; max-height: none; min-height: 0; }
@@ -629,6 +632,7 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
     transform: translateY(105%); transition: transform 0.25s ease; box-shadow: var(--shadow);
   }
   .sheet-open .lib-drawer { transform: none; }
+  .lib-item { touch-action: pan-y; } /* in the phone drawer, tap to add and swipe to scroll */
   .sheet-close { display: inline-flex; }
   .sheet-open .sheet-scrim { display: block; position: fixed; inset: 0; z-index: 55; background: rgb(0 0 0 / 0.4); }
   .lib-toggle { display: inline-flex; }
@@ -652,3 +656,23 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* Defense jobs: tap one to light up the X doing it (playbook pages and the whiteboard). */
+.jobs { margin-top: 12px; }
+.jobs-title { margin: 0 0 6px; font-family: var(--font-display); font-weight: 700; font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-muted); }
+.jobs-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.job-chip {
+  min-height: 36px; padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+  font: 600 0.9rem var(--font-body); cursor: pointer;
+}
+.job-chip:hover { border-color: var(--fg-muted); }
+.job-chip.on { background: #ffc400; border-color: #c48a00; color: #1b1430; }
+.job-def { margin: 8px 0 0; font-size: 0.92rem; color: var(--fg); max-width: 62ch; }
+.job-def .muted { color: var(--fg-muted); }
+.call-vs { color: var(--fg-muted); font-family: var(--font-display); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; flex: none; padding: 0 2px; }
+.call-chip.def { border-color: color-mix(in srgb, var(--k-defense) 45%, var(--line)); }
+.def-box { border: 1px solid color-mix(in srgb, var(--k-defense) 30%, var(--line)); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; background: var(--surface); }
+.def-box .eyebrow { color: var(--k-defense); margin: 0 0 4px; }
+.def-box .jobs { margin-top: 4px; }
+.def-box .job-def { font-size: 0.88rem; }

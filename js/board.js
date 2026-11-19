@@ -43,12 +43,13 @@
     tool: "move",
     color: "",
     style: BH.local.get(STYLE_KEY, "floor"),
-    libKind: "all",
     libQ: "",
     pendingOpen: null,
     sheetOpen: false,
     sel: null, // the line being edited (its handles show)
     paused: false, // Run it was paused: the next Run it picks up from here instead of step 1
+    defense: null, // "lock-left": our X's guard the offense on every step
+    hl: null, // the defensive job lit up ("gap", "deny"...)
   };
   let root = null;
   let svg = null;
@@ -71,6 +72,7 @@
       S.segs = Array.isArray(saved.segs) ? saved.segs : [];
       S.step = Math.min(saved.step || 0, S.board.frames.length - 1);
       S.tool = saved.tool || "move";
+      S.defense = saved.defense === "lock-left" ? "lock-left" : null;
       return;
     }
     // Earlier versions kept a board per tab: carry over the one that was open.
@@ -90,12 +92,15 @@
   let saveTimer;
   function persist() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => BH.local.set(SAVE_KEY, { board: S.board, step: S.step, segs: S.segs, tool: S.tool }), 300);
+    saveTimer = setTimeout(() => BH.local.set(SAVE_KEY, { board: S.board, step: S.step, segs: S.segs, tool: S.tool, defense: S.defense }), 300);
   }
   const frame = () => S.board.frames[S.step];
+  /* What's drawn: the board as is, or with Lock Left's X's on the offense. */
+  const viewFrame = (f) => (S.defense && BH.defense ? BH.defense.withDefense(f) : f);
+  const viewBoard = (b) => (S.defense && BH.defense ? { ...b, frames: b.frames.map(BH.defense.withDefense) } : b);
   function snapshot() {
     S.paused = false; // the board changed, so Run it starts over
-    S.history.push(JSON.stringify({ board: S.board, step: S.step, segs: S.segs }));
+    S.history.push(JSON.stringify({ board: S.board, step: S.step, segs: S.segs, defense: S.defense }));
     if (S.history.length > 60) S.history.shift();
   }
   function undo() {
@@ -105,6 +110,8 @@
     S.board = v.board;
     S.step = v.step;
     S.segs = v.segs;
+    S.defense = v.defense || null;
+    if (!S.defense) S.hl = null;
     S.paused = false;
     changedAll();
   }
@@ -156,6 +163,7 @@
   function addToCall(itemId, opts = {}) {
     const it = BH.store.get(itemId);
     if (!it) return false;
+    if (it.rule === "lock-left") return defenseOn(opts);
     const rule = BH.isAuto(it) ? it.rule : null;
     if (!opts.silent) {
       stopPlay();
@@ -181,6 +189,29 @@
       changedAll();
     }
     return ok;
+  }
+  /* Put Lock Left on the offense (every step, moving with the ball). */
+  function defenseOn(opts = {}) {
+    if (!opts.silent) {
+      stopPlay();
+      snapshot();
+    }
+    // Nothing to guard on an empty board: start from 4-Out.
+    if (!S.segs.length && JSON.stringify(S.board) === JSON.stringify(scratchBoard()) && BH.store.get("4-out")) appendDrawn(BH.store.get("4-out"));
+    S.defense = "lock-left";
+    S.note = null;
+    if (!opts.silent) {
+      changedAll();
+      BH.toast("Lock Left is on. Tap a job on the right (Gap, Deny...) to light up who's doing it.");
+    }
+    return true;
+  }
+  function defenseOff() {
+    stopPlay();
+    snapshot();
+    S.defense = null;
+    S.hl = null;
+    changedAll();
   }
   function appendRule(it, opts) {
     // Straight out of a trigger, the trigger's down screen is the backside action.
@@ -301,6 +332,16 @@
     S.segs = [];
     S.step = 0;
     S.note = null;
+    S.hl = null;
+    const job = BH.defense && BH.defense.termRole(it);
+    if (job) {
+      // A defensive job (Gap, Deny...): Lock Left on 4-Out with that X lit up.
+      defenseOn({ silent: true });
+      S.hl = job;
+      S.note = id;
+      S.step = 0;
+      return;
+    }
     if (BH.isAuto(it) && BH.store.get("4-out")) addToCall("4-out", { silent: true });
     if (!addToCall(id, { silent: true }) && !BH.hasDiagram(it)) S.note = id;
     S.step = 0;
@@ -317,7 +358,7 @@
       courtG.innerHTML = BH.court.markup(mode);
       courtG.dataset.mode = mode;
     }
-    svg.querySelector(".diagram-layer").innerHTML = D().frameMarkup(frame(), { interactive: true });
+    svg.querySelector(".diagram-layer").innerHTML = D().frameMarkup(viewFrame(frame()), { interactive: true, hl: S.hl });
     svg.querySelector(".handle-layer").innerHTML = handlesMarkup();
     if (S.sel) {
       const el = svg.querySelector(`.diagram-layer [data-stroke="${CSS.escape(S.sel)}"]`);
@@ -379,6 +420,18 @@
   }
   const pathD = (pts) => pts.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + "," + q[1].toFixed(1)).join(" ");
 
+  /* The ball this player has in his hand, if any. */
+  function heldBall(tk) {
+    const ball = frame().tokens.find((x) => x.t === "ball");
+    if (!ball) return null;
+    if (ball.h) return ball.h === tk.id ? ball : null;
+    const d = D().dist([ball.x, ball.y], [tk.x, tk.y]);
+    const closest = frame()
+      .tokens.filter((o) => o.t === "o" || o.t === "x")
+      .every((o) => o.id === tk.id || D().dist([ball.x, ball.y], [o.x, o.y]) >= d);
+    return d < 30 && closest ? ball : null;
+  }
+
   /* ---------- pointer handling on the court ---------- */
   let gesture = null;
   function onDown(evt) {
@@ -402,6 +455,11 @@
       if (!tk) return;
       snapshot();
       gesture = { type: "drag", id, el: tokEl, dx: tk.x - p[0], dy: tk.y - p[1], moved: false };
+      // The ball goes where the player who has it goes.
+      const ball = tk.t !== "ball" && heldBall(tk);
+      if (ball) {
+        gesture.ball = { id: ball.id, ox: ball.x - tk.x, oy: ball.y - tk.y, el: svg.querySelector(`.diagram-layer [data-tok="${CSS.escape(ball.id)}"]`) };
+      }
       tokEl.classList.add("dragging");
     } else if (S.tool === "erase") {
       snapshot();
@@ -439,6 +497,8 @@
       const x = p[0] + gesture.dx,
         y = p[1] + gesture.dy;
       gesture.el.setAttribute("transform", `translate(${x.toFixed(1)},${y.toFixed(1)})`);
+      const gb = gesture.ball;
+      if (gb && gb.el) gb.el.setAttribute("transform", `translate(${(x + gb.ox).toFixed(1)},${(y + gb.oy).toFixed(1)})`);
       gesture.x = x;
       gesture.y = y;
       gesture.moved = true;
@@ -474,7 +534,27 @@
         if (tk) {
           tk.x = Math.round(g.x);
           tk.y = Math.round(g.y);
-          if (tk.t === "ball") delete tk.h;
+          if (tk.t === "ball") {
+            // Dropped on a player: it's in his hand.
+            const near = frame()
+              .tokens.filter((o) => o.t === "o" || o.t === "x")
+              .reduce((b, o) => {
+                const d = D().dist([o.x, o.y], [tk.x, tk.y]);
+                return d < 30 && (!b || d < b.d) ? { o, d } : b;
+              }, null);
+            if (near) {
+              tk.x = near.o.x + 13;
+              tk.y = near.o.y - 12;
+              tk.h = near.o.id;
+            } else delete tk.h;
+          } else if (g.ball) {
+            const b = frame().tokens.find((x) => x.id === g.ball.id);
+            if (b) {
+              b.x = tk.x + g.ball.ox;
+              b.y = tk.y + g.ball.oy;
+              b.h = tk.id;
+            }
+          }
         }
         changed();
       } else S.history.pop();
@@ -655,7 +735,7 @@
     await new Promise((r) => setTimeout(r, 200));
     while (!tok.cancelled && S.board === b && (S.step < b.frames.length - 1 || keepGoing())) {
       if (BH.prefersReducedMotion()) await new Promise((r) => setTimeout(r, 700));
-      else if (!(await D().animateStep(svg, b, S.step, tok))) break;
+      else if (!(await D().animateStep(svg, viewBoard(b), S.step, tok, { hl: S.hl }))) break;
       if (tok.cancelled) break;
       S.step += 1;
       drawBoard();
@@ -826,11 +906,29 @@
                 .join("")
             : `<span class="call-empty">Tap a play to start the call, then tap actions to keep it going.</span>`
         }
+        ${
+          S.defense
+            ? `<span class="call-vs" aria-hidden="true">vs</span><div class="call-chip def k-defense">
+            <button class="chip-main" data-def="info" title="Lock Left: our defense"><i class="dot"></i>${esc((defItem() || {}).name || "Lock Left")}</button>
+            <button class="chip-x" data-def="off" aria-label="Take the defense off">${icons.x}</button>
+          </div>`
+            : ""
+        }
       </div>
       ${S.segs.length ? `<button class="btn ghost new-call" data-act="new" title="Start a new call">${icons.plus}<span>New</span></button>` : ""}
       <button class="btn lib-toggle" data-act="lib">${icons.library}<span>Library</span></button>`;
     BH.$$("[data-jump]", bar).forEach((b) => b.addEventListener("click", () => goStep(S.segs[+b.dataset.jump].start)));
     BH.$$("[data-remove]", bar).forEach((b) => b.addEventListener("click", () => removeSeg(+b.dataset.remove)));
+    const dOff = BH.$('[data-def="off"]', bar);
+    if (dOff) dOff.addEventListener("click", defenseOff);
+    const dInfo = BH.$('[data-def="info"]', bar);
+    if (dInfo)
+      dInfo.addEventListener("click", () => {
+        const box = BH.$("#board-info .def-box", root);
+        if (box) box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        const first = box && BH.$("[data-job]", box);
+        if (first) first.focus();
+      });
     const nw = BH.$('[data-act="new"]', bar);
     if (nw) nw.addEventListener("click", newCall);
     BH.$('[data-act="lib"]', bar).addEventListener("click", () => toggleSheet());
@@ -842,41 +940,48 @@
   function renderLibrary() {
     const lib = BH.$("#lib-drawer", root);
     if (!lib) return;
-    const kinds = ["set", "action", "trigger", "formation", "defense"];
+    // Grouped the way you build a call: where you start, how you get into it, what you run.
+    const groups = [
+      { kind: "formation", title: "Formations" },
+      { kind: "trigger", title: "Triggers" },
+      { kind: "set", title: "Sets" },
+      { kind: "action", title: "Actions" },
+      { kind: "defense", title: "Defense" },
+    ];
     const items = BH.store.items();
-    const q = S.libQ.toLowerCase();
-    const list = items.filter((i) => (S.libKind === "all" ? true : i.kind === S.libKind) && (!q || (i.name + " " + i.call).toLowerCase().includes(q)));
-    const order = (k) => {
-      const i = kinds.indexOf(k);
-      return i < 0 ? 9 : i;
-    };
-    list.sort((a, b) => order(a.kind) - order(b.kind) || a.name.localeCompare(b.name));
+    const q = S.libQ.trim().toLowerCase();
+    const match = (i) => !q || (i.name + " " + i.call).toLowerCase().includes(q);
+    // Continuity goes last in Actions: it repeats what comes before it.
+    const last = (i) => (i.rule === "continuity" ? 1 : 0);
+    const shown = groups
+      .map((g) => ({ ...g, list: items.filter((i) => i.kind === g.kind && match(i)).sort((a, b) => last(a) - last(b) || a.name.localeCompare(b.name)) }))
+      .filter((g) => g.list.length);
+    const runs = (it) => BH.isAuto(it) || BH.hasDiagram(it) || it.rule === "lock-left";
     lib.innerHTML = `
       <header class="lib-head">
         <h2>Library</h2>
         <button class="btn icon sheet-close" data-act="close" aria-label="Close library">${icons.x}</button>
       </header>
-      <label class="search small">${icons.search}<input id="lib-search" type="search" placeholder="Find a set or action" value="${esc(S.libQ)}" autocomplete="off" /></label>
-      <div class="lib-kinds">
-        <button class="chip${S.libKind === "all" ? " on" : ""}" data-lk="all">All</button>
-        ${kinds.map((k) => `<button class="chip${S.libKind === k ? " on" : ""}" data-lk="${k}">${esc(BH.kind(k).label)}</button>`).join("")}
-      </div>
-      <ul class="lib-list">
+      <label class="search small">${icons.search}<input id="lib-search" type="search" placeholder="Find a play or action" value="${esc(S.libQ)}" autocomplete="off" /></label>
+      <div class="lib-list">
         ${
-          list.length
-            ? list
+          shown.length
+            ? shown
                 .map(
-                  (it) => `<li><button class="lib-item k-${esc(it.kind)}" data-lib="${esc(it.id)}">
-                  <span class="lib-grip">${icons.grip}</span>
-                  <span class="lib-text"><b>${esc(it.name)}</b><small>${esc(BH.kind(it.kind).one)}${it.call ? " · " + esc(it.call) : ""}</small></span>
-                  ${BH.isAuto(it) ? `<span class="lib-auto" title="Runs from wherever the ball is">Auto</span>` : BH.hasDiagram(it) ? `<span class="lib-has" title="Has a diagram">${icons.board}</span>` : ""}
-                </button></li>`
+                  (g) => `<section class="lib-group k-${g.kind}">
+                <h3><i class="dot"></i>${esc(g.title)}</h3>
+                <div class="lib-chips">${g.list
+                  .map(
+                    (it) => `<button class="lib-item k-${esc(it.kind)}${runs(it) ? "" : " notes-only"}" data-lib="${esc(it.id)}" title="${esc(it.call || it.name)}${runs(it) ? "" : " · notes only, no diagram yet"}">${esc(it.name)}</button>`
+                  )
+                  .join("")}</div>
+              </section>`
                 )
                 .join("")
-            : `<li class="lib-empty">${items.length ? "No matches." : "Nothing installed yet."}</li>`
+            : `<p class="lib-empty">${items.length ? "No matches." : "Nothing installed yet."}</p>`
         }
-      </ul>
-      <p class="lib-hint">Tap or drag onto the call. <b>Auto</b> actions pick up from wherever the ball is.</p>`;
+      </div>
+      <p class="lib-hint">Tap or drag onto the call. Actions pick up wherever the ball is.</p>`;
     const input = BH.$("#lib-search", lib);
     input.addEventListener("input", () => {
       S.libQ = input.value;
@@ -888,12 +993,6 @@
         again.setSelectionRange(pos, pos);
       } catch (e) {}
     });
-    BH.$$("[data-lk]", lib).forEach((b) =>
-      b.addEventListener("click", () => {
-        S.libKind = b.dataset.lk;
-        renderLibrary();
-      })
-    );
     BH.$('[data-act="close"]', lib).addEventListener("click", () => toggleSheet(false));
     BH.$$("[data-lib]", lib).forEach((b) => {
       const it = BH.store.get(b.dataset.lib);
@@ -908,6 +1007,30 @@
     });
   }
 
+  const defItem = () => BH.store.items().find((x) => x.rule === "lock-left");
+  /* The defense box on the right: tap a job to light up the X doing it. */
+  function defBoxMarkup() {
+    const f = viewFrame(frame());
+    if (!BH.defense || !(f.tokens || []).some((t) => t.t === "x")) return "";
+    const jobs = BH.defense.roles(f);
+    const present = S.hl ? Object.values(jobs).includes(S.hl) : true;
+    const d = S.defense && defItem();
+    return `<div class="def-box k-defense">
+        <p class="eyebrow">Defense${d ? " · " + esc(d.name) : ""}</p>
+        ${BH.defense.jobsMarkup(S.hl, present)}
+      </div>`;
+  }
+  function wireDefBox(box) {
+    BH.$$("[data-job]", box).forEach((b) =>
+      b.addEventListener("click", () => {
+        S.hl = S.hl === b.dataset.job ? null : b.dataset.job;
+        drawBoard();
+        renderInfo();
+        const again = BH.$(`#board-info [data-job="${b.dataset.job}"]`, root);
+        if (again) again.focus();
+      })
+    );
+  }
   function renderInfo() {
     const box = BH.$("#board-info", root);
     if (!box) return;
@@ -925,8 +1048,9 @@
           }
           <button class="btn ${S.segs.length > 1 ? "primary" : "ghost"}" data-act="save-new">${icons.plus} Save ${S.segs.length > 1 ? "this call" : ""} as a new item</button></div>`
       : "";
+    const defBox = defBoxMarkup();
     if (!it) {
-      box.innerHTML = `
+      box.innerHTML = `${defBox}
         <div class="info-card">
           <p class="eyebrow">On the court</p>
           <h2>${seg ? "Removed from the playbook" : "Scratch board"}</h2>
@@ -934,6 +1058,7 @@
           <ol class="howto">
             <li><b>Build the call:</b> tap a play from the Library, like 5 Thru, then tap actions like Rub, Twirl and Swing. Each one picks up where the last one ended.</li>
             <li><b>Continuity</b> runs your actions again from the other side.</li>
+            <li><b>Defense:</b> tap Lock Left in the Library to put our X's on the offense. They move with the ball; tap a job like Gap or Deny to light up who's doing it.</li>
             <li><b>Players:</b> tap one in the tray, then drag it where it goes.</li>
             <li><b>Lines:</b> drag from where it starts to where it ends for a straight line. Drag the dot in the middle to bend it, or the end dots to move it. Tap a line with Move to edit it later; Delete or Erase removes it.</li>
             <li>Start a pass at the end of a dribble and the ball follows both.</li>
@@ -944,7 +1069,8 @@
     } else {
       const k = BH.kind(it.kind);
       const inContinuity = seg && seg.parts && !S.note;
-      box.innerHTML = `
+      const isDefTerm = S.note && BH.defense && BH.defense.termRole(it);
+      box.innerHTML = `${defBox}
         <div class="info-card">
           <div class="card-meta"><span class="kind-chip k-${esc(it.kind)}">${esc(k.one)}</span>${inContinuity ? '<span class="kind-chip k-scratch">Continuity</span>' : ""}${it.example ? '<span class="ex-chip">Example</span>' : ""}</div>
           <h2>${esc(it.name)}</h2>
@@ -952,7 +1078,7 @@
           ${it.summary ? `<p>${esc(it.summary)}</p>` : ""}
           ${it.keys.length ? `<h3>Keys</h3><ul class="keys">${it.keys.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
           ${it.reads.length ? `<h3>Reads</h3><ul class="reads">${it.reads.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
-          ${S.note ? `<p class="muted">No diagram yet${coach ? ". Draw it on the court and save it as a new item, or add it in Install." : "."}</p>` : ""}
+          ${S.note && !isDefTerm ? `<p class="muted">No diagram yet${coach ? ". Draw it on the court and save it as a new item, or add it in Install." : "."}</p>` : ""}
           ${names.length > 1 ? `<p class="muted small">The call: ${names.map(esc).join(" › ")}</p>` : ""}
           <div class="info-actions">
             <a class="btn ghost" href="#item-${esc(it.id)}">${icons.book} Open in playbook</a>
@@ -962,6 +1088,7 @@
           ${coachBox}
         </div>`;
     }
+    wireDefBox(box);
     const reset = BH.$('[data-act="reset"]', box);
     if (reset)
       reset.addEventListener("click", () => {
@@ -983,14 +1110,14 @@
           return;
         }
         saveTo.disabled = true;
-        const ok = await BH.store.saveItem({ ...target, diagram: BH.clone(S.board) }, `Saved the diagram for ${target.name}.`);
+        const ok = await BH.store.saveItem({ ...target, diagram: BH.clone(viewBoard(S.board)) }, `Saved the diagram for ${target.name}.`);
         if (ok) changedAll();
         else renderInfo();
       });
     const saveNew = BH.$('[data-act="save-new"]', box);
     if (saveNew)
       saveNew.addEventListener("click", () => {
-        const over = { diagram: BH.clone(S.board), kind: "set" };
+        const over = { diagram: BH.clone(viewBoard(S.board)), kind: "set" };
         if (names.length > 1) {
           over.name = names.join(" + ");
           over.summary = names.join(", then ") + ".";

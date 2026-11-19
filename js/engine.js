@@ -465,8 +465,17 @@
 
   const isAuto = (item) => !!(item && item.rule && RULES[item.rule]);
   BH.isAuto = isAuto;
-  /* The diagram to show for an item: the coach's drawing, or a demo of its rule. */
-  BH.viewDiagram = (item) => (BH.hasDiagram(item) ? item.diagram : isAuto(item) ? demo(item) : null);
+  /* The diagram to show for an item: the coach's drawing, or a demo of its rule. A
+     defense shows its example; a defensive term shows that example with its X lit up. */
+  BH.viewDiagram = (item) => {
+    if (BH.hasDiagram(item)) return item.diagram;
+    if (isAuto(item)) return demo(item);
+    const DF = BH.defense;
+    if (!DF || !item) return null;
+    if (item.rule === "lock-left") return DF.demo();
+    const job = DF.termRole(item);
+    return job ? { ...DF.demo(), hl: job } : null;
+  };
 
   BH.engine = {
     RULES,

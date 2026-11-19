@@ -246,12 +246,17 @@
     return `<g class="stk stk-${esc(s.t)}" data-stroke="${esc(s.id)}"${style}>${line}${head}${hitPath}</g>`;
   }
 
-  function tokenMarkup(tk) {
+  /* extra (defenders only): { face: degrees he faces, hl: lit up, dim: another X is lit up, tag: job label } */
+  function tokenMarkup(tk, extra = {}) {
     const tr = `transform="translate(${(+tk.x).toFixed(1)},${(+tk.y).toFixed(1)})"`;
     const id = `data-tok="${esc(tk.id)}"`;
     const n = esc(tk.n || "");
     if (tk.t === "x") {
-      return `<g class="tok tok-x" ${id} ${tr}><circle class="tok-hit" r="15" /><path class="x-mark" d="M-9,-9 L9,9 M9,-9 L-9,9" /><text class="x-num" x="10" y="16">${n}</text></g>`;
+      // The "(" is his back: it sits behind the X, opposite the way he faces.
+      const back = extra.face == null ? "" : `<path class="x-back" transform="rotate(${extra.face.toFixed(1)})" d="M-6.5,11.3 A13,13 0 0 1 -6.5,-11.3" />`;
+      const glow = extra.hl ? `<circle class="x-glow" r="20" />` : "";
+      const tag = extra.hl && extra.tag ? `<g class="x-tag" transform="translate(0,${+tk.y < 80 ? 31 : -31})"><rect x="${-(extra.tag.length * 4.6 + 7).toFixed(1)}" y="-9.5" width="${(extra.tag.length * 9.2 + 14).toFixed(1)}" height="19" rx="9.5" /><text y="4.6">${esc(extra.tag)}</text></g>` : "";
+      return `<g class="tok tok-x${extra.hl ? " hl" : ""}${extra.dim ? " dim" : ""}" ${id} ${tr}><circle class="tok-hit" r="15" />${glow}${back}<path class="x-mark" d="M-8,-8 L8,8 M8,-8 L-8,8" /><text class="x-num" x="10" y="16">${n}</text>${tag}</g>`;
     }
     if (tk.t === "ball") {
       return `<g class="tok tok-ball" ${id} ${tr}><circle r="7.5" /><path class="seam" d="M-7.5,0 L7.5,0 M0,-7.5 L0,7.5 M-5,-5.3 Q-1.5,0 -5,5.3 M5,-5.3 Q1.5,0 5,5.3" /></g>`;
@@ -262,14 +267,22 @@
     return `<g class="tok tok-o" ${id} ${tr}><circle r="14" /><text y="5.6">${n}</text></g>`;
   }
 
+  /* opts.hl: a defensive job ("gap", "deny"...) to light up on whichever X has it.
+     opts.tags: false hides the job's name over the X (flashcards and the quiz). */
   function frameMarkup(frame, opts = {}) {
     const strokes = (frame.strokes || []).map((s) => strokeMarkup(s, opts)).join("");
-    // Draw players first, ball last, so the ball sits on top.
+    const def = BH.defense && (frame.tokens || []).some((t) => t.t === "x") ? BH.defense : null;
+    const face = def ? def.facing(frame) : {};
+    const jobs = def && opts.hl ? def.roles(frame) : {};
+    const lit = opts.hl ? Object.keys(jobs).filter((id) => jobs[id] === opts.hl) : [];
+    const tagOf = (r) => (def && def.role(r) ? def.role(r).tag : "");
+    // Draw players first, ball last, so the ball sits on top; a lit-up X goes over the rest.
     const order = { cone: 0, x: 1, o: 2, ball: 3 };
+    const rank = (t) => (lit.includes(t.id) ? 4 : order[t.t] ?? 2);
     const toks = (frame.tokens || [])
       .slice()
-      .sort((a, b) => (order[a.t] ?? 2) - (order[b.t] ?? 2))
-      .map(tokenMarkup)
+      .sort((a, b) => rank(a) - rank(b))
+      .map((t) => (t.t === "x" ? tokenMarkup(t, { face: face[t.id], hl: lit.includes(t.id), dim: opts.hl && !lit.includes(t.id), tag: opts.tags === false ? "" : tagOf(jobs[t.id]) }) : tokenMarkup(t)))
       .join("");
     return `<g class="strokes">${strokes}</g><g class="tokens">${toks}</g>`;
   }
@@ -284,13 +297,14 @@
     let h = BH.court.height(mode);
     if (mode === "half" && opts.crop !== false) h = Math.min(h, Math.max(330, maxY + 50));
     const vb = `-12 -12 524 ${h + 24}`;
-    return `<svg class="court floor mini" viewBox="${vb}" preserveAspectRatio="xMidYMin meet" role="img" aria-label="${esc(opts.label || "Diagram")}">${BH.court.markup(mode, { mini: true })}${frameMarkup(frame)}</svg>`;
+    return `<svg class="court floor mini" viewBox="${vb}" preserveAspectRatio="xMidYMin meet" role="img" aria-label="${esc(opts.label || "Diagram")}">${BH.court.markup(mode, { mini: true })}${frameMarkup(frame, { hl: opts.hl || (diagram && diagram.hl), tags: opts.tags })}</svg>`;
   }
 
   /* ---------- motion ---------- */
 
   const PLAYER_MOVES = ["cut", "dribble", "screen"];
   const BALL_MOVES = { dribble: 0, handoff: 1, pass: 2, shot: 3 }; // order the ball takes them in
+  const HAND = [13, -12]; // where the ball sits on the player who has it
 
   /* Where the ball goes this step. It follows a dribble, handoff, pass or shot that
      starts at the ball, then any that start where the last one ended — so a pass
@@ -317,6 +331,15 @@
     };
     let s = next(34);
     let carrier = null;
+    // Phases, in order: { kind: "carry", pid, sids } while a player has it in his hand
+    // (sids: his dribble lines; none means his whole path), or { kind: "fly", poly }
+    // for a pass, handoff or shot.
+    const phases = [];
+    const owner = (sid) => {
+      if (!playerPaths) return null;
+      for (const pid of Object.keys(playerPaths)) if ((playerPaths[pid].parts || []).some((pt) => pt.sid === sid)) return pid;
+      return null;
+    };
     if (!s && playerPaths) {
       // The ball rides with the player who has it, if they move without passing.
       const owner = ball.h && tokens.find((p) => p.id === ball.h && dist([p.x, p.y], at) < 45);
@@ -334,12 +357,19 @@
         poly = playerPaths[carrier.id].map((q) => [q[0] + (ball.x - carrier.x), q[1] + (ball.y - carrier.y)]);
         const e = playerPaths[carrier.id][playerPaths[carrier.id].length - 1];
         at = e;
+        phases.push({ kind: "carry", pid: carrier.id, sids: null });
         s = next(34);
       }
     }
     for (let guard = 0; s && guard < 8; guard++) {
       used.add(s.id);
-      poly = poly.concat(ballPoly(s));
+      const bp = ballPoly(s);
+      poly = poly.concat(bp);
+      const pid = s.t === "dribble" ? owner(s.id) : null;
+      const last = phases[phases.length - 1];
+      if (pid && last && last.kind === "carry" && last.pid === pid && last.sids) last.sids.push(s.id);
+      else if (pid) phases.push({ kind: "carry", pid, sids: [s.id] });
+      else phases.push({ kind: "fly", poly: bp });
       at = s.pts[s.pts.length - 1];
       if (s.t === "shot") {
         shot = true;
@@ -348,7 +378,7 @@
       s = next(30);
     }
     if (poly.length < 2) return null;
-    return { poly, end: at, shot, carrier: carrier && !used.size ? carrier.id : null };
+    return { poly, end: at, shot, carrier: carrier && !used.size ? carrier.id : null, phases };
   }
 
   /* Which stroke moves which token during the step that follows this frame. */
@@ -372,6 +402,7 @@
     const used = new Set(Object.values(claimed).map((c) => c.s.id));
     Object.keys(claimed).forEach((pid) => {
       let poly = sampleSmooth(claimed[pid].s.pts);
+      const parts = [{ sid: claimed[pid].s.id, t: claimed[pid].s.t, from: 0, to: poly.length - 1 }];
       for (let guard = 0; guard < 6; guard++) {
         const end = poly[poly.length - 1];
         let next = null,
@@ -383,8 +414,11 @@
         });
         if (!next) break;
         used.add(next.id);
+        const from = poly.length;
         poly = poly.concat(sampleSmooth(next.pts));
+        parts.push({ sid: next.id, t: next.t, from, to: poly.length - 1 });
       }
+      poly.parts = parts;
       out[pid] = poly;
     });
     const ball = tokens.find((t) => t.t === "ball");
@@ -421,8 +455,8 @@
             if (pick) (bd = dd), (rec = op), (recId = o.id);
           });
         const base = rec || chain.end;
-        nt.x = Math.round(base[0] + 13);
-        nt.y = Math.round(base[1] - 12);
+        nt.x = Math.round(base[0] + HAND[0]);
+        nt.y = Math.round(base[1] + HAND[1]);
         if (recId) nt.h = recId;
         else delete nt.h;
         return nt;
@@ -440,29 +474,138 @@
 
   const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
+  /* Where everyone is at time t (0..1) of the step from fromFrame to toFrame.
+     The ball has phases: in a player's hand (it stays at his hand while he dribbles
+     or moves) and in the air (pass, handoff, shot). A player who dribbles and then
+     gives it up gets there first, so the pass or handoff comes after he arrives. */
   function tween(fromFrame, toFrame, t) {
     const paths = assignPaths(fromFrame);
     const e = ease(t);
-    const pos = {};
-    (toFrame.tokens || []).forEach((tk) => {
-      const from = (fromFrame.tokens || []).find((f) => f.id === tk.id);
-      if (!from) return (pos[tk.id] = [tk.x, tk.y]);
-      const p = paths[tk.id];
+    const fromTok = (id) => (fromFrame.tokens || []).find((f) => f.id === id);
+    const toTok = (id) => (toFrame.tokens || []).find((f) => f.id === id);
+    const ballT = (fromFrame.tokens || []).find((x) => x.t === "ball");
+    const chain = ballT ? ballChain(fromFrame, paths) : null;
+    const phases = (chain && chain.phases) || [];
+
+    // How far along his path (0..1) a player is at time e. Carriers get their own clock.
+    const clocks = {};
+    const fracAt = (poly, idx) => {
+      const L = polyLength(poly);
+      return L ? polyLength(poly.slice(0, idx + 1)) / L : 1;
+    };
+    // Time windows for the ball's phases: carrying by distance, passes quicker.
+    const weight = (ph) => {
+      if (ph.kind === "fly") return Math.max(30, polyLength(ph.poly) * 0.45);
+      const poly = paths[ph.pid] || [];
+      if (!ph.sids) return Math.max(40, polyLength(poly));
+      const pts = (poly.parts || []).filter((x) => ph.sids.includes(x.sid));
+      return Math.max(40, pts.reduce((sum, x) => sum + polyLength(poly.slice(x.from, x.to + 1)), 0));
+    };
+    let acc = 0;
+    const total = phases.reduce((sum, ph) => sum + weight(ph), 0) || 1;
+    phases.forEach((ph) => {
+      ph.a = acc / total;
+      acc += weight(ph);
+      ph.b = phases.length === 1 ? 1 : acc / total;
+    });
+    phases.forEach((ph, i) => {
+      if (ph.kind !== "carry" || clocks[ph.pid]) return;
+      const poly = paths[ph.pid] || [];
+      let f0 = 0,
+        f1 = 1;
+      if (ph.sids && poly.parts) {
+        const pts = poly.parts.filter((x) => ph.sids.includes(x.sid));
+        if (pts.length) {
+          f0 = fracAt(poly, pts[0].from);
+          f1 = fracAt(poly, pts[pts.length - 1].to);
+        }
+      }
+      // A carry that isn't followed by a pass keeps the ball for the rest of his path.
+      if (i === phases.length - 1) f1 = 1;
+      const pts = [[0, 0]];
+      if (ph.a > 0) pts.push([ph.a, f0]);
+      else if (f0 > 0) pts[0] = [0, 0];
+      pts.push([ph.b, f1]);
+      if (ph.b < 1) pts.push([1, 1]);
+      clocks[ph.pid] = pts;
+    });
+    const clock = (id, time) => {
+      const c = clocks[id];
+      if (!c) return time;
+      for (let i = 1; i < c.length; i++) {
+        if (time <= c[i][0]) {
+          const [t0, f0] = c[i - 1],
+            [t1, f1] = c[i];
+          return t1 > t0 ? f0 + ((time - t0) / (t1 - t0)) * (f1 - f0) : f1;
+        }
+      }
+      return c[c.length - 1][1];
+    };
+    const posOf = (id, time) => {
+      const tk = toTok(id),
+        from = fromTok(id);
+      if (!tk) return null;
+      if (!from) return [tk.x, tk.y];
+      const p = paths[id];
+      const f = clock(id, time);
       if (p && p.length > 1) {
-        const pt = pointAt(p, e);
+        const pt = pointAt(p, f);
         const s0 = p[0],
           s1 = p[p.length - 1];
-        pos[tk.id] = [pt[0] + (from.x - s0[0]) * (1 - e) + (tk.x - s1[0]) * e, pt[1] + (from.y - s0[1]) * (1 - e) + (tk.y - s1[1]) * e];
-      } else {
-        pos[tk.id] = [from.x + (tk.x - from.x) * e, from.y + (tk.y - from.y) * e];
+        return [pt[0] + (from.x - s0[0]) * (1 - f) + (tk.x - s1[0]) * f, pt[1] + (from.y - s0[1]) * (1 - f) + (tk.y - s1[1]) * f];
       }
+      return [from.x + (tk.x - from.x) * time, from.y + (tk.y - from.y) * time];
+    };
+
+    const pos = {};
+    (toFrame.tokens || []).forEach((tk) => {
+      if (tk.t === "ball" && phases.length) return;
+      pos[tk.id] = posOf(tk.id, e);
     });
+    if (ballT && phases.length && toTok(ballT.id)) {
+      // Walk the phases to find where the ball starts and ends each one.
+      const fin = toTok(ballT.id);
+      let start = [ballT.x, ballT.y];
+      let at = null;
+      for (let i = 0; i < phases.length; i++) {
+        const ph = phases[i];
+        const u = ph.b > ph.a ? Math.max(0, Math.min(1, (e - ph.a) / (ph.b - ph.a))) : 1;
+        let end;
+        if (ph.kind === "carry") {
+          const c0 = posOf(ph.pid, ph.a),
+            c1 = posOf(ph.pid, ph.b);
+          const off0 = [start[0] - c0[0], start[1] - c0[1]];
+          const off1 = i === phases.length - 1 ? [fin.x - c1[0], fin.y - c1[1]] : HAND;
+          end = [c1[0] + off1[0], c1[1] + off1[1]];
+          if (e <= ph.b || i === phases.length - 1) {
+            const c = posOf(ph.pid, e);
+            at = [c[0] + off0[0] + (off1[0] - off0[0]) * u, c[1] + off0[1] + (off1[1] - off0[1]) * u];
+          }
+        } else {
+          const nx = phases[i + 1];
+          if (i === phases.length - 1) end = [fin.x, fin.y];
+          else if (nx.kind === "carry") {
+            const c = posOf(nx.pid, ph.b);
+            end = [c[0] + HAND[0], c[1] + HAND[1]];
+          } else end = ph.poly[ph.poly.length - 1];
+          if (e <= ph.b || i === phases.length - 1) {
+            const q = pointAt(ph.poly, u),
+              q0 = ph.poly[0],
+              q1 = ph.poly[ph.poly.length - 1];
+            at = [q[0] + (start[0] - q0[0]) * (1 - u) + (end[0] - q1[0]) * u, q[1] + (start[1] - q0[1]) * (1 - u) + (end[1] - q1[1]) * u];
+          }
+        }
+        if (at) break;
+        start = end;
+      }
+      pos[ballT.id] = at || [fin.x, fin.y];
+    }
     return pos;
   }
 
   /* Animate the move from frame i to i+1 inside an <svg> that shows frame i.
      Returns a promise; resolves false if cancelled. */
-  function animateStep(svg, diagram, i, token) {
+  function animateStep(svg, diagram, i, token, opts = {}) {
     const from = diagram.frames[i];
     const to = diagram.frames[i + 1];
     if (!from || !to) return Promise.resolve(false);
@@ -470,7 +613,7 @@
     // Start from the next frame's tokens at the old positions, with the old strokes fading.
     const p0 = tween(from, to, 0);
     const startTokens = (to.tokens || []).map((tk) => (p0[tk.id] ? { ...tk, x: p0[tk.id][0], y: p0[tk.id][1] } : tk));
-    layer.innerHTML = `<g class="strokes fading">${(from.strokes || []).map((s) => strokeMarkup(s)).join("")}</g>` + frameMarkup({ tokens: startTokens, strokes: [] }).replace('<g class="strokes"></g>', "");
+    layer.innerHTML = `<g class="strokes fading">${(from.strokes || []).map((s) => strokeMarkup(s)).join("")}</g>` + frameMarkup({ tokens: startTokens, strokes: [] }, opts).replace('<g class="strokes"></g>', "");
     const els = {};
     layer.querySelectorAll(".tok").forEach((el) => (els[el.dataset.tok] = el));
     const dur = 1150;
@@ -499,6 +642,7 @@
       this.i = 0;
       this.token = { cancelled: false };
       this.opts = opts;
+      this.hl = opts.hl || diagram.hl || null;
       const mode = diagram.court || "half";
       host.innerHTML = `
         <div class="player">
@@ -531,7 +675,7 @@
     show(i) {
       const n = this.diagram.frames.length;
       this.i = Math.max(0, Math.min(n - 1, i));
-      this.svg.querySelector(".diagram-layer").innerHTML = frameMarkup(this.diagram.frames[this.i]);
+      this.svg.querySelector(".diagram-layer").innerHTML = frameMarkup(this.diagram.frames[this.i], { hl: this.hl, tags: this.opts.tags });
       const lbl = this.host.querySelector(".step-label");
       if (lbl) lbl.textContent = `Step ${this.i + 1} of ${n}`;
     }
@@ -552,7 +696,7 @@
       await new Promise((r) => setTimeout(r, 250));
       while (!token.cancelled && this.i < n - 1) {
         if (BH.prefersReducedMotion()) await new Promise((r) => setTimeout(r, 700));
-        else if (!(await animateStep(this.svg, this.diagram, this.i, token))) break;
+        else if (!(await animateStep(this.svg, this.diagram, this.i, token, { hl: this.hl, tags: this.opts.tags }))) break;
         if (token.cancelled) break;
         this.show(this.i + 1);
         await new Promise((r) => setTimeout(r, 650));
@@ -562,6 +706,11 @@
     stop() {
       this.token.cancelled = true;
       this.setPlaying(false);
+    }
+    /* Light up the X doing a job ("gap", "deny"...), or null for none. Follows him step to step. */
+    highlight(job) {
+      this.hl = job || null;
+      if (!this.playing) this.show(this.i);
     }
     destroy() {
       this.stop();
