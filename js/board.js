@@ -223,23 +223,23 @@
   }
   /* Twirl plays out differently against Lock Left (Hedge, Drop), so rebuild a call that has one. */
   function rebuildForDefense() {
-    const segs = S.segs.map((g) => ({ id: g.itemId, to: g.to }));
+    const segs = S.segs.map((g) => ({ id: g.itemId, to: g.to, read: g.read }));
     if (!segs.some((g) => (BH.store.get(g.id) || {}).rule === "twirl")) return;
     S.board = scratchBoard();
     S.segs = [];
-    segs.forEach((g) => addToCall(g.id, { silent: true, to: g.to }));
+    segs.forEach((g) => addToCall(g.id, { silent: true, to: g.to, read: g.read }));
     S.step = Math.min(S.step, S.board.frames.length - 1);
   }
   function appendRule(it, opts) {
     // Straight out of a trigger, the trigger's down screen is the backside action.
     const prev = segItem(S.segs[S.segs.length - 1]);
-    const res = E().extend(S.board.frames, it.rule, { noBackside: !!(prev && prev.kind === "trigger"), defense: S.defense, to: opts.to });
+    const res = E().extend(S.board.frames, it.rule, { noBackside: !!(prev && prev.kind === "trigger"), defense: S.defense, to: opts.to, read: opts.read });
     if (res.error) {
       if (!opts.silent) BH.toast(`Couldn't run ${it.name}: ${res.error}`);
       return false;
     }
     S.board.frames = res.frames;
-    S.segs.push({ id: BH.uid("g"), itemId: it.id, start: res.start, ...(opts.to ? { to: opts.to } : {}) });
+    S.segs.push({ id: BH.uid("g"), itemId: it.id, start: res.start, ...(opts.to ? { to: opts.to } : {}), ...(opts.read ? { read: opts.read } : {}) });
     S.step = res.start;
     return true;
   }
@@ -318,7 +318,7 @@
     stopPlay();
     snapshot();
     const g = S.segs[i];
-    const rest = S.segs.slice(i + 1).map((x) => ({ id: x.itemId, to: x.to }));
+    const rest = S.segs.slice(i + 1).map((x) => ({ id: x.itemId, to: x.to, read: x.read }));
     if (g.base) {
       S.board = scratchBoard();
       S.segs = [];
@@ -327,7 +327,7 @@
       S.board.frames[g.start].strokes = [];
       S.segs = S.segs.slice(0, i);
     }
-    const skipped = rest.filter((g) => !addToCall(g.id, { silent: true, to: g.to })).map((g) => g.id);
+    const skipped = rest.filter((g) => !addToCall(g.id, { silent: true, to: g.to, read: g.read })).map((g) => g.id);
     S.step = Math.min(S.step, S.board.frames.length - 1);
     if (skipped.length) BH.toast(`Couldn't run ${skipped.map((id) => (BH.store.get(id) || {}).name).join(", ")} from here, so it came off the call.`);
     changedAll();
@@ -967,7 +967,7 @@
             ? S.segs
                 .map((g, i) => {
                   const it = segItem(g);
-                  const name = (it ? it.name : "Removed item") + (g.to === "open" ? " → open man" : g.to === "corner" ? " → corner" : "");
+                  const name = (it ? it.name : "Removed item") + (g.to === "open" ? " → open man" : g.to === "corner" ? " → corner" : "") + (READS[g.read] ? ` · ${READS[g.read]}` : "");
                   return `${i ? '<span class="call-sep" aria-hidden="true">›</span>' : ""}<div class="call-chip${g === cur ? " on" : ""} k-${esc(it ? it.kind : "scratch")}">
                     <button class="chip-main" data-jump="${i}" aria-pressed="${g === cur}" title="Go to ${esc(name)}"><i class="dot"></i>${esc(name)}${g.cycles > 1 ? ` <small>×${g.cycles}</small>` : ""}</button>
                     <button class="chip-x" data-remove="${i}" aria-label="Take ${esc(name)} out of the call">${icons.x}</button>
@@ -1013,29 +1013,45 @@
     { group: "Triggers", id: "sc-1thru", name: "1 Thru into Twist", call: ["baseline-drive-lift", "twist", "get", "swing", "continuity"], about: "The 1 Thru trigger, a Twist, a Get and Swing, then Continuity" },
     { group: "Triggers", id: "sc-pitch", name: "Pitch", call: ["4-out", "pitch", "twirl", "swing", "continuity"], about: "Pitch at the top into a Twirl and Swing, then Continuity" },
     { group: "Triggers", id: "sc-switch", name: "Switch", call: ["4-out", "switch", "rub", "get", "swing", "continuity"], about: "Swing Pitch into a Rub, a Get and Swing, then Continuity" },
-    { group: "Drive & X-out", id: "sc-slot", name: "Slot drive", call: ["4-out", "drive", "kick-out"], about: "Watch the Wall help, the Bear help the helper (he takes the Wall's man), and the Wall and Bear X-out; the Gap snipes and grabs" },
-    { group: "Drive & X-out", id: "sc-top", name: "Top drive", call: [["5-out", "power"], "drive", "kick-out"], about: "Watch the Gap and the corner (the Wall) snipe and grab, the weak wing drop to the corner's man, and the weak wing and corner X-out" },
-    { group: "Drive & X-out", id: "sc-wing", name: "Wing drive", call: ["baseline-drive-lift", "drive", "kick-out"], about: "1 Thru leaves 5 on the wing; watch the rotation and the X-out on his drive" },
-    { group: "Drive & X-out", id: "sc-corner", name: "Corner drive", call: ["4-out", "swing", "kick-out", "drive", "kick-out"], about: "Swing it across, Kick it to the corner, he drives baseline and kicks it back out; watch the rotation and the X-out" },
-    { group: "Drive & Skip: Scramble", id: "sc-skip-slot", name: "Slot → corner", call: ["4-out", "drive", { id: "skip", to: "corner" }], about: "Slot drive, the Wall helps and the Bear helps the helper; he skips it to the weak corner and everyone scrambles, the corner's man closes out" },
-    { group: "Drive & Skip: Scramble", id: "sc-skip-slot-open", name: "Slot → open man", call: ["4-out", "drive", { id: "skip", to: "open" }], about: "Slot drive; he skips it to the man the Bear left and the Wall sprints all the way out to close out (the X-out)" },
-    { group: "Drive & Skip: Scramble", id: "sc-skip-top", name: "Top → corner", call: [["5-out", "power"], "drive", { id: "skip", to: "corner" }], about: "Top drive; he skips it to the weak corner, where the weak wing dropped, and everyone scrambles" },
-    { group: "Drive & Skip: Scramble", id: "sc-skip-top-open", name: "Top → open man", call: [["5-out", "power"], "drive", { id: "skip", to: "open" }], about: "Top drive; he skips it to the weak wing, and the corner's man recovers out to him (the X-out)" },
-    { group: "Drive & Skip: Scramble", id: "sc-skip-wing", name: "Wing → corner", call: ["baseline-drive-lift", "drive", { id: "skip", to: "corner" }], about: "Wing drive out of 1 Thru; he skips it to the weak corner and everyone scrambles" },
-    { group: "Drive & Skip: Scramble", id: "sc-skip-wing-open", name: "Wing → open man", call: ["baseline-drive-lift", "drive", { id: "skip", to: "open" }], about: "Wing drive; he skips it to the man the Bear left and the Wall recovers out to him" },
-    { group: "Drive & Skip: Scramble", id: "sc-skip-corner", name: "Corner → corner", call: ["4-out", "swing", "kick-out", "drive", { id: "skip", to: "corner" }], about: "Baseline drive from the corner; he skips it to the far corner and everyone scrambles" },
-    { group: "Drive & Skip: Scramble", id: "sc-skip-corner-open", name: "Corner → open man", call: ["4-out", "swing", "kick-out", "drive", { id: "skip", to: "open" }], about: "Baseline drive from the corner; he skips it to the weak slot the Bear left and the Wall sprints out" },
-    { group: "Beat: Scram", id: "sc-beat", name: "Slot drive", call: ["4-out", { id: "drive", beat: true }, "kick-out"], about: "He gets beat on a slot drive: the Gap picks up the ball, the on-ball sprints to the Gap's man (Scram)" },
-    { group: "Beat: Scram", id: "sc-beat-top", name: "Top drive", call: [["5-out", "power"], { id: "drive", beat: true }, "kick-out"], about: "He gets beat at the top: the drive-side wing picks up the ball, the on-ball sprints to his man, the corner stays home (Scram)" },
-    { group: "Beat: Scram", id: "sc-beat-wing", name: "Wing drive", call: ["baseline-drive-lift", { id: "drive", beat: true }, "kick-out"], about: "He gets beat on a wing drive: the Gap picks up the ball, the on-ball sprints to the Gap's man (Scram)" },
-    { group: "Ball screens", id: "sc-hedge", name: "Hard Hedge", call: ["4-out", "twirl", "kick-out"], about: "Twirl going right: the screener's man HARD HEDGES and forces him back out, the on-ball fights OVER the screen to get back, the Bear tags the roller until the big recovers; then the kick and the scramble" },
-    { group: "Ball screens", id: "sc-drop", name: "Drop", call: ["4-out", "swing", "twirl", "swing"], about: "Twirl going left: the on-ball FORCES him into the screen and chases over the top, the big DROPS and contains; then the pass out and the scramble" },
+    { group: "Drive & X-out", id: "sc-slot", terms: ["wall", "bear", "gap"], name: "Slot drive", call: ["4-out", "drive", "kick-out"], about: "Watch the Wall help, the Bear help the helper (he takes the Wall's man), and the Wall and Bear X-out; the Gap snipes and grabs" },
+    { group: "Drive & X-out", id: "sc-top", terms: ["wall", "bear", "gap"], name: "Top drive", call: [["5-out", "power"], "drive", "kick-out"], about: "Watch the Gap and the corner (the Wall) snipe and grab, the weak wing drop to the corner's man, and the weak wing and corner X-out" },
+    { group: "Drive & X-out", id: "sc-wing", terms: ["wall", "bear"], name: "Wing drive", call: ["baseline-drive-lift", "drive", "kick-out"], about: "1 Thru leaves 5 on the wing; watch the rotation and the X-out on his drive" },
+    { group: "Drive & X-out", id: "sc-corner", terms: ["wall", "bear"], name: "Corner drive", call: ["4-out", "swing", "kick-out", "drive", "kick-out"], about: "Swing it across, Kick it to the corner, he drives baseline and kicks it back out; watch the rotation and the X-out" },
+    { group: "Drive & Skip: Scramble", id: "sc-skip-slot", terms: ["skip", "wall", "bear"], name: "Slot → corner", call: ["4-out", "drive", { id: "skip", to: "corner" }], about: "Slot drive, the Wall helps and the Bear helps the helper; he skips it to the weak corner and everyone scrambles, the corner's man closes out" },
+    { group: "Drive & Skip: Scramble", id: "sc-skip-slot-open", terms: ["skip", "wall", "bear"], name: "Slot → open man", call: ["4-out", "drive", { id: "skip", to: "open" }], about: "Slot drive; he skips it to the man the Bear left and the Wall sprints all the way out to close out (the X-out)" },
+    { group: "Drive & Skip: Scramble", id: "sc-skip-top", terms: ["skip", "wall", "bear"], name: "Top → corner", call: [["5-out", "power"], "drive", { id: "skip", to: "corner" }], about: "Top drive; he skips it to the weak corner, where the weak wing dropped, and everyone scrambles" },
+    { group: "Drive & Skip: Scramble", id: "sc-skip-top-open", terms: ["skip", "wall", "bear"], name: "Top → open man", call: [["5-out", "power"], "drive", { id: "skip", to: "open" }], about: "Top drive; he skips it to the weak wing, and the corner's man recovers out to him (the X-out)" },
+    { group: "Drive & Skip: Scramble", id: "sc-skip-wing", terms: ["skip", "wall", "bear"], name: "Wing → corner", call: ["baseline-drive-lift", "drive", { id: "skip", to: "corner" }], about: "Wing drive out of 1 Thru; he skips it to the weak corner and everyone scrambles" },
+    { group: "Drive & Skip: Scramble", id: "sc-skip-wing-open", terms: ["skip", "wall", "bear"], name: "Wing → open man", call: ["baseline-drive-lift", "drive", { id: "skip", to: "open" }], about: "Wing drive; he skips it to the man the Bear left and the Wall recovers out to him" },
+    { group: "Drive & Skip: Scramble", id: "sc-skip-corner", terms: ["skip", "wall", "bear"], name: "Corner → corner", call: ["4-out", "swing", "kick-out", "drive", { id: "skip", to: "corner" }], about: "Baseline drive from the corner; he skips it to the far corner and everyone scrambles" },
+    { group: "Drive & Skip: Scramble", id: "sc-skip-corner-open", terms: ["skip", "wall", "bear"], name: "Corner → open man", call: ["4-out", "swing", "kick-out", "drive", { id: "skip", to: "open" }], about: "Baseline drive from the corner; he skips it to the weak slot the Bear left and the Wall sprints out" },
+    { group: "Beat: Scram", id: "sc-beat", terms: ["scram"], name: "Slot drive", call: ["4-out", { id: "drive", beat: true }, "kick-out"], about: "He gets beat on a slot drive: the Gap picks up the ball, the on-ball sprints to the Gap's man (Scram)" },
+    { group: "Beat: Scram", id: "sc-beat-top", terms: ["scram"], name: "Top drive", call: [["5-out", "power"], { id: "drive", beat: true }, "kick-out"], about: "He gets beat at the top: the drive-side wing picks up the ball, the on-ball sprints to his man, the corner stays home (Scram)" },
+    { group: "Beat: Scram", id: "sc-beat-wing", terms: ["scram"], name: "Wing drive", call: ["baseline-drive-lift", { id: "drive", beat: true }, "kick-out"], about: "He gets beat on a wing drive: the Gap picks up the ball, the on-ball sprints to the Gap's man (Scram)" },
+    { group: "Ball screen going right: Hard Hedge", id: "sc-hedge", name: "Hedge: back left", call: ["4-out", "twirl", "kick-out"], terms: ["hedge"], about: "Twirl going right: the big HARD HEDGES and forces him back LEFT, the on-ball fights OVER, the roll-side corner tags the roller until the big recovers; then the kick and the scramble" },
+    { group: "Ball screen going right: Hard Hedge", id: "sc-hedge-roll", name: "Hedge: hit the roller", call: ["4-out", "twirl", "post-entry"], terms: ["hedge"], about: "The hedge forces him back left and he throws it to the roller; the big has recovered to him and the tag goes back home" },
+    { group: "Ball screen going right: Hard Hedge", id: "sc-hedge-beat", name: "Beat the hedge", call: ["4-out", { id: "twirl", read: "beat" }, "kick-out"], terms: ["hedge"], about: "He keeps going right and turns the corner: the on-ball and the big have to recover, the roll-side corner tags the roller; then the kick and the scramble" },
+    { group: "Ball screen going right: Hard Hedge", id: "sc-hedge-beat-skip", name: "Beat the hedge: skip", call: ["4-out", { id: "twirl", read: "beat" }, { id: "skip", to: "corner" }], terms: ["hedge", "skip"], about: "He beats the hedge and skips it to the roll-side corner, the man the tagger left: the tagger recovers and closes out" },
+    { group: "Ball screen going right: Hard Hedge", id: "sc-hedge-reject", name: "Reject: drives left", call: ["4-out", { id: "twirl", read: "reject" }, "kick-out"], terms: ["hedge", "wall", "bear"], about: "He turns down the screen and drives left, where Lock Left wants him: the drive rotation (Wall helps, Bear helps the helper) and the X-out" },
+    { group: "Ball screen going left: Drop", id: "sc-drop", name: "Drop: swing out", call: ["4-out", "swing", "twirl", "swing"], terms: ["contain"], about: "Twirl going left: the on-ball FORCES him into the screen and chases over the top, the big DROPS and contains; he swings it out and we scramble" },
+    { group: "Ball screen going left: Drop", id: "sc-drop-pocket", name: "Drop: pocket pass", call: ["4-out", "swing", "twirl", "post-entry"], terms: ["contain"], about: "He comes off the screen and hits the roller with a pocket pass: the big in the drop is right there to close out on him" },
+    { group: "Ball screen going left: Drop", id: "sc-drop-attack", name: "Drop: attack the big", call: ["4-out", "swing", { id: "twirl", read: "attack" }, "kick-out"], terms: ["contain"], about: "He turns the corner and attacks the drop: the big contains between him and the rim, the on-ball chases; then the kick and the scramble" },
+    { group: "Ball screen going left: Drop", id: "sc-drop-skip", name: "Drop: skip", call: ["4-out", "swing", "twirl", { id: "skip", to: "corner" }], terms: ["contain", "skip"], about: "He comes off the drop and skips it to the far corner: everyone scrambles" },
   ];
+  /* What a step's read adds to its chip. */
+  const READS = { beat: "beat the hedge", reject: "reject", attack: "attack the drop" };
   /* The program's item for a scenario step (the first that exists when there's a choice). */
   const scenarioItem = (step) => [].concat(step && step.id ? step.id : step).find((id) => BH.store.get(id));
   const scenarioReady = (sc) => sc.call.every((step) => scenarioItem(step));
   /* Load a scenario: a fresh call with Lock Left on, each piece added in order. */
   function startScenario(sc) {
+    const failed = buildScenario(sc);
+    if (S.sheetOpen) toggleSheet(false);
+    changedAll();
+    BH.toast(failed.length ? `Loaded ${sc.name}, but ${failed.map((id) => (BH.store.get(id) || {}).name).join(", ")} couldn't run from there.` : `Loaded ${sc.name}. Hit Run it.`);
+  }
+  /* A fresh call with Lock Left on, each piece of the scenario added in order. Returns what couldn't run. */
+  function buildScenario(sc) {
     stopPlay();
     snapshot();
     S.board = scratchBoard();
@@ -1051,15 +1067,13 @@
     sc.call.forEach((step) => {
       const id = scenarioItem(step);
       const n = S.segs.length;
-      if (!addToCall(id, { silent: true, to: step && step.to })) return void failed.push(id);
+      if (!addToCall(id, { silent: true, to: step && step.to, read: step && step.read })) return void failed.push(id);
       // A drive he gets beat on (the Scram scenario).
       const seg = S.segs[n] || S.segs[S.segs.length - 1];
       if (step && step.beat && seg && S.board.frames[seg.start]) S.board.frames[seg.start].beat = true;
     });
     S.step = 0;
-    if (S.sheetOpen) toggleSheet(false);
-    changedAll();
-    BH.toast(failed.length ? `Loaded ${sc.name}, but ${failed.map((id) => (BH.store.get(id) || {}).name).join(", ")} couldn't run from there.` : `Loaded ${sc.name}. Hit Run it.`);
+    return failed;
   }
 
   function renderLibrary() {
@@ -1223,10 +1237,14 @@
       : "";
     // A ball screen on this step (set, or being used): how we're playing it.
     const cvs = xs.map((x) => x.cv).filter(Boolean);
-    const cov = f.cover || (cvs.includes("hedge") || cvs.includes("over") ? "hedge" : cvs.includes("drop") || cvs.includes("force") ? "drop" : null);
+    const cov = f.bs || f.cover || (cvs.includes("hedge") || cvs.includes("over") ? "hedge" : cvs.includes("drop") || cvs.includes("force") ? "drop" : null);
     const covRow =
-      cov === "hedge"
-        ? `<p class="small"><b>Hard Hedge</b> (screen going right): the screener's man jumps out hard and forces the ball back out, the on-ball fights OVER the screen to get back to him, and the Bear tags the roller until the big recovers.</p>`
+      cov === "beat"
+        ? `<p class="small"><b>Beat the hedge:</b> he kept going right. The on-ball chases on his hip and the big recovers between him and the roller; the roll-side corner defender tags the roller until the big gets back.</p>`
+        : cov === "reject"
+          ? `<p class="small"><b>Reject:</b> he turned down the screen going right and drove left, where Lock Left wants him. We rotate like any drive (Wall, Bear, Gap).</p>`
+          : cov === "hedge"
+        ? `<p class="small"><b>Hard Hedge</b> (screen going right): the screener's man jumps out hard and forces the ball back LEFT, the on-ball fights OVER the screen to get back to him, and the roll-side corner defender tags the roller until the big recovers.</p>`
         : cov === "drop"
           ? `<p class="small"><b>Drop</b> (screen going left): the on-ball FORCES him into the screen and chases over the top; the big DROPS and contains, between the ball and the rim.</p>`
           : cov === "contain"
@@ -1468,6 +1486,12 @@
   function render(host) {
     root = host;
     if (!S.board) load();
+    const pendingSc = S.pendingScenario && SCENARIOS.find((x) => x.id === S.pendingScenario);
+    S.pendingScenario = null;
+    if (pendingSc) {
+      S.pendingOpen = null;
+      buildScenario(pendingSc);
+    }
     if (S.pendingOpen) {
       const id = S.pendingOpen;
       S.pendingOpen = null;
@@ -1526,6 +1550,10 @@
     },
     queueOpen(id) {
       S.pendingOpen = id;
+    },
+    /* Open a scenario next time the whiteboard shows (from the playbook). */
+    queueScenario(id) {
+      S.pendingScenario = id;
     },
     /* What's drawn, step by step (the defense included): for tests. */
     viewFrames: () => viewBoard(S.board).frames,

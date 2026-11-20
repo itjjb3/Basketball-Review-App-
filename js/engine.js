@@ -431,8 +431,28 @@
         const sx = SP[0] - H[0];
         const cover = ctx.defense === "lock-left" ? (sx > 8 ? "hedge" : sx < -8 ? "drop" : null) : null;
         const off = add(S2, mul(perp, 22)); // over the top of the screen
+        const edge = (p) => clampPt(add(RIM, mul(unit(sub(p, RIM)), 115))); // the edge of the paint toward p
+        const read = ctx.read || "";
+        if (read === "reject") {
+          // He rejects the screen and drives away from it (left, where Lock Left wants him).
+          const fH = unit(sub(RIM, H2));
+          const left = [fH[1], -fH[0]];
+          const T = clampPt(add(RIM, mul(unit(sub(add(H2, mul(left, 55)), RIM)), 120)));
+          api.step([line("dribble", [H2, lerp(H2, T, 0.5), T]), rollCut, ...clearForDrive(f2, h, T, [S.id])]);
+          return;
+        }
+        if (read === "beat" || read === "attack") {
+          // He keeps going off the screen and turns the corner to the edge of the paint
+          // (beat the hedge going right; attack the drop going left).
+          // Toward the elbow on the side he's going (the screen's side).
+          const T = edge([250 + Math.sign(off[0] - H2[0] || 1) * 55, 170]);
+          api.step([line("dribble", [H2, off, T]), rollCut]);
+          return;
+        }
         if (cover === "hedge") {
-          const back = clampPt(add(lerp(H2, off, 0.55), mul(unit(sub(H2, RIM)), 42)));
+          // The hedge forces him back, away from the screen (back LEFT going right).
+          const away = unit(sub(H2, S2));
+          const back = clampPt(add(add(lerp(H2, off, 0.4), mul(away, 46)), mul(unit(sub(H2, RIM)), 14)));
           api.step([line("dribble", [H2, off, back]), rollCut]);
           return;
         }

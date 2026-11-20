@@ -138,6 +138,21 @@
     const isDefense = it.rule === "lock-left";
     const showJobs = !!(dg && DF && (isDefense || job) && dg.frames.some((f) => (f.tokens || []).some((t) => t.t === "x")));
     const defWords = isDefense && DF ? DF.terms() : [];
+    // Situations on the whiteboard: every scenario on the Lock Left page, the ones that show this word elsewhere.
+    const allSc = (BH.board && BH.board.SCENARIOS) || [];
+    const scs = isDefense ? allSc : allSc.filter((sc) => (sc.terms || []).includes(it.id));
+    const groups = [...new Set(scs.map((sc) => sc.group))];
+    const sitMarkup = scs.length
+      ? `<h2>See it on the whiteboard</h2>${groups
+          .map(
+            (g) =>
+              `${groups.length > 1 || isDefense ? `<p class="sit-group">${esc(g)}</p>` : ""}<div class="related">${scs
+                .filter((sc) => sc.group === g)
+                .map((sc) => `<a class="chip" href="#board" data-sc-open="${esc(sc.id)}" title="${esc(sc.about)}">${esc(sc.name)}</a>`)
+                .join("")}</div>`
+          )
+          .join("")}`
+      : "";
     root.innerHTML = `
       <section class="view-item">
         <a class="back" href="#playbook">${icons.prev} Playbook</a>
@@ -162,6 +177,7 @@
               <a class="btn" href="#study" data-study-kind="${esc(it.kind)}">${icons.cards} Study ${esc(k.label.toLowerCase())}</a>
               ${BH.store.isCoach ? `<a class="btn ghost" href="#install" data-edit="${esc(it.id)}">${icons.edit} Edit</a>` : ""}
             </div>
+            ${sitMarkup}
             ${
               defWords.length
                 ? `<h2>${esc(it.name)} words</h2><div class="related">${defWords.map((r) => `<a class="chip" href="#item-${esc(r.id)}">${esc(r.name)}</a>`).join("")}</div>`
@@ -182,6 +198,7 @@
     if (showJobs) wireJobs(root);
     const ob = BH.$("[data-open-board]", root);
     ob.addEventListener("click", () => BH.board && BH.board.queueOpen(it.id));
+    BH.$$("[data-sc-open]", root).forEach((a) => a.addEventListener("click", () => BH.board && BH.board.queueScenario(a.dataset.scOpen)));
     const sk = BH.$("[data-study-kind]", root);
     sk.addEventListener("click", () => BH.study && BH.study.preset(it.kind));
     const ed = BH.$("[data-edit]", root);

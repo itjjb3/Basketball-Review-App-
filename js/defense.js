@@ -288,15 +288,9 @@
       const a = toward(P(o)),
         b = toward(B);
       if (a && b) {
-        base = add(a, b);
-        if (Math.hypot(base[0], base[1]) < 0.35) {
-          // In the passing lane with man and ball on opposite sides: open up away from the rim,
-          // toward the floor (on the baseline that's up the court, so he never flips around).
-          const away = add(unit(sub(X, RIM)), [0, 0.8]);
-          const p1 = [-a[1], a[0]];
-          base = p1[0] * away[0] + p1[1] * away[1] >= 0 ? p1 : mul(p1, -1);
-        }
-        base = unit(base);
+        // Ball-you-man, leaning to see the ball: with man and ball on opposite sides he
+        // faces the ball, and he never flips around as they move.
+        base = unit(add(mul(a, 0.6), b));
         to = b;
       }
     } else if (o) base = toward(P(o));
@@ -623,15 +617,18 @@
     }
     return moveAll(f, plan);
   }
-  /* How they use the screen.
-     - HARD HEDGE (going right): the screener's man jumps out into the handler's path, hands
-       high, and forces him back out, then recovers to the roller. The on-ball fights over
-       the top of the screen and gets back in front of him. The Bear sinks to tag the roller
-       until the big gets back. No switch.
+  /* How they use the screen (read: what the handler did, from defendFrames).
+     - HARD HEDGE (going right): the screener's man jumps out into the handler's path and
+       forces him back LEFT, then recovers to the roller. The on-ball fights over the top of
+       the screen and gets back in front of him. The roll-side corner defender tags the
+       roller until the big gets back. No switch.
+     - BEAT THE HEDGE (he keeps going right): the big and the on-ball have to recover (the
+       on-ball chases on his hip, the big gets back between him and the roller), and the
+       roll-side corner defender tags the roller.
      - DROP (going left): the on-ball forced him into the screen and chases over the top,
        on his back hip. The big stays in the drop, between the ball and the rim and in front
        of the roller (Contain). No switch. */
-  function screenRespond(f, sc, next) {
+  function screenRespond(f, sc, next, read) {
     const js = jobsOf(f),
       jobs = roles(f),
       m = matchups(f);
@@ -650,6 +647,10 @@
     const onX = guard[sc.handler],
       bigX = guard[sc.screener],
       bearX = Object.keys(js).find((x) => js[x].includes("bear") && x !== onX && x !== bigX);
+    // The roll-side corner defender tags the roller (the Bear if nobody's in that corner).
+    const rollSide = roller ? (roller[0] >= 250 ? 1 : -1) : 0;
+    const cornerMan = offense(f).find((o) => o.id !== sc.handler && o.id !== sc.screener && isCorner(P(o)) && (P(o)[0] >= 250 ? 1 : -1) === rollSide);
+    const tagX = (cornerMan && guard[cornerMan.id] !== onX && guard[cornerMan.id] !== bigX && guard[cornerMan.id]) || bearX;
     const plan = {};
     defenders(f).forEach((x) => {
       const man = m[x.id] ? endOf(m[x.id]) : null;
@@ -663,9 +664,19 @@
       const drib = (f.strokes || []).find((x) => x.t === "dribble" && x.pts && x.pts.length > 2 && start && dist(x.pts[0], start) < 30);
       const off = drib ? drib.pts[1] : add(SP, mul(unit(sub(SP, RIM)), 22));
       const hedge = add(off, mul(unit(sub(off, SP)), 16));
-      if (bigX && roller) plan[bigX] = { ...plan[bigX], path: [B, hedge, null], end: add(roller, mul(unit(sub(stop, roller)), 22)) };
-      if (onX) plan[onX] = { ...plan[onX], path: [P(defenders(f).find((x) => x.id === onX)), top, null], end: spotFor("ball", stop, stop) };
-      if (bearX && roller && plan[bearX]) plan[bearX] = { ...plan[bearX], end: lerp(plan[bearX].end, roller, 0.45) };
+      const onP = onX && P(defenders(f).find((x) => x.id === onX));
+      if (read === "beat") {
+        // He turned the corner on the hedge: the big recovers between him and the roller, the
+        // on-ball chases on his hip, and the roll-side corner tags the roller.
+        const along = unit(sub(stop, off));
+        if (bigX && roller) plan[bigX] = { ...plan[bigX], path: [B, hedge, null], end: lerp(add(stop, mul(unit(sub(RIM, stop)), 30)), roller, 0.35) };
+        if (onX) plan[onX] = { ...plan[onX], path: [onP, top, null], end: add(add(stop, mul(along, -22)), mul([-along[1], along[0]], 10)) };
+        if (tagX && roller && plan[tagX]) plan[tagX] = { ...plan[tagX], end: add(roller, mul(unit(sub(stop, roller)), 20)) };
+      } else {
+        if (bigX && roller) plan[bigX] = { ...plan[bigX], path: [B, hedge, null], end: add(roller, mul(unit(sub(stop, roller)), 22)) };
+        if (onX) plan[onX] = { ...plan[onX], path: [onP, top, null], end: spotFor("ball", stop, stop) };
+        if (tagX && roller && plan[tagX]) plan[tagX] = { ...plan[tagX], end: lerp(plan[tagX].end, roller, 0.45) };
+      }
     } else {
       if (onX) {
         const along = unit(sub(stop, start || stop));
@@ -808,7 +819,24 @@
         pending = sc;
         g.cover = sc.dir === "right" ? "hedge" : sc.dir === "left" ? "drop" : "contain";
       } else if (used) {
-        r = screenRespond(g, used, next);
+        // What did he do with the screen? Going right: back out (the hedge worked), turned the
+        // corner (beat the hedge), or turned it down and drove left (reject: a drive).
+        const ht = (g.tokens || []).find((t) => t.id === used.handler),
+          hn = (next.tokens || []).find((t) => t.id === used.handler);
+        let read = used.dir === "left" ? "drop" : "hedge";
+        if (used.dir === "right" && ht && hn && dist(P(hn), RIM) < dist(P(ht), RIM) - 45) {
+          // Beat: he went to the screen's side of the line to the rim. Reject: the other side.
+          const toR = sub(RIM, P(ht));
+          const side = (q) => Math.sign(cross(toR, sub(q, P(ht))));
+          read = side(P(hn)) === side(used.SP) ? "beat" : "reject";
+        }
+        const rdv = read === "reject" ? driveIn(g) : null;
+        if (rdv) {
+          rdv.beat = !!f.beat;
+          g.drive = true;
+          r = respond(g, rdv, next);
+        } else r = screenRespond(g, used, next, read);
+        g.bs = read;
         rot = true;
       } else if (dv) {
         dv.beat = !!f.beat;

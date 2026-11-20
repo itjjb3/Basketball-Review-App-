@@ -317,6 +317,7 @@ body[data-view="board"] main { max-width: 1600px; padding-block: 16px 24px; }
 .reads li::before { content: "→"; position: absolute; left: 0; top: 0; color: var(--k-trigger); font-weight: 700; }
 .item-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .related { display: flex; gap: 8px; flex-wrap: wrap; }
+.sit-group { margin: 12px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-muted); }
 
 /* diagram player */
 .player { background: var(--court-apron); border-radius: var(--r); overflow: hidden; }

@@ -2146,11 +2146,12 @@
       "kind": "term",
       "name": "Hard Hedge",
       "call": "",
-      "summary": "Any ball screen going RIGHT: the screener's man HARD HEDGES, jumping out to force the ball back out, and the ball defender fights OVER the screen to get back to him. No switch.",
+      "summary": "Any ball screen going RIGHT: the screener's man HARD HEDGES, jumping out to force the ball back LEFT, and the ball defender fights OVER the screen to get back to him. No switch.",
       "keys": [
-        "Big: jump out hard, hands high, then recover to the roller",
+        "Big: jump out hard into his path, then recover to the roller",
         "On-ball: fight over the top of the screen and get back in front",
-        "The Bear tags the roller until the big gets back"
+        "The roll-side corner defender tags the roller until the big gets back",
+        "Beat the hedge (he keeps going right): the on-ball and the big recover, the roll-side corner tags the roller"
       ],
       "reads": [],
       "updated": "2026-11-20"
