@@ -67,6 +67,19 @@
     return o.find((t) => t.n === RABBIT) || nearest(o, RIM);
   };
 
+  /* A drive from H to T: a post man on the drive side (or in the driver's way) clears to
+     the opposite block so the drive has room. Returns his cut lines. */
+  function clearForDrive(f, h, T, skip = []) {
+    const sd = Math.abs(T[0] - 250) > 15 ? sideOf(T) : sideOf(P(h));
+    const block = [250 - sd * 75, 76];
+    const os = offense(f);
+    return os
+      .filter((o) => o.id !== h.id && !skip.includes(o.id) && !isPerimeter(o) && (sideOf(P(o)) === sd || dist(P(o), T) < 70))
+      .filter((o) => dist(P(o), block) > 30 && os.every((t) => t.id === o.id || dist(P(t), block) > 40))
+      .slice(0, 1)
+      .map((o) => line("cut", [P(o), [250, Math.max(95, Math.min(P(o)[1], 130))], block]));
+  }
+
   function holder(f) {
     const b = (f.tokens || []).find((t) => t.t === "ball");
     if (!b) return null;
@@ -398,7 +411,7 @@
           const fH = unit(sub(RIM, H2));
           const left = [fH[1], -fH[0]];
           const T = clampPt(add(RIM, mul(unit(sub(add(H2, mul(left, 55)), RIM)), 120)));
-          api.step([line("dribble", [H2, lerp(H2, T, 0.5), T]), rollCut]);
+          api.step([line("dribble", [H2, lerp(H2, T, 0.5), T]), rollCut, ...clearForDrive(f2, h, T, [S.id])]);
           return;
         }
         const end = cover === "fire" ? lerp(H2, G, 0.45) : G;
@@ -406,7 +419,7 @@
       },
     },
     drive: {
-      label: "Drive: the ball handler attacks the edge of the paint going left (the way Lock Left forces him)",
+      label: "Drive: the ball handler attacks the edge of the paint going left (the way Lock Left forces him); a post man on that side clears to the opposite block",
       run(api) {
         const h = holder(api.f);
         if (!h) return "nobody has the ball.";
@@ -416,7 +429,7 @@
         const f = unit(sub(RIM, H));
         const left = [f[1], -f[0]];
         const T = clampPt(add(RIM, mul(unit(sub(add(H, mul(left, 55)), RIM)), 120)));
-        api.step([line("dribble", [H, lerp(H, T, 0.5), T])]);
+        api.step([line("dribble", [H, lerp(H, T, 0.5), T]), ...clearForDrive(api.f, h, T)]);
       },
     },
     kick: {

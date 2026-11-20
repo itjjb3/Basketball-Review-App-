@@ -135,7 +135,19 @@
     } else {
       const rest = os.filter((o) => o.id !== h.id && guard[o.id] && !out[guard[o.id]]).sort((a, b) => dist(P(a), RIM) - dist(P(b), RIM));
       if (rest[0]) give(guard[rest[0].id], "wall");
-      if (rest[1]) give(guard[rest[1].id], "bear");
+      // The Bear helps the helper: the weak-side slot or wing (he can be the Deny too).
+      // With nobody up top on the weak side, the next man closest to the rim.
+      const bs = P(h)[0] >= 250 ? 1 : -1;
+      const wallX = rest[0] && guard[rest[0].id];
+      const helper = os
+        .filter((o) => o.id !== h.id && isPerimeter(P(o)) && !isCorner(P(o)) && (P(o)[0] >= 250 ? 1 : -1) === -bs && Math.abs(P(o)[0] - 250) > 15)
+        .filter((o) => {
+          const x = guard[o.id];
+          return x && x !== wallX && !(out[x] || []).some((j) => j === "ball" || j === "gap");
+        })
+        .sort((a, b) => dist(P(a), P(h)) - dist(P(b), P(h)))[0];
+      if (helper) give(guard[helper.id], "bear");
+      else if (rest[1]) give(guard[rest[1].id], "bear");
     }
     return out;
   }
@@ -437,7 +449,7 @@
     } else {
       const gapX = xOfJob("gap"),
         wallX = xOfJob("wall"),
-        bearX = xOfJob("bear"),
+        bearX = Object.keys(js).find((x) => js[x].includes("bear") && x !== ballX && x !== gapX && x !== wallX),
         denyX = xOfJob("deny");
       if (gapX) move[gapX] = "snipe";
       if (wallX) (move[wallX] = "step"), (wallMan = m[wallX] ? endOf(m[wallX]) : null);
@@ -460,7 +472,7 @@
         xout.length = 0;
         scram.push([num(ballX), num(gapX)]);
       }
-      void denyX; // the Deny stays in the lane
+      void denyX; // the Deny stays in the lane (unless he's also the Bear)
     }
     fillMan = wallMan && dist(wallMan, RIM) < 150 ? wallMan : null;
 
@@ -625,7 +637,7 @@
     const xOf = (j) => Object.keys(jobs).find((x) => jobs[x] === j);
     const onX = guard[sc.handler],
       bigX = guard[sc.screener],
-      bearX = xOf("bear"),
+      bearX = Object.keys(js).find((x) => js[x].includes("bear") && x !== onX),
       denyX = xOf("deny");
     const plan = {};
     defenders(f).forEach((x) => {
@@ -639,7 +651,7 @@
     const bearMan = bearX && m[bearX] ? endOf(m[bearX]) : null;
     const denyMan = denyX && m[denyX] ? endOf(m[denyX]) : null;
     // The Deny sinks to split his man and the Bear's man, staying on his side of it.
-    if (denyX && denyMan && bearMan && denyX !== bigX) plan[denyX] = { ...plan[denyX], end: lerp(lerp(denyMan, bearMan, 0.35), stop, 0.2) };
+    if (denyX && denyMan && bearMan && denyX !== bigX && denyX !== bearX) plan[denyX] = { ...plan[denyX], end: lerp(lerp(denyMan, bearMan, 0.35), stop, 0.2) };
     const r = moveAll(f, plan);
     // X-out: the Bear keeps the roller, the big recovers out of the trap to the Bear's man.
     const n = (xId) => (defenders(f).find((x) => x.id === xId) || {}).n;
