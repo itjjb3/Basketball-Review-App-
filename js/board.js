@@ -1263,7 +1263,7 @@
       ? `<p class="small"><b>Handoff going ${f.handoff.dir}:</b> ${f.handoff.dir === "right" ? "like a ball screen going right: the giver's man HEDGES into the receiver's path, the receiver's man fights OVER the top." : "like a ball screen going left: the receiver's man FORCES him into it and chases over the top, the giver's man DROPS."}</p>`
       : "";
     const gapRow = f.offGap ? `<p class="small"><b>Off-ball screen: shoot the gap.</b> X${esc(f.offGap.x)} is already in the middle, so he goes under, between the screener and the rim, and beats ${esc(f.offGap.cutter)} to his spot. The screener's man stays home. No switch.</p>` : "";
-    const postRow = f.post ? `<p class="small"><b>Post:</b> X${esc(f.post.x)} plays halfway over ${esc(f.post.man)}'s left shoulder, forcing him left.</p>` : "";
+    const postRow = f.post ? `<p class="small"><b>Post:</b> X${esc(f.post.x)} shades ${esc(f.post.man)} so he always has to go left: between him and the rim, halfway over to his right hand (his left shoulder with his back to the basket).</p>` : "";
     // Passed out of a rotation: the scramble.
     const scr = f.scramble;
     const scrRow = scr

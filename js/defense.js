@@ -161,13 +161,14 @@
   const clampPt = (p) => [Math.round(Math.max(14, Math.min(486, p[0]))), Math.round(Math.max(14, Math.min(460, p[1])))];
 
   /* Where Lock Left puts a defender with this job, guarding a man at M, ball at B. */
-  /* The post: halfway over his LEFT shoulder (his left as he faces the ball, or straight out
-     from the rim when he has it), forcing him left. */
+  /* The post: always shading him so he has to go LEFT. Like the on-ball on the perimeter,
+     between him and the rim and shaded to his right hand (as he faces up), only closer and
+     halfway over: his left shoulder with his back to the basket. Never depends on the ball. */
   const POST = 120;
-  function postSpot(M, B) {
-    const fb = dist(B, M) > 20 ? unit(sub(B, M)) : unit(sub(M, RIM));
-    const left = [fb[1], -fb[0]];
-    return add(M, mul(unit(add(left, mul(fb, 0.15))), 20));
+  function postSpot(M) {
+    const toRim = unit(sub(RIM, M));
+    const right = [-toRim[1], toRim[0]];
+    return add(M, mul(unit(add(toRim, right)), 18));
   }
   function spotFor(job, M, B) {
     const toRim = unit(sub(RIM, M)),
@@ -176,7 +177,7 @@
     switch (job) {
       case "ball": {
         if (dist(M, RIM) < POST) {
-          q = postSpot(M, M); // a post catch: stay on his left shoulder
+          q = postSpot(M); // a post catch: keep shading him left
           break;
         }
         // Between him and the rim, shaded to his right hand (he faces the rim) so he goes left.
@@ -194,10 +195,10 @@
         break;
       }
       case "wall": {
-        // Paint help. On a post man: halfway over his left shoulder. Off a perimeter man: in
+        // Paint help. On a post man: shading him to go left. Off a perimeter man: in
         // the paint, leaning to the ball's side. Both change gradually as the ball and his
         // man move, so he never jumps across the lane.
-        const near = postSpot(M, B);
+        const near = postSpot(M);
         const lean = Math.max(-1, Math.min(1, (B[0] - 250) / 60));
         const far = lerp(M, [250 + lean * 30, 135], 0.65);
         q = lerp(near, far, Math.max(0, Math.min(1, (dist(M, RIM) - 120) / 40)));
@@ -990,7 +991,7 @@
         carry = r.ends;
         carrySw = [...(r.xout || []).map((q) => [q[0], q[1], "natural"]), ...(r.scram || []).map((q) => [q[0], q[1], "scram"])];
       }
-      // The ball in the post: his man is halfway over his left shoulder (tag it).
+      // The ball in the post: his man shades him to go left (tag it).
       const ph = holder(g);
       if (ph && dist(P(ph), RIM) < POST) {
         const pm = matchups(g);
