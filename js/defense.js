@@ -161,12 +161,24 @@
   const clampPt = (p) => [Math.round(Math.max(14, Math.min(486, p[0]))), Math.round(Math.max(14, Math.min(460, p[1])))];
 
   /* Where Lock Left puts a defender with this job, guarding a man at M, ball at B. */
+  /* The post: halfway over his LEFT shoulder (his left as he faces the ball, or straight out
+     from the rim when he has it), forcing him left. */
+  const POST = 120;
+  function postSpot(M, B) {
+    const fb = dist(B, M) > 20 ? unit(sub(B, M)) : unit(sub(M, RIM));
+    const left = [fb[1], -fb[0]];
+    return add(M, mul(unit(add(left, mul(fb, 0.15))), 20));
+  }
   function spotFor(job, M, B) {
     const toRim = unit(sub(RIM, M)),
       toBall = unit(sub(B, M));
     let q;
     switch (job) {
       case "ball": {
+        if (dist(M, RIM) < POST) {
+          q = postSpot(M, M); // a post catch: stay on his left shoulder
+          break;
+        }
         // Between him and the rim, shaded to his right hand (he faces the rim) so he goes left.
         const right = [-toRim[1], toRim[0]];
         q = add(add(M, mul(toRim, 28)), mul(right, 12));
@@ -182,10 +194,10 @@
         break;
       }
       case "wall": {
-        // Paint help. On a post man: side-fronting him on the ball side. Off a perimeter man:
-        // in the paint, leaning to the ball's side. Both change gradually as the ball and his
+        // Paint help. On a post man: halfway over his left shoulder. Off a perimeter man: in
+        // the paint, leaning to the ball's side. Both change gradually as the ball and his
         // man move, so he never jumps across the lane.
-        const near = add(M, mul(toBall, 27));
+        const near = postSpot(M, B);
         const lean = Math.max(-1, Math.min(1, (B[0] - 250) / 60));
         const far = lerp(M, [250 + lean * 30, 135], 0.65);
         q = lerp(near, far, Math.max(0, Math.min(1, (dist(M, RIM) - 120) / 40)));
@@ -561,7 +573,7 @@
   }
   const rnd1 = (q) => [Math.round(q[0] * 10) / 10, Math.round(q[1] * 10) / 10];
   /* Shared: build our lines and next-step X's from each X's end spot. */
-  function moveAll(f, plan) {
+  function moveAll(f, plan, lines) {
     const strokes = [],
       ends = [];
     defenders(f).forEach((x) => {
@@ -569,7 +581,7 @@
         pl = plan[x.id] || {};
       const end = clampPt(pl.end || X);
       const path = pl.path ? [...pl.path.slice(0, -1), end] : null;
-      if (dist(X, end) > 8) strokes.push({ id: "dz" + x.id, t: "cut", pts: (path || [X, lerp(X, end, 0.5), end]).map(rnd1), c: DEF_INK });
+      if (dist(X, end) > 8 && (!lines || lines.includes(x.id))) strokes.push({ id: "dz" + x.id, t: "cut", pts: (path || [X, lerp(X, end, 0.5), end]).map(rnd1), c: DEF_INK });
       const nx = { ...x, x: end[0], y: end[1] };
       delete nx.hh;
       delete nx.cv;
@@ -692,6 +704,84 @@
     return r;
   }
 
+  /* ---- handoffs (played like ball screens) and off-ball screens (shoot the gap) ---- */
+  /* A handoff this step: { giver, receiver, M, R, dir: "right" | "left" | "straight" } or null. */
+  function handoffIn(f, next) {
+    const h = holder(f);
+    const s = (f.strokes || []).find((x) => x.t === "handoff" && x.pts && x.pts.length >= 2);
+    if (!h || !s || !next) return null;
+    const M = s.pts[0],
+      R = s.pts[s.pts.length - 1];
+    const rec = offense(next)
+      .filter((o) => o.id !== h.id)
+      .reduce((b, o) => (!b || dist(P(o), R) < dist(P(b), R) ? o : b), null);
+    if (!rec || dist(P(rec), R) > 40) return null;
+    const dx = R[0] - M[0];
+    return { giver: h.id, receiver: rec.id, M, R, dir: dx > 8 ? "right" : dx < -8 ? "left" : "straight" };
+  }
+  /* Our handoff coverage, like a ball screen. Going right: the giver's man HEDGES (jumps out
+     into the receiver's path) and the receiver's man fights OVER the top. Going left: the
+     receiver's man FORCES him into it and trails over the top, the giver's man DROPS.
+     Returns { plan, lines, cv } (cv: { xId: tag } for this step). */
+  function handoffPlan(f, hf) {
+    const m = matchups(f);
+    const guard = {};
+    Object.keys(m).forEach((x) => (guard[m[x]] = x));
+    const gX = guard[hf.giver],
+      rX = guard[hf.receiver];
+    const plan = {},
+      cv = {};
+    const at = (xId) => P(defenders(f).find((x) => x.id === xId));
+    const M = hf.M,
+      R = hf.R;
+    const out = unit(sub(M, RIM));
+    const overTop = add(M, mul(out, 30)); // around the giver's outside shoulder
+    const along = unit(sub(R, M));
+    if (hf.dir === "right") {
+      if (gX) (plan[gX] = { path: [at(gX), lerp(M, R, 0.6), null], end: add(add(R, mul(along, 18)), mul(out, 6)) }), (cv[gX] = "hedge");
+      if (rX) (plan[rX] = { path: [at(rX), overTop, null], end: spotFor("ball", R, R) }), (cv[rX] = "over");
+    } else if (hf.dir === "left") {
+      if (rX) (plan[rX] = { path: [at(rX), overTop, null], end: add(R, mul(along, -22)) }), (cv[rX] = "force");
+      if (gX) (plan[gX] = { end: lerp(M, RIM, 0.4) }), (cv[gX] = "drop");
+    }
+    return { plan, lines: Object.keys(plan), cv };
+  }
+  /* An off-ball screen this step (not on the ball handler): { screener, cutter, SP } or null. */
+  function offScreenIn(f) {
+    const h = holder(f);
+    for (const s of f.strokes || []) {
+      if (s.t !== "screen" || !s.pts || s.pts.length < 2) continue;
+      const SP = s.pts[s.pts.length - 1];
+      if (h && dist(SP, P(h)) <= 60) continue;
+      const os = offense(f);
+      const scr = os.reduce((b, o) => (dist(P(o), s.pts[0]) < 26 && (!b || dist(P(o), s.pts[0]) < dist(P(b), s.pts[0])) ? o : b), null);
+      if (!scr) continue;
+      const cut = os
+        .filter((o) => o.id !== scr.id && (!h || o.id !== h.id))
+        .reduce((b, o) => (!b || dist(P(o), SP) < dist(P(b), SP) ? o : b), null);
+      if (!cut || dist(P(cut), SP) > 80) continue;
+      return { screener: scr.id, cutter: cut.id, SP };
+    }
+    return null;
+  }
+  /* The cut off it: SHOOT THE GAP. The cutter's man is already in the middle, so he goes
+     under, between the screener and the rim, and beats the cutter to his spot. The screener's
+     man stays home. No switch. Returns { plan, lines, cv }. */
+  function gapPlan(f, os, nextSpots) {
+    const m = matchups(f);
+    const guard = {};
+    Object.keys(m).forEach((x) => (guard[m[x]] = x));
+    const cX = guard[os.cutter];
+    const st = (f.tokens || []).find((t) => t.id === os.screener);
+    if (!cX || !st) return null;
+    const S = P(st);
+    const gap = add(S, mul(unit(sub(RIM, S)), 24)); // just under the screen, on the rim side
+    const end = nextSpots[cX];
+    if (!end) return null;
+    const X = P(defenders(f).find((x) => x.id === cX));
+    return { plan: { [cX]: { path: [X, gap, null], end } }, lines: [cX], cv: { [cX]: "under" } };
+  }
+
   /* The scramble: the ball gets passed out of a rotation. Everyone recovers from where he
      rotated to his Lock Left spot for where the ball goes (sticking with the X-out), and the
      catcher's man sprints and closes out hands high. Returns { strokes, closer, catcher }. */
@@ -754,6 +844,7 @@
     let carry = null,
       carrySw = [], // switches the rotation calls for, applied on the next step
       pending = null, // a ball screen set last step (the next step is how it's used)
+      pendingOff = null, // an off-ball screen set last step (the next step is the cut off it)
       carryFrom = null; // "rotation": carry came out of a drive or a ball screen being used
     // Who's guarding whom, carried through the possession: { defender number: man number }.
     let guard = {};
@@ -807,6 +898,8 @@
       const next = frames[i + 1];
       const used = pending && pending.dir !== "straight" ? pending : null;
       pending = null;
+      const offUsed = pendingOff;
+      pendingOff = null;
       const sc = next && screenIn(g);
       const dv = next && !sc && !used && driveIn(g);
       let r = null,
@@ -843,6 +936,47 @@
         g.drive = true;
         r = respond(g, dv, next);
         rot = true;
+      }
+      // Handoffs (like ball screens) and the cut off an off-ball screen (shoot the gap): only
+      // the X's in the action get lines; everyone else plays the string live to his spot.
+      const hf = !r && next ? handoffIn(g, next) : null;
+      const offSet = next ? offScreenIn(g) : null;
+      if (offSet) pendingOff = offSet;
+      if (!r && next && ((hf && hf.dir !== "straight") || offUsed)) {
+        const offNext = { ...next, tokens: (next.tokens || []).filter((t) => t.t !== "x") };
+        const spots = {};
+        place(offNext, guard).forEach((x) => (spots[x.id] = P(x)));
+        const plan = {},
+          lines = [];
+        defenders(g).forEach((x) => (plan[x.id] = { end: spots[x.id] || P(x) }));
+        const parts = [hf && hf.dir !== "straight" ? handoffPlan(g, hf) : null, offUsed ? gapPlan(g, offUsed, spots) : null].filter(Boolean);
+        parts.forEach((pt) =>
+          Object.keys(pt.plan).forEach((xId) => {
+            if (lines.includes(xId)) return; // the handoff comes first
+            plan[xId] = { ...plan[xId], ...pt.plan[xId] };
+            lines.push(xId);
+          })
+        );
+        if (lines.length) {
+          r = moveAll(g, plan, lines);
+          const cvs = Object.assign({}, ...parts.map((pt) => pt.cv));
+          g.tokens = g.tokens.map((t) => (t.t === "x" && cvs[t.id] ? { ...t, cv: cvs[t.id] } : t));
+          g.liveOthers = lines.slice(); // the X's in the action follow their lines; the rest play live
+          if (hf && hf.dir !== "straight") {
+            g.handoff = { dir: hf.dir };
+            rot = true;
+          }
+          if (offUsed) {
+            const cX = parts.find((pt) => pt.cv && Object.values(pt.cv).includes("under"));
+            const cxId = cX && Object.keys(cX.cv).find((k) => cX.cv[k] === "under");
+            const xt = cxId && g.tokens.find((t) => t.id === cxId);
+            const ct = g.tokens.find((t) => t.id === offUsed.cutter);
+            if (xt && ct) g.offGap = { x: xt.n, cutter: ct.n };
+          }
+        }
+      }
+      if (r) {
+        // (lines and ends are applied below)
       } else if (wasRotated && next && (g.strokes || []).some((x) => x.t === "pass")) {
         // Passed out of a rotation: the scramble.
         const sr = scramble(g, next, guard);
@@ -855,6 +989,16 @@
         if (rot) carryFrom = "rotation";
         carry = r.ends;
         carrySw = [...(r.xout || []).map((q) => [q[0], q[1], "natural"]), ...(r.scram || []).map((q) => [q[0], q[1], "scram"])];
+      }
+      // The ball in the post: his man is halfway over his left shoulder (tag it).
+      const ph = holder(g);
+      if (ph && dist(P(ph), RIM) < POST) {
+        const pm = matchups(g);
+        const px = Object.keys(pm).find((xId) => pm[xId] === ph.id);
+        if (px) {
+          g.tokens = g.tokens.map((t) => (t.id === px && !t.cv ? { ...t, cv: "post" } : t));
+          g.post = { x: (g.tokens.find((t) => t.id === px) || {}).n, man: ph.n };
+        }
       }
       out.push(g);
     });
@@ -874,6 +1018,7 @@
     if (!defenders(from).length && !defenders(to).length) return null;
     const auto = from.def === "lock-left" && to.def === "lock-left";
     const drive = (from.strokes || []).some((x) => /^dz/.test(x.id || ""));
+    const lineFor = (xId) => (Array.isArray(from.liveOthers) ? from.liveOthers.includes(xId) : (from.strokes || []).some((x) => x.id === "dz" + xId));
     const jFrom = jobsOf(from),
       jTo = jobsOf(to);
     const main = (js) => {
@@ -918,7 +1063,7 @@
       const out = {};
       const xsNow = defenders(to).map((x) => {
         let q;
-        if (auto && !drive) {
+        if (auto && (!drive || (from.liveOthers && !lineFor(x.id)))) {
           // From his man at the start of the step to his man at the end (they differ on a switch).
           const manA = offNow.find((o) => o.id === (mFrom[x.id] || mTo[x.id])),
             manB = offNow.find((o) => o.id === mTo[x.id]);

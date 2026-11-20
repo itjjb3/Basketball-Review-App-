@@ -253,7 +253,7 @@
           const openMan = nearest(weak.filter((t) => !inCorner(t)), P(h));
           const far = weak.slice().sort((a, b) => dist(P(b), P(h)) - dist(P(a), P(h)))[0];
           const t = ctx.to === "open" ? openMan || cornerMan || far : cornerMan || far;
-          api.step([passTo(h, t), spaceOut(f, h, hs)]);
+          api.step([passTo(h, t), dist(P(h), RIM) > 95 ? spaceOut(f, h, hs) : null]);
           return;
         }
         const hs = Math.abs(h.x - 250) > 20 ? sideOf(P(h)) : 0;
@@ -486,8 +486,9 @@
         const t = nearest(same.length ? same : per, P(h));
         const moves = [passTo(h, t)];
         if (!isPerimeter(h)) {
-          // The driver kicks it and spaces back out to the nearest open spot on his side.
-          const back = spaceOut(api.f, h, s || -sideOf(P(t)));
+          // The driver kicks it and spaces back out to the nearest open spot on his side
+          // (a post man stays in the post).
+          const back = dist(P(h), RIM) > 95 ? spaceOut(api.f, h, s || -sideOf(P(t))) : null;
           if (back) moves.push(back);
         }
         api.step(moves);

@@ -1025,6 +1025,14 @@
     { group: "Drive & Skip: Scramble", id: "sc-skip-wing-open", terms: ["skip", "wall", "bear"], name: "Wing → open man", call: ["baseline-drive-lift", "drive", { id: "skip", to: "open" }], about: "Wing drive; he skips it to the man the Bear left and the Wall recovers out to him" },
     { group: "Drive & Skip: Scramble", id: "sc-skip-corner", terms: ["skip", "wall", "bear"], name: "Corner → corner", call: ["4-out", "swing", "kick-out", "drive", { id: "skip", to: "corner" }], about: "Baseline drive from the corner; he skips it to the far corner and everyone scrambles" },
     { group: "Drive & Skip: Scramble", id: "sc-skip-corner-open", terms: ["skip", "wall", "bear"], name: "Corner → open man", call: ["4-out", "swing", "kick-out", "drive", { id: "skip", to: "open" }], about: "Baseline drive from the corner; he skips it to the weak slot the Bear left and the Wall sprints out" },
+    { group: "Handoffs (like ball screens)", id: "sc-ho-rub-right", name: "Rub going right: hedge", call: ["4-out", "rub", "swing"], terms: ["hedge"], about: "The Rub handoff goes right: the giver's man HEDGES into the receiver's path and the receiver's man fights OVER the top, then the hedger recovers" },
+    { group: "Handoffs (like ball screens)", id: "sc-ho-rub-left", name: "Rub going left: drop", call: ["4-out", "swing", "rub", "swing"], terms: ["contain"], about: "The Rub handoff goes left: the receiver's man FORCES him into it and chases over the top, the giver's man DROPS" },
+    { group: "Handoffs (like ball screens)", id: "sc-ho-get-right", name: "Get going right: hedge", call: ["4-out", "get"], terms: ["hedge"], about: "The Rabbit's handoff (Get) goes right: X4 HEDGES, the on-ball fights OVER, then the Rabbit rolls" },
+    { group: "Handoffs (like ball screens)", id: "sc-ho-get-left", name: "Get going left: drop", call: ["4-out", "swing", "get"], terms: ["contain"], about: "The Rabbit's handoff (Get) goes left: the on-ball FORCES him into it, X4 DROPS" },
+    { group: "Off-ball screens: shoot the gap", id: "sc-off-rub", name: "Rub's down screen", call: ["4-out", "rub"], terms: [], about: "The Rub's backside down screen: the cutter's man is already in the middle, so he shoots the gap (under, between the screener and the rim). No switch" },
+    { group: "Off-ball screens: shoot the gap", id: "sc-off-twist", name: "Twist's down screen", call: ["4-out", "twist"], terms: [], about: "The Twist's backside down screen: the cutter's man shoots the gap. No switch" },
+    { group: "Post", id: "sc-post-slot", name: "Post entry from the slot", call: ["4-out", "post-entry", "kick-out"], terms: ["wall"], about: "The ball goes into the Rabbit on the block: X4 plays halfway over his left shoulder, forcing him left; then he kicks it back out" },
+    { group: "Post", id: "sc-post-corner", name: "Post entry from the corner", call: ["4-out", "kick-out", "post-entry", "kick-out"], terms: ["wall"], about: "Kick to the corner, then into the post: X4 on his left shoulder; then he kicks it out and we scramble" },
     { group: "Beat: Scram", id: "sc-beat", terms: ["scram"], name: "Slot drive", call: ["4-out", { id: "drive", beat: true }, "kick-out"], about: "He gets beat on a slot drive: the Gap picks up the ball, the on-ball sprints to the Gap's man (Scram)" },
     { group: "Beat: Scram", id: "sc-beat-top", terms: ["scram"], name: "Top drive", call: [["5-out", "power"], { id: "drive", beat: true }, "kick-out"], about: "He gets beat at the top: the drive-side wing picks up the ball, the on-ball sprints to his man, the corner stays home (Scram)" },
     { group: "Beat: Scram", id: "sc-beat-wing", terms: ["scram"], name: "Wing drive", call: ["baseline-drive-lift", { id: "drive", beat: true }, "kick-out"], about: "He gets beat on a wing drive: the Gap picks up the ball, the on-ball sprints to the Gap's man (Scram)" },
@@ -1250,6 +1258,12 @@
           : cov === "contain"
             ? `<p class="small"><b>Contain:</b> the big stays between the ball and the rim.</p>`
             : "";
+    // A handoff (played like a ball screen), the cut off an off-ball screen, the ball in the post.
+    const hoRow = f.handoff
+      ? `<p class="small"><b>Handoff going ${f.handoff.dir}:</b> ${f.handoff.dir === "right" ? "like a ball screen going right: the giver's man HEDGES into the receiver's path, the receiver's man fights OVER the top." : "like a ball screen going left: the receiver's man FORCES him into it and chases over the top, the giver's man DROPS."}</p>`
+      : "";
+    const gapRow = f.offGap ? `<p class="small"><b>Off-ball screen: shoot the gap.</b> X${esc(f.offGap.x)} is already in the middle, so he goes under, between the screener and the rim, and beats ${esc(f.offGap.cutter)} to his spot. The screener's man stays home. No switch.</p>` : "";
+    const postRow = f.post ? `<p class="small"><b>Post:</b> X${esc(f.post.x)} plays halfway over ${esc(f.post.man)}'s left shoulder, forcing him left.</p>` : "";
     // Passed out of a rotation: the scramble.
     const scr = f.scramble;
     const scrRow = scr
@@ -1258,6 +1272,9 @@
     const switchRow = `<div class="switch-row">
         ${beatRow}
         ${covRow}
+        ${hoRow}
+        ${gapRow}
+        ${postRow}
         ${scrRow}
         ${events.length ? `<ul class="switch-list">${events.join("")}</ul>` : ""}
         ${switched.length ? `<p class="small"><b>Switched:</b> ${switched.join(" · ")}</p>` : ""}
