@@ -779,10 +779,11 @@
       "keys": [
         "If there's no one to skip to, there's no skip",
         "Skip to a Lock: the Lock rises with the ball",
-        "The player who was skipped runs the lane line and fills back to the corner"
+        "The player who was skipped runs the lane line and fills back to the corner",
+        "Out of a drive: across to the weak-side corner or the open man; the driver spaces back out"
       ],
       "reads": [],
-      "updated": "2026-11-18",
+      "updated": "2026-11-20",
       "rule": "skip"
     },
     {
@@ -2141,34 +2142,31 @@
       "updated": "2026-11-18"
     },
     {
-      "id": "ice",
+      "id": "hedge",
       "kind": "term",
-      "name": "Ice",
-      "call": "“Ice!”",
-      "summary": "Any ball screen going RIGHT, we ICE it and force the ball LEFT, away from the screen. The big plays CONTAIN.",
-      "keys": [],
+      "name": "Hard Hedge",
+      "call": "",
+      "summary": "Any ball screen going RIGHT: the screener's man HARD HEDGES, jumping out to force the ball back out, and the ball defender fights OVER the screen to get back to him. No switch.",
+      "keys": [
+        "Big: jump out hard, hands high, then recover to the roller",
+        "On-ball: fight over the top of the screen and get back in front",
+        "The Bear tags the roller until the big gets back"
+      ],
       "reads": [],
-      "updated": "2026-11-18"
-    },
-    {
-      "id": "fire",
-      "kind": "term",
-      "name": "Fire",
-      "call": "“Fire!”",
-      "summary": "Any ball screen going LEFT, we are forcing it into a TRAP.",
-      "keys": [],
-      "reads": [],
-      "updated": "2026-11-18"
+      "updated": "2026-11-20"
     },
     {
       "id": "contain",
       "kind": "term",
-      "name": "Contain",
+      "name": "Drop / Contain",
       "call": "",
-      "summary": "Also called drop coverage. The big stays between the ball and the rim. No switch.",
-      "keys": [],
+      "summary": "Any ball screen going LEFT: the ball defender FORCES him INTO the screen and the big plays DROP / CONTAIN, staying between the ball and the rim. No switch.",
+      "keys": [
+        "On-ball: force him into the screen, then chase over the top on his back hip",
+        "Big: drop, between the ball and the rim and in front of the roller"
+      ],
       "reads": [],
-      "updated": "2026-11-18"
+      "updated": "2026-11-20"
     },
     {
       "id": "kick",

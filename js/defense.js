@@ -43,8 +43,7 @@
     deny: "deny",
     wall: "wall",
     bear: "bear",
-    ice: null,
-    fire: null,
+    hedge: null,
     contain: null,
     scram: null,
     wolf: null,
@@ -291,8 +290,9 @@
       if (a && b) {
         base = add(a, b);
         if (Math.hypot(base[0], base[1]) < 0.35) {
-          // In the passing lane with man and ball on opposite sides: open up away from the rim.
-          const away = unit(sub(X, RIM));
+          // In the passing lane with man and ball on opposite sides: open up away from the rim,
+          // toward the floor (on the baseline that's up the court, so he never flips around).
+          const away = add(unit(sub(X, RIM)), [0, 0.8]);
           const p1 = [-a[1], a[0]];
           base = p1[0] * away[0] + p1[1] * away[1] >= 0 ? p1 : mul(p1, -1);
         }
@@ -544,10 +544,10 @@
     return { strokes, ends, xout, scram };
   }
 
-  /* ---- ball screens: Ice, Fire, Contain ----
-     A ball screen: a teammate's screen that ends at the ball handler. Going RIGHT we ICE
-     it (force him left, away from the screen; the big plays Contain). Going LEFT it's
-     FIRE (trap). Straight at him: the big plays Contain.
+  /* ---- ball screens: Hard Hedge, Drop, Contain ----
+     A ball screen: a teammate's screen that ends at the ball handler. Going RIGHT the
+     screener's man HARD HEDGES and the on-ball fights over. Going LEFT the on-ball forces
+     him into it and the big DROPS (Contain). Straight at him: the big plays Contain.
      Returns { handler, screener, SP, dir: "right" | "left" | "straight" } or null. */
   function screenIn(f) {
     const h = holder(f);
@@ -587,8 +587,12 @@
     });
     return { strokes, ends };
   }
-  /* The screen is set: Ice (on-ball jumps to the screen side, the big drops to Contain),
-     Fire (the big shows on the handler's path, ready to trap), or straight (Contain). */
+  /* The screen is set.
+     - Going RIGHT, Hard Hedge: the on-ball gets tight on the top side of the screen, ready
+       to fight OVER it; the screener's man comes up level with the screen, ready to jump out.
+     - Going LEFT, Drop: the on-ball forces him INTO the screen (on his far side); the big
+       DROPS to Contain, between the ball and the rim.
+     - Straight at him: the big plays Contain. */
   function coverSet(f, sc, next) {
     const js = jobsOf(f),
       m = matchups(f);
@@ -607,20 +611,27 @@
     });
     const onX = guard[sc.handler],
       bigX = guard[sc.screener];
+    const toS = unit(sub(SPe, H)),
+      outward = unit(sub(H, RIM));
     if (onX) {
-      if (sc.dir === "right") plan[onX] = { ...plan[onX], end: add(H, mul(unit(sub(SPe, H)), 22)), cv: "ice" };
-      else if (sc.dir === "left") plan[onX] = { ...plan[onX], end: spotFor("ball", H, H), cv: "fire" };
+      if (sc.dir === "right") plan[onX] = { ...plan[onX], end: add(add(H, mul(toS, 12)), mul(outward, 14)), cv: "over" };
+      else if (sc.dir === "left") plan[onX] = { ...plan[onX], end: add(add(H, mul(toS, -20)), mul(unit(sub(RIM, H)), 12)), cv: "force" };
     }
     if (bigX) {
-      if (sc.dir === "left") plan[bigX] = { ...plan[bigX], end: add(SPe, mul(unit(sub(SPe, H)), 18)) }; // shows, ready to trap
-      else plan[bigX] = { ...plan[bigX], end: lerp(SPe, RIM, 0.4), cv: "contain" };
+      if (sc.dir === "right") plan[bigX] = { ...plan[bigX], end: add(SPe, mul(unit(sub(SPe, RIM)), -16)), cv: "hedge" }; // level with the screen
+      else plan[bigX] = { ...plan[bigX], end: lerp(SPe, RIM, 0.4), cv: sc.dir === "left" ? "drop" : "contain" };
     }
     return moveAll(f, plan);
   }
-  /* FIRE: the on-ball and the big trap him where he's stopped, hands high. The Bear tags
-     the roller, the Deny sinks to split his man and the Bear's man, the Gap stays in the
-     gap ready to snipe and grab the pass out of the trap. */
-  function trapRespond(f, sc, next) {
+  /* How they use the screen.
+     - HARD HEDGE (going right): the screener's man jumps out into the handler's path, hands
+       high, and forces him back out, then recovers to the roller. The on-ball fights over
+       the top of the screen and gets back in front of him. The Bear sinks to tag the roller
+       until the big gets back. No switch.
+     - DROP (going left): the on-ball forced him into the screen and chases over the top,
+       on his back hip. The big stays in the drop, between the ball and the rim and in front
+       of the roller (Contain). No switch. */
+  function screenRespond(f, sc, next) {
     const js = jobsOf(f),
       jobs = roles(f),
       m = matchups(f);
@@ -630,33 +641,68 @@
       const t = (next.tokens || []).find((x) => x.id === oid) || (f.tokens || []).find((x) => x.id === oid);
       return t ? P(t) : null;
     };
-    const start = endOf(sc.handler) && P((f.tokens || []).find((t) => t.id === sc.handler));
+    const ht = (f.tokens || []).find((t) => t.id === sc.handler);
+    const start = ht ? P(ht) : endOf(sc.handler);
     const stop = endOf(sc.handler);
-    const along = unit(sub(stop, start || stop)),
-      perp = [-along[1], along[0]];
-    const xOf = (j) => Object.keys(jobs).find((x) => jobs[x] === j);
+    const SPn = (f.tokens || []).find((t) => t.id === sc.screener);
+    const SP = SPn ? P(SPn) : sc.SP;
+    const roller = endOf(sc.screener);
     const onX = guard[sc.handler],
       bigX = guard[sc.screener],
-      bearX = Object.keys(js).find((x) => js[x].includes("bear") && x !== onX),
-      denyX = xOf("deny");
+      bearX = Object.keys(js).find((x) => js[x].includes("bear") && x !== onX && x !== bigX);
     const plan = {};
     defenders(f).forEach((x) => {
       const man = m[x.id] ? endOf(m[x.id]) : null;
       plan[x.id] = { end: man ? spotFor(jobs[x.id], man, stop) : P(x), jobs: js[x.id] || [] };
     });
-    if (onX) plan[onX] = { ...plan[onX], end: add(stop, mul(perp, 20)), hh: true, cv: "fire" };
-    if (bigX && bigX !== onX) plan[bigX] = { ...plan[bigX], end: add(stop, mul(perp, -20)), hh: true };
-    const roller = endOf(sc.screener);
-    if (bearX && bearX !== bigX && roller) plan[bearX] = { ...plan[bearX], end: add(roller, mul(unit(sub(stop, roller)), 20)) };
-    const bearMan = bearX && m[bearX] ? endOf(m[bearX]) : null;
-    const denyMan = denyX && m[denyX] ? endOf(m[denyX]) : null;
-    // The Deny sinks to split his man and the Bear's man, staying on his side of it.
-    if (denyX && denyMan && bearMan && denyX !== bigX && denyX !== bearX) plan[denyX] = { ...plan[denyX], end: lerp(lerp(denyMan, bearMan, 0.35), stop, 0.2) };
+    // Over the top of the screen: on the side away from the rim.
+    const top = add(SP, mul(unit(sub(SP, RIM)), 22));
+    if (sc.dir === "right") {
+      const B = bigX && P(defenders(f).find((x) => x.id === bigX));
+      // He jumps out into the handler's path, where he comes over the top of the screen.
+      const drib = (f.strokes || []).find((x) => x.t === "dribble" && x.pts && x.pts.length > 2 && start && dist(x.pts[0], start) < 30);
+      const off = drib ? drib.pts[1] : add(SP, mul(unit(sub(SP, RIM)), 22));
+      const hedge = add(off, mul(unit(sub(off, SP)), 16));
+      if (bigX && roller) plan[bigX] = { ...plan[bigX], path: [B, hedge, null], end: add(roller, mul(unit(sub(stop, roller)), 22)) };
+      if (onX) plan[onX] = { ...plan[onX], path: [P(defenders(f).find((x) => x.id === onX)), top, null], end: spotFor("ball", stop, stop) };
+      if (bearX && roller && plan[bearX]) plan[bearX] = { ...plan[bearX], end: lerp(plan[bearX].end, roller, 0.45) };
+    } else {
+      if (onX) {
+        const along = unit(sub(stop, start || stop));
+        plan[onX] = { ...plan[onX], path: [P(defenders(f).find((x) => x.id === onX)), top, null], end: add(stop, mul(along, -22)) };
+      }
+      if (bigX) {
+        const front = add(stop, mul(unit(sub(RIM, stop)), 34));
+        plan[bigX] = { ...plan[bigX], end: roller ? lerp(front, roller, 0.3) : front };
+      }
+    }
     const r = moveAll(f, plan);
-    // X-out: the Bear keeps the roller, the big recovers out of the trap to the Bear's man.
-    const n = (xId) => (defenders(f).find((x) => x.id === xId) || {}).n;
-    r.xout = bigX && bearX && bigX !== bearX && roller ? [[n(bigX), n(bearX)]] : [];
+    r.xout = [];
     return r;
+  }
+
+  /* The scramble: the ball gets passed out of a rotation. Everyone recovers from where he
+     rotated to his Lock Left spot for where the ball goes (sticking with the X-out), and the
+     catcher's man sprints and closes out hands high. Returns { strokes, closer, catcher }. */
+  function scramble(g, next, guard) {
+    const offNext = { ...next, tokens: (next.tokens || []).filter((t) => t.t !== "x") };
+    const spots = place(offNext, guard);
+    const h = holder(offNext);
+    const xs = defenders(g);
+    const closer = h ? spots.find((x) => (x.m || x.n) === h.n) : null;
+    const strokes = [];
+    xs.forEach((x) => {
+      const to = spots.find((q) => q.n === x.n);
+      if (!to) return;
+      const X = P(x),
+        end = P(to);
+      if (dist(X, end) <= 8) return;
+      const isCloser = closer && closer.n === x.n;
+      // The closeout: sprint most of the way, then chop the feet.
+      const pts = isCloser ? [X, lerp(X, end, 0.75), end] : [X, lerp(X, end, 0.5), end];
+      strokes.push({ id: "dz" + x.id, t: "cut", pts: pts.map(rnd1), c: DEF_INK });
+    });
+    return { strokes, closer: closer && closer.n, catcher: h && h.n };
   }
 
   /* Lock Left over a whole possession: our X's where Lock Left puts them each step, and
@@ -696,7 +742,8 @@
     const out = [];
     let carry = null,
       carrySw = [], // switches the rotation calls for, applied on the next step
-      pending = null; // a ball screen set last step (the next step is how it's used)
+      pending = null, // a ball screen set last step (the next step is how it's used)
+      carryFrom = null; // "rotation": carry came out of a drive or a ball screen being used
     // Who's guarding whom, carried through the possession: { defender number: man number }.
     let guard = {};
     const swap = (a, b) => {
@@ -747,24 +794,37 @@
       carry = null;
       carrySw = [];
       const next = frames[i + 1];
-      const fire = pending && pending.dir === "left" ? pending : null;
+      const used = pending && pending.dir !== "straight" ? pending : null;
       pending = null;
       const sc = next && screenIn(g);
-      const dv = next && !sc && !fire && driveIn(g);
-      let r = null;
+      const dv = next && !sc && !used && driveIn(g);
+      let r = null,
+        rot = false;
+      const wasRotated = carryFrom === "rotation" && g.carried;
+      carryFrom = null;
       if (sc) {
-        // A ball screen: Ice, Fire or Contain, then the next step is how they use it.
+        // A ball screen: Hard Hedge, Drop or Contain, then the next step is how they use it.
         r = coverSet(g, sc, next);
         pending = sc;
-        g.cover = sc.dir === "right" ? "ice" : sc.dir === "left" ? "fire" : "contain";
-      } else if (fire) r = trapRespond(g, fire, next);
-      else if (dv) {
+        g.cover = sc.dir === "right" ? "hedge" : sc.dir === "left" ? "drop" : "contain";
+      } else if (used) {
+        r = screenRespond(g, used, next);
+        rot = true;
+      } else if (dv) {
         dv.beat = !!f.beat;
         g.drive = true;
         r = respond(g, dv, next);
+        rot = true;
+      } else if (wasRotated && next && (g.strokes || []).some((x) => x.t === "pass")) {
+        // Passed out of a rotation: the scramble.
+        const sr = scramble(g, next, guard);
+        g.strokes.push(...sr.strokes);
+        g.scramble = { closer: sr.closer, catcher: sr.catcher };
+        if (sr.closer) g.tokens = g.tokens.map((t) => (t.t === "x" && t.n === sr.closer ? { ...t, hh: true } : t));
       }
       if (r) {
         g.strokes.push(...r.strokes);
+        if (rot) carryFrom = "rotation";
         carry = r.ends;
         carrySw = [...(r.xout || []).map((q) => [q[0], q[1], "natural"]), ...(r.scram || []).map((q) => [q[0], q[1], "scram"])];
       }

@@ -80,6 +80,14 @@
       .map((o) => line("cut", [P(o), [250, Math.max(95, Math.min(P(o)[1], 130))], block]));
   }
 
+  /* Out of a drive: the driver spaces back out to the nearest open spot on his side
+     (a baseline driver refills his corner, a slot driver his slot). Returns the cut or null. */
+  function spaceOut(f, h, sd) {
+    const open = (q) => offense(f).every((o) => o.id === h.id || dist(P(o), q) > 50);
+    const spot = [slot(sd), wing(sd), corner(sd)].filter(open).sort((a, b) => dist(a, P(h)) - dist(b, P(h)))[0];
+    return spot ? line("cut", [P(h), lerp(P(h), spot, 0.5), spot]) : null;
+  }
+
   function holder(f) {
     const b = (f.tokens || []).find((t) => t.t === "ball");
     if (!b) return null;
@@ -205,7 +213,7 @@
         const { ahead, behind } = along(api.f, h, dir);
         // From a slot, the top or the nail, swing it slot to slot; from a wing or corner, to the next player.
         const hs = Math.abs(h.x - 250) > 20 ? sideOf(P(h)) : 0;
-        // Central: the top, a slot, the nail, or anywhere inside the arc (out of a drive or an Ice reject).
+        // Central: the top, a slot, the nail, or anywhere inside the arc (out of a drive).
         const central = (Math.abs(h.x - 250) < 135 && h.y > 150) || !isPerimeter(h);
         const slotOk = (t) => isSlot(t) && (!hs || sideOf(P(t)) !== hs);
         const otherSlot = central ? ahead.find(slotOk) || behind.find(slotOk) : null;
@@ -229,11 +237,25 @@
       },
     },
     skip: {
-      label: "Skip: across the floor over the next player; a Lock who catches it rises, the skipped player fills the corner",
+      label: "Skip: across the floor over the next player; a Lock who catches it rises, the skipped player fills the corner. Out of a drive it goes across to the weak-side corner (or the open man)",
       run(api, ctx) {
         const f = api.f;
         const h = holder(f);
         if (!h) return "nobody has the ball.";
+        if (!isPerimeter(h)) {
+          // Out of a drive: across the floor to the weak-side corner, or to the open man (the
+          // slot or wing the help left). The driver spaces back out on his side.
+          const hs = Math.abs(h.x - 250) > 15 ? sideOf(P(h)) : ctx.dir ? -ctx.dir : -1;
+          const weak = offense(f).filter((t) => t.id !== h.id && isPerimeter(t) && Math.abs(t.x - 250) > 15 && sideOf(P(t)) === -hs);
+          if (!weak.length) return "there's no one across the floor to skip it to.";
+          const inCorner = (t) => t.y < 130 && Math.abs(t.x - 250) > 150;
+          const cornerMan = weak.filter(inCorner).sort((a, b) => dist(P(b), P(h)) - dist(P(a), P(h)))[0];
+          const openMan = nearest(weak.filter((t) => !inCorner(t)), P(h));
+          const far = weak.slice().sort((a, b) => dist(P(b), P(h)) - dist(P(a), P(h)))[0];
+          const t = ctx.to === "open" ? openMan || cornerMan || far : cornerMan || far;
+          api.step([passTo(h, t), spaceOut(f, h, hs)]);
+          return;
+        }
         const hs = Math.abs(h.x - 250) > 20 ? sideOf(P(h)) : 0;
         const dir = hs ? -hs : ctx.dir || 1; // skips go from one side to the other
         const { ahead } = along(f, h, dir);
@@ -403,19 +425,19 @@
         if (dot(perp, sub(RIM, S2)) > 0) perp = mul(perp, -1); // go over the top of the screen
         const roll = [250 + s * 24, 80];
         const rollCut = line("cut", [S2, lerp(S2, roll, 0.5), roll]);
-        // Against Lock Left: a screen going right gets ICED (he rejects it and drives left);
-        // a screen going left is FIRE (he comes off it and gets stopped in the trap).
+        // Against Lock Left: a screen going right gets HARD HEDGED (he comes off it and the
+        // screener's man jumps out and forces him back out); a screen going left, the on-ball
+        // forces him into it and the big DROPS, so he comes off downhill and gets contained.
         const sx = SP[0] - H[0];
-        const cover = ctx.defense === "lock-left" ? (sx > 8 ? "ice" : sx < -8 ? "fire" : null) : null;
-        if (cover === "ice") {
-          const fH = unit(sub(RIM, H2));
-          const left = [fH[1], -fH[0]];
-          const T = clampPt(add(RIM, mul(unit(sub(add(H2, mul(left, 55)), RIM)), 120)));
-          api.step([line("dribble", [H2, lerp(H2, T, 0.5), T]), rollCut, ...clearForDrive(f2, h, T, [S.id])]);
+        const cover = ctx.defense === "lock-left" ? (sx > 8 ? "hedge" : sx < -8 ? "drop" : null) : null;
+        const off = add(S2, mul(perp, 22)); // over the top of the screen
+        if (cover === "hedge") {
+          const back = clampPt(add(lerp(H2, off, 0.55), mul(unit(sub(H2, RIM)), 42)));
+          api.step([line("dribble", [H2, off, back]), rollCut]);
           return;
         }
-        const end = cover === "fire" ? lerp(H2, G, 0.45) : G;
-        api.step([line("dribble", [H2, add(S2, mul(perp, 22)), end]), rollCut]);
+        const end = cover === "drop" ? lerp(H2, G, 0.8) : G;
+        api.step([line("dribble", [H2, off, end]), rollCut]);
       },
     },
     drive: {
@@ -444,12 +466,9 @@
         const t = nearest(same.length ? same : per, P(h));
         const moves = [passTo(h, t)];
         if (!isPerimeter(h)) {
-          // The driver kicks it and spaces back out to the nearest open spot on his side
-          // (a baseline driver refills his corner, a slot driver his slot).
-          const sd = s || -sideOf(P(t));
-          const open = (q) => offense(api.f).every((o) => o.id === h.id || dist(P(o), q) > 50);
-          const spot = [slot(sd), wing(sd), corner(sd)].filter(open).sort((a, b) => dist(a, P(h)) - dist(b, P(h)))[0];
-          if (spot) moves.push(line("cut", [P(h), lerp(P(h), spot, 0.5), spot]));
+          // The driver kicks it and spaces back out to the nearest open spot on his side.
+          const back = spaceOut(api.f, h, s || -sideOf(P(t)));
+          if (back) moves.push(back);
         }
         api.step(moves);
       },
