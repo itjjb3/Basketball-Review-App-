@@ -285,14 +285,21 @@
       },
     },
     "post-entry": {
-      label: "Post entry: pass to the nearest teammate in the paint",
+      label: "Post entry: the Rabbit posts up on the ball-side block (if he isn't there) and gets it",
       run(api) {
         const h = holder(api.f);
         if (!h) return "nobody has the ball.";
         const paint = offense(api.f).filter((t) => t.id !== h.id && t.x > 165 && t.x < 335 && t.y < 215);
         const t = nearest(paint, P(h));
         if (!t) return "no one is in the paint for a post entry.";
-        api.step([passTo(h, t)]);
+        if (dist(P(t), RIM) > 110) {
+          // Up at the elbow: he posts up on the ball-side block first.
+          const s = Math.abs(h.x - 250) > 15 ? sideOf(P(h)) : sideOf(P(t));
+          const block = [250 + s * 75, 76];
+          const Tp = P(t);
+          api.step([line("cut", [Tp, lerp(Tp, block, 0.5), block])]);
+        }
+        api.step([passTo(tok(api.f, h.id), tok(api.f, t.id))]);
       },
     },
     get: {

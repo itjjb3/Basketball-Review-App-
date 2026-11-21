@@ -301,9 +301,9 @@
       const a = toward(P(o)),
         b = toward(B);
       if (a && b) {
-        // Ball-you-man, leaning to see the ball: with man and ball on opposite sides he
-        // faces the ball, and he never flips around as they move.
-        base = unit(add(mul(a, 0.6), b));
+        // Ball-you-man (pistols): about halfway between his man and the ball. Weighted a hair
+        // to the ball so it never cancels out when they're on opposite sides (no flips).
+        base = unit(add(mul(a, 0.9), b));
         to = b;
       }
     } else if (o) base = toward(P(o));
@@ -324,12 +324,26 @@
 
   /* Which way each defender faces, in degrees. An X with his own angle (f) keeps it.
      jobs: the main job per X to use (the replay passes them), else worked out here. */
+  /* Each defender's main job for where the ball is right now, ignoring the jobs X's keep
+     through a rotation (j): his stance follows the ball even when his label hasn't changed. */
+  function freshRoles(f) {
+    if (!defenders(f).some((x) => x.j)) return roles(f);
+    return roles({
+      ...f,
+      tokens: (f.tokens || []).map((t) => {
+        if (t.t !== "x" || !t.j) return t;
+        const c = { ...t };
+        delete c.j;
+        return c;
+      }),
+    });
+  }
   function facing(f, draft, jobs) {
     const out = {};
     const xs = defenders(f);
     if (!xs.length) return out;
     const st = stance(draft);
-    jobs = jobs || roles(f);
+    jobs = jobs || freshRoles(f);
     const m = matchups(f);
     xs.forEach((x) => {
       if (typeof x.f === "number" && isFinite(x.f)) return (out[x.id] = x.f);
@@ -783,6 +797,25 @@
     return { plan: { [cX]: { path: [X, gap, null], end } }, lines: [cX], cv: { [cX]: "under" } };
   }
 
+  /* The DIG (when it's called): on the entry pass into the post, the Gap (for where the ball
+     is going) digs at the post man, hands active, between him and his own man, ready to
+     recover on the kick out. Returns { plan, lines, cv, x, man, digX } or null. */
+  function digPlan(g, next, guard) {
+    const offNext = { ...next, tokens: (next.tokens || []).filter((t) => t.t !== "x") };
+    const post = holder(offNext);
+    if (!post) return null;
+    const spots = place(offNext, guard);
+    const jobs = roles({ tokens: [...offNext.tokens, ...spots] });
+    const gapX = Object.keys(jobs).find((xId) => jobs[xId] === "gap");
+    const sp = gapX && spots.find((x) => x.id === gapX);
+    const man = sp && offense(offNext).find((o) => o.n === (sp.m || sp.n));
+    const now = defenders(g).find((x) => x.id === gapX);
+    if (!sp || !man || !now) return null;
+    const dig = add(P(post), mul(unit(sub(P(man), P(post))), 32));
+    const X = P(now);
+    return { plan: { [gapX]: { path: [X, lerp(X, dig, 0.5), null], end: dig } }, lines: [gapX], cv: { [gapX]: "dig" }, digX: gapX, x: now.n, man: post.n };
+  }
+
   /* The scramble: the ball gets passed out of a rotation. Everyone recovers from where he
      rotated to his Lock Left spot for where the ball goes (sticking with the X-out), and the
      catcher's man sprints and closes out hands high. Returns { strokes, closer, catcher }. */
@@ -938,6 +971,26 @@
         r = respond(g, dv, next);
         rot = true;
       }
+      // An entry pass into the post: the coach can call the Dig (the Gap digs).
+      const nextHolder = next ? holder({ ...next, tokens: (next.tokens || []).filter((t) => t.t !== "x") }) : null;
+      const postCatch = !!(next && nextHolder && dist(P(nextHolder), RIM) < POST && (g.strokes || []).some((x) => x.t === "pass"));
+      if (postCatch) g.postCatch = true;
+      if (!r && postCatch && f.dig) {
+        const dp = digPlan(g, next, guard);
+        if (dp) {
+          const offNext = { ...next, tokens: (next.tokens || []).filter((t) => t.t !== "x") };
+          const plan = {};
+          const spots = {};
+          place(offNext, guard).forEach((x) => (spots[x.id] = P(x)));
+          defenders(g).forEach((x) => (plan[x.id] = { end: spots[x.id] || P(x) }));
+          Object.assign(plan, dp.plan);
+          r = moveAll(g, plan, dp.lines);
+          g.tokens = g.tokens.map((t) => (t.id === dp.digX ? { ...t, cv: "dig", hh: true } : t));
+          g.liveOthers = dp.lines.slice();
+          g.dig = { x: dp.x, man: dp.man };
+          rot = true;
+        }
+      }
       // Handoffs (like ball screens) and the cut off an off-ball screen (shoot the gap): only
       // the X's in the action get lines; everyone else plays the string live to his spot.
       const hf = !r && next ? handoffIn(g, next) : null;
@@ -1029,6 +1082,9 @@
     };
     const rFrom = main(jFrom),
       rTo = main(jTo);
+    // Which way he faces comes from where the ball is now, not the job he kept through a rotation.
+    const fFrom = freshRoles(from),
+      fTo = freshRoles(to);
     const mFrom = matchups(from),
       mTo = matchups(to);
     const start = {};
@@ -1090,8 +1146,8 @@
       const late = w >= 0.5;
       const live = { tokens: [...offNow, ...(ballNow ? [ballNow] : []), ...xsNow] };
       // He turns from his old job's stance to his new one as the job hands over.
-      const fA = facing(live, opts.stance, rFrom),
-        fB = facing(live, opts.stance, rTo);
+      const fA = facing(live, opts.stance, fFrom),
+        fB = facing(live, opts.stance, fTo);
       const face = {};
       Object.keys(fB).forEach((id) => {
         const a = fA[id] == null ? fB[id] : fA[id];
@@ -1205,5 +1261,5 @@
     return `<b>${esc(name)}.</b> ${what}${none}${t ? ` <a href="#item-${esc(t.id)}">Open ${esc(name)}</a>` : ""}`;
   }
 
-  BH.defense = { ROLES, role, TERMS, termRole, terms, matchups, naturalSwitches, screenIn, jobsOf, roles, isTop, spotFor, place, withDefense, defendFrames, driveIn, respond, liveStep, facing, stance, stanceFor, DEFAULT_STANCE, demo, jobTerm, jobsMarkup, jobText };
+  BH.defense = { ROLES, role, TERMS, termRole, terms, matchups, naturalSwitches, screenIn, jobsOf, roles, freshRoles, isTop, spotFor, place, withDefense, defendFrames, driveIn, respond, liveStep, facing, stance, stanceFor, DEFAULT_STANCE, demo, jobTerm, jobsMarkup, jobText };
 })();

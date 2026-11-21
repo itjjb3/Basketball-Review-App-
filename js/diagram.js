@@ -263,7 +263,7 @@
       const tag = extra.hl && extra.tag ? `<g class="x-tag" transform="translate(0,${up})"><rect x="${-(extra.tag.length * 4.6 + 7).toFixed(1)}" y="-9.5" width="${(extra.tag.length * 9.2 + 14).toFixed(1)}" height="19" rx="9.5" /><text y="4.6">${esc(extra.tag)}</text></g>` : "";
       // Switched (Scram) on this step: a red SCRAM label on the other side of him.
       // Ball-screen coverage on this step: OVER / HEDGE (going right), FORCE / DROP (going left), CONTAIN.
-      const cvText = { over: "OVER", hedge: "HEDGE", force: "FORCE", drop: "DROP", contain: "CONTAIN", post: "FORCE LEFT", under: "UNDER" }[tk.cv] || "";
+      const cvText = { over: "OVER", hedge: "HEDGE", force: "FORCE", drop: "DROP", contain: "CONTAIN", post: "FORCE LEFT", under: "UNDER", dig: "DIG" }[tk.cv] || "";
       // Above him unless his job label is there; a post defender's tag goes up the court, off his man.
       const cvY = tk.cv === "post" ? (extra.hl && extra.tag ? 58 : 31) : extra.hl && extra.tag ? -up : up;
       const cover = cvText ? `<g class="x-cover" transform="translate(0,${cvY})"><rect x="${-(cvText.length * 4.4 + 7).toFixed(1)}" y="-8.5" width="${(cvText.length * 8.8 + 14).toFixed(1)}" height="17" rx="8.5" /><text y="4.2">${cvText}</text></g>` : "";

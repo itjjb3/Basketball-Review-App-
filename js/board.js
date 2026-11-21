@@ -1033,6 +1033,9 @@
     { group: "Off-ball screens: shoot the gap", id: "sc-off-twist", name: "Twist's down screen", call: ["4-out", "twist"], terms: [], about: "The Twist's backside down screen: the cutter's man shoots the gap. No switch" },
     { group: "Post", id: "sc-post-slot", name: "Post entry from the slot", call: ["4-out", "post-entry", "kick-out"], terms: ["wall"], about: "The ball goes into the Rabbit on the block: X4 plays halfway over his left shoulder, forcing him left; then he kicks it back out" },
     { group: "Post", id: "sc-post-corner", name: "Post entry from the corner", call: ["4-out", "kick-out", "post-entry", "kick-out"], terms: ["wall"], about: "Kick to the corner, then into the post: X4 on his left shoulder; then he kicks it out and we scramble" },
+    { group: "Post", id: "sc-post-wing", name: "Post entry from the wing", call: ["baseline-drive-lift", "post-entry", "kick-out"], terms: ["wall"], about: "1 Thru leaves 5 on the wing: the Rabbit posts up on the ball-side block and X4 shades him so he has to go left; then he kicks it out" },
+    { group: "Post", id: "sc-post-dig", name: "Dig (slot entry)", call: ["4-out", { id: "post-entry", dig: true }, "kick-out"], terms: ["gap", "wall"], about: "The Dig is called: on the entry, the Gap digs at the post, hands active; he kicks it out to the digger's man and the digger recovers (the scramble)" },
+    { group: "Post", id: "sc-post-dig-wing", name: "Dig (wing entry)", call: ["baseline-drive-lift", { id: "post-entry", dig: true }, "kick-out"], terms: ["gap", "wall"], about: "Entry from the wing with the Dig called: the Gap digs, then recovers on the kick out" },
     { group: "Beat: Scram", id: "sc-beat", terms: ["scram"], name: "Slot drive", call: ["4-out", { id: "drive", beat: true }, "kick-out"], about: "He gets beat on a slot drive: the Gap picks up the ball, the on-ball sprints to the Gap's man (Scram)" },
     { group: "Beat: Scram", id: "sc-beat-top", terms: ["scram"], name: "Top drive", call: [["5-out", "power"], { id: "drive", beat: true }, "kick-out"], about: "He gets beat at the top: the drive-side wing picks up the ball, the on-ball sprints to his man, the corner stays home (Scram)" },
     { group: "Beat: Scram", id: "sc-beat-wing", terms: ["scram"], name: "Wing drive", call: ["baseline-drive-lift", { id: "drive", beat: true }, "kick-out"], about: "He gets beat on a wing drive: the Gap picks up the ball, the on-ball sprints to the Gap's man (Scram)" },
@@ -1079,6 +1082,15 @@
       // A drive he gets beat on (the Scram scenario).
       const seg = S.segs[n] || S.segs[S.segs.length - 1];
       if (step && step.beat && seg && S.board.frames[seg.start]) S.board.frames[seg.start].beat = true;
+      // A called Dig: on the entry pass (this piece's last step with moves).
+      if (step && step.dig) {
+        const fr = S.board.frames;
+        for (let k = fr.length - 1; k >= (seg ? seg.start : 0); k--)
+          if ((fr[k].strokes || []).some((x) => x.t === "pass")) {
+            fr[k].dig = true;
+            break;
+          }
+      }
     });
     S.step = 0;
     return failed;
@@ -1264,6 +1276,15 @@
       : "";
     const gapRow = f.offGap ? `<p class="small"><b>Off-ball screen: shoot the gap.</b> X${esc(f.offGap.x)} is already in the middle, so he goes under, between the screener and the rim, and beats ${esc(f.offGap.cutter)} to his spot. The screener's man stays home. No switch.</p>` : "";
     const postRow = f.post ? `<p class="small"><b>Post:</b> X${esc(f.post.x)} shades ${esc(f.post.man)} so he always has to go left: between him and the rim, halfway over to his right hand (his left shoulder with his back to the basket).</p>` : "";
+    // An entry pass into the post: call the Dig (the Gap digs).
+    const digOn = !!(frame() && frame().dig);
+    const digRow = f.postCatch
+      ? `<p class="small">${
+          digOn && f.dig
+            ? `<b>Dig:</b> X${esc(f.dig.x)} (the Gap) digs at ${esc(f.dig.man)} on the catch, hands active, then recovers to his man on the kick out. <button class="linkish" data-act="dig">Undo</button>`
+            : `<button class="btn ghost small" data-act="dig">Dig (the Gap digs)</button>`
+        }</p>`
+      : "";
     // Passed out of a rotation: the scramble.
     const scr = f.scramble;
     const scrRow = scr
@@ -1275,6 +1296,7 @@
         ${hoRow}
         ${gapRow}
         ${postRow}
+        ${digRow}
         ${scrRow}
         ${events.length ? `<ul class="switch-list">${events.join("")}</ul>` : ""}
         ${switched.length ? `<p class="small"><b>Switched:</b> ${switched.join(" · ")}</p>` : ""}
@@ -1294,6 +1316,15 @@
       </div>`;
   }
   function wireDefBox(box) {
+    const dig = BH.$('[data-act="dig"]', box);
+    if (dig)
+      dig.addEventListener("click", () => {
+        snapshot();
+        const f = frame();
+        if (f.dig) delete f.dig;
+        else f.dig = true;
+        changed();
+      });
     const beat = BH.$('[data-act="beat"]', box);
     if (beat)
       beat.addEventListener("click", () => {
