@@ -195,13 +195,16 @@
         break;
       }
       case "wall": {
-        // Paint help. On a post man: shading him to go left. Off a perimeter man: in
-        // the paint, leaning to the ball's side. Both change gradually as the ball and his
-        // man move, so he never jumps across the lane.
+        // Paint help. On a ball-side post man: shading him to go left. Off a perimeter man,
+        // or with the ball on the other side of the floor: shifted into the paint, leaning to
+        // the ball's side. Both change gradually as the ball and his man move, so he never
+        // jumps across the lane.
         const near = postSpot(M);
         const lean = Math.max(-1, Math.min(1, (B[0] - 250) / 60));
         const far = lerp(M, [250 + lean * 30, 135], 0.65);
-        q = lerp(near, far, Math.max(0, Math.min(1, (dist(M, RIM) - 120) / 40)));
+        const sm = Math.abs(M[0] - 250) > 20 ? Math.sign(M[0] - 250) : 0;
+        const weak = sm ? Math.max(0, Math.min(1, ((250 - B[0]) * sm - 20) / 60)) : 0;
+        q = lerp(near, far, Math.max(weak, Math.max(0, Math.min(1, (dist(M, RIM) - 120) / 40))));
         break;
       }
       case "bear": {
@@ -210,8 +213,17 @@
         q = [d[0] + (250 - d[0]) * 0.35, d[1] + 18];
         break;
       }
-      default:
-        q = lerp(M, RIM, 0.3);
+      default: {
+        // Two or more passes away. With the ball on his side he stays closer to his man; with
+        // the ball on the other side he's the low man: sagged to the weak-side block and lane
+        // line, in position to help the helper.
+        const sm = M[0] >= 250 ? 1 : -1;
+        const away = Math.max(0, Math.min(1, ((250 - B[0]) * sm + 20) / 80));
+        const home = lerp(M, RIM, 0.3);
+        const low = lerp(M, RIM, 0.55);
+        const help = [250 + sm * Math.min(Math.abs(low[0] - 250), 65), low[1]];
+        q = lerp(home, help, away);
+      }
     }
     return clampPt(q);
   }
@@ -301,9 +313,12 @@
       const a = toward(P(o)),
         b = toward(B);
       if (a && b) {
-        // Ball-you-man (pistols): about halfway between his man and the ball. Weighted a hair
-        // to the ball so it never cancels out when they're on opposite sides (no flips).
-        base = unit(add(mul(a, 0.9), b));
+        // Ball-you-man (pistols): about halfway between his man and the ball, opened a little
+        // to the floor. When his man and the ball are on a line through him (the low man on
+        // the baseline) he faces up the floor and sees both, and it never flips around.
+        const toFloor = sub([250, 230], X);
+        const open = mul(unit(toFloor), 0.5 * Math.max(0, Math.min(1, Math.hypot(toFloor[0], toFloor[1]) / 40)));
+        base = unit(add(add(mul(a, 0.9), b), open));
         to = b;
       }
     } else if (o) base = toward(P(o));
@@ -546,7 +561,7 @@
           break;
         }
         case "home":
-          end = man ? spotFor(null, man, Dv) : X;
+          end = man ? lerp(man, RIM, 0.3) : X; // he stays with his man
           break;
         default:
           end = man ? spotFor(jobs[x.id] === "deny" ? "deny" : jobs[x.id] === "ball" ? "ball" : null, man, Dv) : lerp(X, RIM, 0.15);
