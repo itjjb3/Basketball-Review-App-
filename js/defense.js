@@ -134,11 +134,18 @@
     } else {
       const rest = os.filter((o) => o.id !== h.id && guard[o.id] && !out[guard[o.id]]).sort((a, b) => dist(P(a), RIM) - dist(P(b), RIM));
       if (rest[0]) give(guard[rest[0].id], "wall");
-      // The Bear helps the helper: the weak-side slot or wing (he can be the Deny too).
-      // With nobody up top on the weak side, the next man closest to the rim.
+      // The Bear helps the helper: whichever defender two or more passes away (no job yet)
+      // is closest to the Wall's man from his help spot (usually the low man). With none,
+      // the weak-side slot or wing (he can be the Deny too), else the next man to the rim.
       const bs = P(h)[0] >= 250 ? 1 : -1;
       const wallX = rest[0] && guard[rest[0].id];
-      const helper = os
+      const twoAway = rest[0]
+        ? os
+            .filter((o) => o.id !== h.id && guard[o.id] && !out[guard[o.id]])
+            .map((o) => ({ o, d: dist(spotFor(null, P(o), P(h)), P(rest[0])) }))
+            .sort((a, b) => a.d - b.d)[0]
+        : null;
+      const helper = twoAway ? twoAway.o : os
         .filter((o) => o.id !== h.id && isPerimeter(P(o)) && !isCorner(P(o)) && (P(o)[0] >= 250 ? 1 : -1) === -bs && Math.abs(P(o)[0] - 250) > 15)
         .filter((o) => {
           const x = guard[o.id];
@@ -164,7 +171,8 @@
   /* The post: always shading him so he has to go LEFT. Like the on-ball on the perimeter,
      between him and the rim and shaded to his right hand (as he faces up), only closer and
      halfway over: his left shoulder with his back to the basket. Never depends on the ball. */
-  const POST = 120;
+  /* The low post: near the block, low in the lane (a driver at the elbow isn't posting up). */
+  const inPost = (p) => dist(p, RIM) < 105 && p[1] < 125;
   function postSpot(M) {
     const toRim = unit(sub(RIM, M));
     const right = [-toRim[1], toRim[0]];
@@ -176,7 +184,7 @@
     let q;
     switch (job) {
       case "ball": {
-        if (dist(M, RIM) < POST) {
+        if (inPost(M)) {
           q = postSpot(M); // a post catch: keep shading him left
           break;
         }
@@ -485,10 +493,22 @@
     } else {
       const gapX = xOfJob("gap"),
         wallX = xOfJob("wall"),
-        bearX = Object.keys(js).find((x) => js[x].includes("bear") && x !== ballX && x !== gapX && x !== wallX),
         denyX = xOfJob("deny");
+      let bearX = Object.keys(js).find((x) => js[x].includes("bear") && x !== ballX && x !== gapX && x !== wallX);
       if (gapX) move[gapX] = "snipe";
       if (wallX) (move[wallX] = "step"), (wallMan = m[wallX] ? endOf(m[wallX]) : null);
+      // Help the helper: whichever defender two or more passes away is closest to where the
+      // Wall's man ends up (after a post man clears), usually the low man.
+      if (wallMan) {
+        const two = defenders(f)
+          .filter((x) => x.id !== ballX && x.id !== gapX && x.id !== wallX && x.id !== denyX && (!jobs[x.id] || jobs[x.id] === "bear"))
+          .sort((a, b) => dist(P(a), wallMan) - dist(P(b), wallMan))[0];
+        if (two && two.id !== bearX) {
+          if (bearX) label[bearX] = (js[bearX] || []).filter((j) => j !== "bear");
+          bearX = two.id;
+          label[bearX] = ["bear"];
+        }
+      }
       if (bearX) {
         // The Bear helps the helper: he takes the Wall's man, the first pass out on that side.
         // The Wall recovers to the open guy (the Bear's man): an off-ball X-out.
@@ -988,7 +1008,7 @@
       }
       // An entry pass into the post: the coach can call the Dig (the Gap digs).
       const nextHolder = next ? holder({ ...next, tokens: (next.tokens || []).filter((t) => t.t !== "x") }) : null;
-      const postCatch = !!(next && nextHolder && dist(P(nextHolder), RIM) < POST && (g.strokes || []).some((x) => x.t === "pass"));
+      const postCatch = !!(next && nextHolder && inPost(P(nextHolder)) && (g.strokes || []).some((x) => x.t === "pass"));
       if (postCatch) g.postCatch = true;
       if (!r && postCatch && f.dig) {
         const dp = digPlan(g, next, guard);
@@ -1061,7 +1081,7 @@
       }
       // The ball in the post: his man shades him to go left (tag it).
       const ph = holder(g);
-      if (ph && dist(P(ph), RIM) < POST) {
+      if (ph && inPost(P(ph))) {
         const pm = matchups(g);
         const px = Object.keys(pm).find((xId) => pm[xId] === ph.id);
         if (px) {
