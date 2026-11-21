@@ -1090,6 +1090,14 @@
     const start = {};
     defenders(from).forEach((x) => (start[x.id] = P(x)));
     const ballTo = (to.tokens || []).find((t) => t.t === "ball");
+    // The Wall faces the ball through the drive, and after it until the ball is passed out
+    // of the paint (from.drive: the drive step; a carried step: X's keep their drive jobs, j).
+    const startHolder = holder(from);
+    const wallNow = (xId) => {
+      const x = defenders(from).find((d) => d.id === xId);
+      if (from.drive) return (jFrom[xId] || []).includes("wall");
+      return !!(from.carried && x && [].concat(x.j || []).includes("wall"));
+    };
     const smooth = (u) => {
       u = Math.max(0, Math.min(1, u));
       return u * u * (3 - 2 * u);
@@ -1149,9 +1157,23 @@
       const fA = facing(live, opts.stance, fFrom),
         fB = facing(live, opts.stance, fTo);
       const face = {};
+      const passedOut = !!(startHolder && ballNow && ballNow.h !== startHolder.id);
       Object.keys(fB).forEach((id) => {
         const a = fA[id] == null ? fB[id] : fA[id];
-        const want = a + wrap(fB[id] - a) * w;
+        let want = a + wrap(fB[id] - a) * w;
+        const X = out[id];
+        if (X && wallNow(id) && (from.drive || !passedOut) && dist(B, X) > 1) {
+          // The Wall stays facing the ball until it's passed out of the paint.
+          want = angOf(sub(B, X));
+        } else if (X && lineFor(id) && rFrom[id] !== "ball" && lastPos && lastPos[id] && t > lastT) {
+          // On a rotation he turns and sprints to his spot (facing where he's running), then
+          // gets in his help stance as he gets there. A short move is a slide: stance the whole way.
+          const v = sub(X, lastPos[id]);
+          const speed = Math.hypot(v[0], v[1]) / (t - lastT);
+          // (He starts squaring up into his stance just before he gets there.)
+          const k = Math.max(0, Math.min(1, (speed - 70) / 90)) * Math.max(0, Math.min(1, (0.88 - t) / 0.2));
+          if (k > 0) want = want + wrap(angOf(v) - want) * k;
+        }
         const was = lastFace && lastFace[id];
         if (was == null || t <= lastT) return (face[id] = want);
         const diff = wrap(want - was);
